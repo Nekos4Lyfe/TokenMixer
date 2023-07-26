@@ -5,7 +5,7 @@
 An A1111 extension for interpolating tokens into embeddings. 
 If you are reading then you are seeing an early version of this extension. 
 
-Milestones: 
+Milestones:
 *Writing this guide 
 *Debugging the Interpolate mode function 
 *Adding a Seecoder module
