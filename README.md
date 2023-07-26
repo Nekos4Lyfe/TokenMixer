@@ -1,4 +1,4 @@
-# TokenMixer
+# TokenMixer for Automatic1111
 
 ![TokenMixer1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/72be4504-3919-498a-8368-a6e43ebb83a9)
 
