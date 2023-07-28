@@ -111,17 +111,17 @@ class Data :
         #Compute similarity of current token to 
         #candidate_vec
         similarity = 100*cos(current, candidate_vec).numpy()[0]
-
+        worst_nsim = None
+        worst_neg_index = None
+        nsim = None
+        tmp = None
+        neg_vec = None
+        strength = self.negative.strength/100
+        negative_similarity = None
         #######
         #Check negatives
         if no_of_negatives > 0: 
-          worst_nsim = None
-          worst_neg_index = None
-          nsim = None
-          tmp = None
-          neg_vec = None
-          strength = self.negative.strength/100
-          negative_similarity = None
+
           for neg_index in range(MAX_NUM_MIX) :
             if self.negative.isEmpty.get(neg_index): continue
             neg_vec = self.negative.get(neg_index)
