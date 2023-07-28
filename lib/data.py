@@ -114,14 +114,13 @@ class Data :
         worst_nsim = None
         worst_neg_index = None
         nsim = None
-        tmp = None
         neg_vec = None
         strength = self.negative.strength/100
         negative_similarity = None
         #######
         #Check negatives
         if no_of_negatives > 0: 
-
+          tmp = None
           for neg_index in range(MAX_NUM_MIX) :
             if self.negative.isEmpty.get(neg_index): continue
             neg_vec = self.negative.get(neg_index)
@@ -140,11 +139,14 @@ class Data :
           negative_similarity = 100 - worst_nsim
         ########### #Done checking negatives
         
-        if negative_similarity == None : negative_similarity = 0
-        similarity_sum += similarity * (1 - strength) + negative_similarity*strength
+
+        if similarity == None : similarity = 0
+        if negative_similarity != None : 
+          similarity_sum += similarity * (1 - strength) + negative_similarity*strength
+        else: similarity_sum += similarity
         
         if similarity == min(minimum , similarity) :
-          minimum = tmp
+          minimum = similarity
           mintoken = i
 
         if similarity == max(maximum , similarity) :
