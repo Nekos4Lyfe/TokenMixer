@@ -10,12 +10,7 @@ import re #used to parse text to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
 
-
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
+from lib.toolbox.constants import MAX_NUM_MIX , SEP_STR
 
 from lib.data import dataStorage
 
@@ -30,16 +25,43 @@ class EmbeddingInspector :
     percentage = args[4]
     max_similar_embs = args[5]
     id_mode = args[6]
+    mix_input = args[7]
+    stack_mode = args[8]
+    send_to_negatives = args[9]
+    neg_input = args[10]
 
-    tokenmixer_vectors = [None]* MAX_NUM_MIX
+
+    negbox = neg_input
+    if neg_input == None : negbox = ''
+    if send_to_negatives and not stack_mode : negbox = ''
+
+    tokenmixer_vectors = mix_input
+    if tokenmixer_vectors == None : tokenmixer_vectors = ''
+    if sendtomix and not stack_mode : tokenmixer_vectors = ''
 
     #Clear all inputs from tokenmixer
     for index in range(MAX_NUM_MIX):
-      self.data.clear(index)
+      self.data.clear(
+        index , 
+        to_mixer = sendtomix and (not stack_mode) , 
+        to_temporary = True , 
+        to_negative = send_to_negatives and (not stack_mode))
     #####
 
     results = []
     log = []
+
+    if send_to_negatives :
+      log.append("send_to_negatives : True")
+    else:
+      log.append("send_to_negatives : False")   
+
+    if sendtomix :
+      log.append("sendtomix : True")
+    else: 
+      log.append("sendtomix : False")
+
+    log.append("----")
 
     emb_vec = None
     emb_id = None
@@ -49,10 +71,11 @@ class EmbeddingInspector :
 
     if mini_input == None or mini_input == '' : 
       log.append("Mini-input is empty!")
-      return '\n'.join(results) , '\n'.join(log)
+      return '' , '' , '\n'.join(results) , '\n'.join(log)
     
     assert  \
     sendtomix != None or \
+    send_to_negatives != None or \
     percentage != None or \
     separate != None or \
     id_mode != None
@@ -67,16 +90,6 @@ class EmbeddingInspector :
         break #Only take the first ID in the input
     else: text = copy.copy(mini_input.strip().lower())
 
-    #Do some checks on text parameter
-    if text == None:
-      results.append('text is NoneType!') 
-      return None , None , None , None , None , '\n'.join(results)
-    if not isinstance (text , str) :
-      results.append('Text is not String!') 
-      return None , None , None , None , None , '\n'.join(results)
-    if text == '':
-      results.append("Text is empty string '' !")
-      return None , None , None , None , None , '\n'.join(results)
 
     loaded_emb = self.data.tools.loaded_embs.get(text, None)
     emb_id = self.data.tools.no_of_internal_embs
@@ -100,7 +113,7 @@ class EmbeddingInspector :
 
     if emb_vec == None : 
       results.append('emb_vec is Nonetype!') 
-      return '\n'.join(results)
+      return '' , '' , '\n'.join(results) , '\n'.join(log) 
 
     # add embedding info to results
     results.append('Embedding name: "'+emb_name+'"')
@@ -170,6 +183,7 @@ class EmbeddingInspector :
       vecs = []
       full = []
       sim = []
+      emb_name = None
       for i in range(max_similar_embs):
         emb_id = best_ids[i].item()
         emb_name = self.data.emb_id_to_name(emb_id)
@@ -180,15 +194,33 @@ class EmbeddingInspector :
         full.append(emb_name+'('+str(emb_id)+')')
         sim.append(str(round((100*sorted_scores).numpy()[i] , 1))+'% ')
 
-        if k==0 and sendtomix :
+
+        if k==0 and send_to_negatives :
           for index in range(MAX_NUM_MIX):
-            if not self.data.vector.isEmpty.get(index): continue
+            if (not self.data.negative.isEmpty.get(index)): continue
             self.data.place(index , \
                 vector =   emb_vec.unsqueeze(0).cpu(),
                 ID =  emb_id ,
-                name = copy.copy(emb_name))
+                name = copy.copy(emb_name) , 
+                to_mixer = False , 
+                to_temporary = True , 
+                to_negative = send_to_negatives)
             break
-      ######
+        #########
+
+        if k==0 and sendtomix :
+          for index in range(MAX_NUM_MIX):
+            if (not self.data.vector.isEmpty.get(index)): continue
+            self.data.place(index , \
+                vector =   emb_vec.unsqueeze(0).cpu(),
+                ID =  emb_id ,
+                name = copy.copy(emb_name) , 
+                to_mixer = sendtomix , 
+                to_temporary = True , 
+                to_negative = False)
+            break
+        #########
+      ##########           
 
       results.append('Vector #' + str(k) + ' :')
 
@@ -207,9 +239,21 @@ class EmbeddingInspector :
       results.append(SEP_STR)
 
       for index in range(MAX_NUM_MIX):
-        tokenmixer_vectors[index]= self.data.vector.name.get(index)
+        name = self.data.vector.name.get(index)
+        if name != None :
+          if sendtomix : 
+            if tokenmixer_vectors != '': tokenmixer_vectors = tokenmixer_vectors + ' , '
+            tokenmixer_vectors = tokenmixer_vectors  + name
+          
+      for index in range(MAX_NUM_MIX):
+        name = self.data.negative.name.get(index)
+        if name != None :        
+          if send_to_negatives:
+            if negbox != '': negbox = negbox + ' , '
+            negbox = negbox  + name
 
-    return  *tokenmixer_vectors , '\n'.join(results) , '\n'.join(log)
+
+    return  tokenmixer_vectors , negbox , '\n'.join(results) , '\n'.join(log)
        
     
   def setupIO_with (self, module):
@@ -226,19 +270,23 @@ class EmbeddingInspector :
       return 1
 
     if (module.ID == "TokenMixer") :
-      input_list.append(self.inputs.mini_input) #0
-      input_list.append(self.inputs.sendtomix) #1
-      input_list.append(self.inputs.separate) #2
-      input_list.append(self.inputs.similarity) #3
-      input_list.append(self.inputs.percentage) #4
+      input_list.append(self.inputs.mini_input)       #0
+      input_list.append(self.inputs.sendtomix)        #1
+      input_list.append(self.inputs.separate)         #2
+      input_list.append(self.inputs.similarity)       #3
+      input_list.append(self.inputs.percentage)       #4
       input_list.append(self.inputs.max_similar_embs) #5
-      input_list.append(self.inputs.id_mode) #6
+      input_list.append(self.inputs.id_mode)          #6
+      input_list.append(module.inputs.mix_input)      #7
+      input_list.append(self.inputs.stack_mode)       #8
+      input_list.append(self.inputs.negatives)        #9
+      input_list.append(module.inputs.negbox)         #10
       #######
-      for i in range(MAX_NUM_MIX):
-        output_list.append(module.inputs.mix_inputs[i]) #4:(4 + MAX_NUM_MIX)
 
-      output_list.append(self.outputs.results) 
-      output_list.append(self.outputs.log) 
+      output_list.append(module.inputs.mix_input) #0
+      output_list.append(module.inputs.negbox)    #1
+      output_list.append(self.outputs.results)    #2
+      output_list.append(self.outputs.log)        #3
       self.buttons.inspect.click(fn=self.Inspect , inputs = input_list , outputs = output_list)
   #End of setupIO_with()
 
@@ -261,6 +309,8 @@ class EmbeddingInspector :
         Inputs.percentage = []
         Inputs.max_similar_embs = []
         Inputs.id_mode = []
+        Inputs.stack_mode = []
+        Inputs.negatives = []
 
     class Buttons :
       def __init__(self):
@@ -274,25 +324,28 @@ class EmbeddingInspector :
 
     #create UI
     with gr.Accordion( label ,open=False , visible = vis) as show:
+      gr.Markdown("Find CLIP tokens similar to input token")
       with gr.Row() :  
           self.inputs.similarity = gr.Slider(label="Similarity upper bound %",value=100, \
                                       minimum=-100, maximum=100, step=0.1 , interactive = True)
       with gr.Row() :  
           self.inputs.max_similar_embs = gr.Slider(label="Number of tokens to display",value=30, \
-                                      minimum=-100, maximum=100, step=1 , interactive = True)
+                                      minimum=0, maximum=300, step=1 , interactive = True)
       with gr.Row() : 
           self.buttons.inspect = gr.Button(value="Get similar tokens", variant="primary")
           self.buttons.reset = gr.Button(value="Reset", variant = "secondary") 
       with gr.Row() : 
-        self.inputs.mini_input = gr.Textbox(label="Input", lines=2, \
-        placeholder="Enter a single vector token" , interactive = True)
+        self.inputs.mini_input = gr.Textbox(label='', lines=2, \
+        placeholder="Enter a single vector token or embedding" , interactive = True)
       with gr.Row() : 
         self.outputs.results = gr.Textbox(label="Output", lines=10, interactive = False)
       with gr.Row():
-          self.inputs.sendtomix = gr.Checkbox(value=False, label="Send vectors similar to first vector to TokenMixer", interactive = True)
-          self.inputs.id_mode = gr.Checkbox(value=False, label="ID input mode", interactive = True)
+          self.inputs.sendtomix = gr.Checkbox(value=False, label="Send to input", interactive = True)
+          self.inputs.id_mode = gr.Checkbox(value=False, label="ID Mode", interactive = True)
           self.inputs.separate = gr.Checkbox(value=False, label="Separate name and ID", interactive = True)
           self.inputs.percentage = gr.Checkbox(value=False, label="Show similarity %", interactive = True)
+          self.inputs.stack_mode = gr.Checkbox(value=False, label="Stack Mode", interactive = True)
+          self.inputs.negatives = gr.Checkbox(value=False, label="Send to negatives", interactive = True) 
       with gr.Accordion("Output Log" , open = False) as logs :
         self.outputs.log = gr.Textbox(label="Output log", lines=5, interactive = False)   
       

@@ -12,11 +12,7 @@ import re #used to parse name_string to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
 
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , MAX_SIMILAR_EMBS , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
+from lib.toolbox.constants import MAX_NUM_MIX 
 
 from lib.data import dataStorage
 
@@ -116,7 +112,7 @@ class TokenExtrapolator:
 
 
   def Set (self, names , ids , index , name_string , ID_string , \
-  comma_probability , sendtomix , suggestion):
+  comma_probability , sendtomix , suggestion , send_to_negatives):
 
     emb_id = copy.copy(ids[index])
     emb_name = copy.copy(names[index])
@@ -130,12 +126,27 @@ class TokenExtrapolator:
     emb_vec = self.data.tools.internal_embs[emb_id].unsqueeze(0)
 
     for k in range(MAX_NUM_MIX):
-      if not sendtomix or suggestion > 0: break
+      if (not sendtomix) or suggestion > 0: break
       if not self.data.vector.isEmpty.get(k) : continue
       self.data.place(k , 
         vector =   emb_vec.cpu(),
         ID =  emb_id ,
-        name = emb_name)
+        name = emb_name , 
+        to_mixer = sendtomix , 
+        to_temporary = True , 
+        to_negative = False)
+      break
+    ##########
+    for k in range(MAX_NUM_MIX):
+      if (not send_to_negatives) or suggestion > 0: break
+      if not self.data.negative.isEmpty.get(k) : continue
+      self.data.place(k , 
+        vector =   emb_vec.cpu(),
+        ID =  emb_id ,
+        name = emb_name , 
+        to_mixer = False , 
+        to_temporary = True , 
+        to_negative = send_to_negatives)
       break
     
     return output_name_string , output_ID_string
@@ -161,8 +172,11 @@ class TokenExtrapolator:
     last_padding = args[13]
     deactivate = args[14]/100
     padding_skip_length = args[15]/100
+    mix_input = args[16]
+    stack_mode = args[17]
+    send_to_negatives = args[18]
+    neg_input = args[19]
 
-    mix_inputs = args[13:MAX_NUM_MIX+13]
     tokenizer = self.data.tools.tokenizer
     internal_embs = self.data.tools.internal_embs
 
@@ -182,13 +196,21 @@ class TokenExtrapolator:
     log = []
     results = []
     tokenbox = ''
-    emptyList = [None]*MAX_NUM_MIX
-    tokenmixer_vectors= [None]*MAX_NUM_MIX
+    
+    negbox = neg_input
+    tokenmixer_vectors = mix_input
+
+    if neg_input == None : neg_input = ''
+    if tokenmixer_vectors == None : tokenmixer_vectors = ''
+
+    if not stack_mode:
+      if sendtomix : tokenmixer_vectors= ''
+      if send_to_negatives : negbox= ''
+
     tmp = None
 
     #set function params
     current = None
-
 
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
@@ -198,19 +220,23 @@ class TokenExtrapolator:
     self.data.update_loaded_embs() 
 
     #clear all slots
-    for i in range(MAX_NUM_MIX):
-      self.data.clear(i)
+    for index in range(MAX_NUM_MIX):
+      self.data.clear(
+        index , 
+        to_mixer = sendtomix and (not stack_mode) , 
+        to_temporary = True , 
+        to_negative = send_to_negatives and (not stack_mode))
     #####
 
     #Empty input
     if (first == None) and (last == None) :
       log.append("No inputs")
-      return *emptyList , '' , '\n'.join(log)
+      return tokenmixer_vectors , '' , '\n'.join(log) , negbox
     ######
 
     if desired_no_of_tokens <=0 :
       log.append("Zero number of tokens to generate")
-      return *emptyList , '' , '\n'.join(log)
+      return tokenmixer_vectors , '' , '\n'.join(log) , negbox
 
 
     log.append("Starting Token Extrapolator.....")
@@ -420,14 +446,16 @@ class TokenExtrapolator:
             name_string , ID_string  = \
             self.Set(post_names , post_ids , \
             index , name_string , ID_string , \
-            comma_probability , sendtomix , suggestion)
+            comma_probability , sendtomix , suggestion , \
+            send_to_negatives)
             log.append(post_messages[index])
         else:
           for index in range (len(pre_names)):
             name_string , ID_string  = \
             self.Set(pre_names , pre_ids , \
             index , name_string , ID_string ,\
-            comma_probability , sendtomix , suggestion)
+            comma_probability , sendtomix , suggestion , \
+            send_to_negatives)
             log.append(pre_messages[index])
 
         for i in range (len(names)):
@@ -436,7 +464,8 @@ class TokenExtrapolator:
           name_string , ID_string  = \
           self.Set(names , ids , \
           index , name_string , ID_string ,\
-          comma_probability , sendtomix , suggestion)
+          comma_probability , sendtomix , suggestion , \
+          send_to_negatives)
           log.append(messages[index])
 
         if reverse : 
@@ -445,14 +474,16 @@ class TokenExtrapolator:
             name_string , ID_string  = \
             self.Set(pre_names , pre_ids , \
             index , name_string , ID_string ,\
-            comma_probability , sendtomix , suggestion)
+            comma_probability , sendtomix , suggestion , \
+            send_to_negatives)
             log.append(pre_messages[index])
         else:
           for index in range (len(post_names)):
             name_string , ID_string  = \
             self.Set(post_names , post_ids , \
             index , name_string , ID_string ,\
-            comma_probability , sendtomix , suggestion)
+            comma_probability , sendtomix , suggestion , \
+            send_to_negatives)
             log.append(post_messages[index])
 
         results.append(name_string)
@@ -461,14 +492,25 @@ class TokenExtrapolator:
           results.append('IDs : ' + ID_string)
           results.append(' ')
         results.append('----------------------------------')
+    ######
 
 
     for i in range(MAX_NUM_MIX):
         if self.data.vector.isEmpty.get(i): continue
-        tokenmixer_vectors[i] = self.data.vector.name.get(i)
+        name = self.data.vector.name.get(i)
+        if name != None and sendtomix :
+          if tokenmixer_vectors != '': tokenmixer_vectors = tokenmixer_vectors + ' , '
+          tokenmixer_vectors = tokenmixer_vectors  + name
+        #######
+    for i in range(MAX_NUM_MIX):
+        if self.data.negative.isEmpty.get(i): continue
+        name = self.data.negative.name.get(i)
+        if name != None and send_to_negatives :
+          if negbox != '': negbox = negbox + ' , '
+          negbox = negbox  + name
 
 
-    return *tokenmixer_vectors , '\n'.join(results) , '\n'.join(log)
+    return tokenmixer_vectors , '\n'.join(results) , '\n'.join(log) , negbox
   ## End of Extrapolate function
         
   def setupIO_with (self, module):
@@ -488,28 +530,33 @@ class TokenExtrapolator:
 
 
     if (module.ID == "TokenMixer") :
-      input_list.append(self.inputs.first) #0
-      input_list.append(self.inputs.first_padding) #1
-      input_list.append(self.inputs.last) #2
-      input_list.append(self.inputs.skip_length) #3
-      input_list.append(self.inputs.randomization) #4
+      input_list.append(self.inputs.first)                #0
+      input_list.append(self.inputs.first_padding)        #1
+      input_list.append(self.inputs.last)                 #2
+      input_list.append(self.inputs.skip_length)          #3
+      input_list.append(self.inputs.randomization)        #4
       input_list.append(self.inputs.desired_no_of_tokens) #5
-      input_list.append(self.inputs.sendtomix) #6
-      input_list.append(self.inputs.id_mode) #7
-      input_list.append(self.inputs.comma) #8
-      input_list.append(self.inputs.suggestions) #9
-      input_list.append(self.inputs.show_id) #10
-      input_list.append(self.inputs.linger) #11
-      input_list.append(self.inputs.steplinger) #12
-      input_list.append(self.inputs.last_padding) #13
-      input_list.append(self.inputs.deactivate) #14
-      input_list.append(self.inputs.padding_skip_length) #15
-      
-      for i in range(MAX_NUM_MIX):
-        input_list.append(module.inputs.mix_inputs[i])
-        output_list.append(module.inputs.mix_inputs[i])
-      output_list.append(self.outputs.tokenbox)
-      output_list.append(self.outputs.log)
+      input_list.append(self.inputs.sendtomix)            #6
+      input_list.append(self.inputs.id_mode)              #7
+      input_list.append(self.inputs.comma)                #8
+      input_list.append(self.inputs.suggestions)          #9
+      input_list.append(self.inputs.show_id)              #10
+      input_list.append(self.inputs.linger)               #11
+      input_list.append(self.inputs.steplinger)           #12
+      input_list.append(self.inputs.last_padding)         #13
+      input_list.append(self.inputs.deactivate)           #14
+      input_list.append(self.inputs.padding_skip_length)  #15
+      input_list.append(module.inputs.mix_input)          #16
+      input_list.append(self.inputs.stack_mode)           #17
+      input_list.append(self.inputs.negatives)            #18
+      input_list.append(module.inputs.negbox)             #19
+
+      ######
+      output_list.append(module.inputs.mix_input)         #0
+      output_list.append(self.outputs.tokenbox)           #1
+      output_list.append(self.outputs.log)                #2
+      output_list.append(module.inputs.negbox)            #3
+      ######
       self.buttons.extrapolate.click(fn=self.Extrapolate , inputs = input_list , outputs = output_list)
 
   #End of setupIO_with()
@@ -548,6 +595,8 @@ class TokenExtrapolator:
         Inputs.first_padding = []
         Inputs.last_padding = []
         Inputs.padding_skip_length = []
+        Inputs.stack_mode = []
+        Inputs.negatives = []
 
     class Buttons :
       def __init__(self):
@@ -560,6 +609,7 @@ class TokenExtrapolator:
     self.ID = "Extrapolator"
 
     with gr.Accordion(label , open=False , visible = vis) as show :
+      gr.Markdown("Extrapolate tokens using the ID list in CLIP")
       with gr.Row() :
         self.inputs.skip_length = gr.Slider(label="Pursuit strength to end token %",value=20, \
                                 minimum=0, maximum=100, step=0.1 , interactive = True)
@@ -580,10 +630,12 @@ class TokenExtrapolator:
       with gr.Row() : 
         self.outputs.tokenbox = gr.Textbox(label="Extrapolation results", lines=10, interactive = False)
       with gr.Row():
-          self.inputs.sendtomix = gr.Checkbox(value=False, label="Send first suggestion to TokenMixer", interactive = True)
+          self.inputs.sendtomix = gr.Checkbox(value=False, label="Send to input", interactive = True)
           self.inputs.id_mode = gr.Checkbox(value=False, label="ID input mode", interactive = True)
           self.inputs.show_id = gr.Checkbox(value=False, label="Include IDs in output", interactive = True)
-      
+          self.inputs.stack_mode = gr.Checkbox(value=False, label="Stack Mode", interactive = True)
+          self.inputs.negatives = gr.Checkbox(value=False, label="Send to negatives", interactive = True , visible = True) 
+
       with gr.Accordion("Advanced options" , open = False):
         with gr.Row() : 
           self.inputs.suggestions = gr.Slider(label="Number of suggestions",value=5, \

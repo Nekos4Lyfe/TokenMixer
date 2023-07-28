@@ -10,11 +10,7 @@ import re #used to parse string to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
 
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , MAX_SIMILAR_EMBS , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
+from lib.toolbox.constants import MAX_NUM_MIX
 
 from lib.data import dataStorage
 
@@ -86,8 +82,10 @@ class TokenCalculator:
     id_mode = args[2]
     output_length = args[3]
     self.random_vector_length = copy.copy(args[4])
-    mix_inputs = args[5:MAX_NUM_MIX+5]
-    vectors = args[MAX_NUM_MIX+6:2*MAX_NUM_MIX+6]
+    mix_input = args[5]
+    stack_mode = args[6]
+    send_to_negatives = args[7]
+    neg_input = args[8]
 
     tokenizer = self.data.tools.tokenizer
     internal_embs = self.data.tools.internal_embs
@@ -104,6 +102,11 @@ class TokenCalculator:
           output_length  == None
           ) , "NoneType in Tokenizer input!"
 
+    negbox = neg_input
+    tokenmixer_vectors = mix_input
+    if sendtomix and not stack_mode: tokenmixer_vectors= ''
+    if send_to_negatives and not stack_mode: negbox= ''
+
     func = self.addition
     log = []
 
@@ -115,13 +118,17 @@ class TokenCalculator:
     self.data.update_loaded_embs() 
 
     #clear all slots
-    for i in range(MAX_NUM_MIX):
-      self.data.clear(i)
+    for index in range(MAX_NUM_MIX):
+      self.data.clear(
+        index , 
+        to_mixer = sendtomix and (not stack_mode) , 
+        to_temporary = True , 
+        to_negative = send_to_negatives and (not stack_mode))
     ######
 
     if calc_input == None :
       print ("calc_input is NoneType")
-      return *emptyList , '', '\n'.join(log)
+      return tokenmixer_vectors , '', '\n'.join(log) , negbox
 
     splitList = calc_input.strip().split(' ')
     split_index = 0
@@ -137,9 +144,6 @@ class TokenCalculator:
     calc_sum = None
     calc = None
     output = None
-
-    emptyList = [None]*MAX_NUM_MIX
-    tokenmixer_vectors= [None]*MAX_NUM_MIX
 
     sumbox = ''
     string = None
@@ -175,7 +179,7 @@ class TokenCalculator:
 
     if calc_sum == None :
       log.append("Empty sum")
-      return *emptyList, '' , '\n'.join(log)
+      return tokenmixer_vectors , '' , '\n'.join(log) , negbox
 
     distance = torch.nn.PairwiseDistance(p=2)
     output = calc_sum.unsqueeze(0).cpu()
@@ -190,19 +194,34 @@ class TokenCalculator:
     #Find an empty slot to save the calc_sum
     for i in range(MAX_NUM_MIX):
       if (not self.data.vector.isEmpty.get(i)) : continue
-
+      
+      sumbox = "emb_sum"
       self.data.place(i , 
           vector = output ,
           ID = 0,
-          name = "emb_sum")
+          name = sumbox , 
+          to_mixer = sendtomix , 
+          to_temporary = True ,
+          to_negative = send_to_negatives)
 
-      sumbox = "emb_sum"
+      
       if sendtomix : 
-        tokenmixer_vectors[i] = self.data.vector.name.get(i)
+        name = self.data.vector.name.get(i)
+        if name != None and sendtomix:
+          if tokenmixer_vectors != '': tokenmixer_vectors = tokenmixer_vectors + ' , '
+          tokenmixer_vectors = tokenmixer_vectors  + name
+      ##########
+      if send_to_negatives: 
+        if self.data.negative.isEmpty.get(i): continue
+        name = self.data.negative.name.get(i)
+        if name != None and send_to_negatives :
+          if negbox != '': negbox = negbox + ' , '
+          negbox = negbox  + name
+
       break
     #End of loop
 
-    return *tokenmixer_vectors , sumbox , '\n'.join(log)
+    return tokenmixer_vectors , sumbox , '\n'.join(log) , negbox
        
     
   def setupIO_with (self, module):
@@ -220,16 +239,22 @@ class TokenCalculator:
 
 
     if (module.ID == "TokenMixer") :
-      input_list.append(self.inputs.calc_input) #0
-      input_list.append(self.inputs.sendtomix)  #1
-      input_list.append(self.inputs.id_mode)    #2
-      input_list.append(self.inputs.length)     #3
-      input_list.append(self.inputs.randlen)    #4
-      for i in range(MAX_NUM_MIX):
-        input_list.append(module.inputs.mix_inputs[i])
-        output_list.append(module.inputs.mix_inputs[i])
-      output_list.append(self.outputs.sumbox)
-      output_list.append(self.outputs.log)
+      input_list.append(self.inputs.calc_input)  #0
+      input_list.append(self.inputs.sendtomix)   #1
+      input_list.append(self.inputs.id_mode)     #2
+      input_list.append(self.inputs.length)      #3
+      input_list.append(self.inputs.randlen)     #4
+      input_list.append(module.inputs.mix_input) #5
+      input_list.append(self.inputs.stack_mode)  #6
+      input_list.append(self.inputs.negatives)   #7
+      input_list.append(module.inputs.negbox)    #8
+
+
+      output_list.append(module.inputs.mix_input) #0
+      output_list.append(self.outputs.sumbox)     #1
+      output_list.append(self.outputs.log)        #2
+      output_list.append(module.inputs.negbox)    #3
+
       self.buttons.calculate.click(fn=self.Calculate , inputs = input_list , outputs = output_list)
   #End of setupIO_with()
 
@@ -262,6 +287,7 @@ class TokenCalculator:
         Inputs.id_mode = []
         Inputs.length = []
         Inputs.randlen = []
+        Inputs.stack_mode = []
 
     class Buttons :
       def __init__(self):
@@ -275,6 +301,7 @@ class TokenCalculator:
 
     #create UI
     with gr.Accordion(label ,open=False , visible = vis) as show: 
+      gr.Markdown("Add or subtract tokens into a new vector")
       with gr.Row() :  
           self.inputs.length = gr.Slider(label="Desired vector length",value=0.35, \
                                       minimum=0, maximum=2, step=0.01 , interactive = True)
@@ -282,13 +309,15 @@ class TokenCalculator:
           self.buttons.calculate = gr.Button(value="Calculate", variant="primary")
           self.buttons.reset = gr.Button(value="Reset", variant = "secondary")
       with gr.Row() : 
-        self.inputs.calc_input = gr.Textbox(label="Input", lines=2, \
+        self.inputs.calc_input = gr.Textbox(label='', lines=2, \
         placeholder="Enter a short prompt (loaded embeddings or modifiers are not supported)" , interactive = True)
       with gr.Row() : 
         self.outputs.sumbox = gr.Textbox(label="CLIP tokens", lines=2, interactive = False)
       with gr.Row():
-          self.inputs.sendtomix = gr.Checkbox(value=False, label="Send to TokenMixer", interactive = True)
+          self.inputs.sendtomix = gr.Checkbox(value=False, label="Send to input", interactive = True)
           self.inputs.id_mode = gr.Checkbox(value=False, label="ID input mode", interactive = True)
+          self.inputs.stack_mode = gr.Checkbox(value=False, label="Stack Mode", interactive = True)
+          self.inputs.negatives = gr.Checkbox(value=False, label="Send to negatives", interactive = True , visible = True) 
       with gr.Accordion("Random ' _ ' token settings" ,open=False , visible = False) as randset: 
         self.inputs.randlen = gr.Slider(minimum=0, maximum=10, step=0.01, \
         label="Randomized ' _ ' token length", default=0.35 , interactive = True)     

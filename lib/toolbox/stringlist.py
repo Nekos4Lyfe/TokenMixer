@@ -11,11 +11,7 @@ import re #used to parse string to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
 
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , MAX_SIMILAR_EMBS , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
+from lib.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
 
 class StringList :
@@ -56,12 +52,6 @@ class StringList :
 class StringList2 :
   #The class StringList2 stores token names as a list
   #It also stores functions which modify this list  
-
-  #This is a copy of the class StringList, because I simply cannot 
-  #be bothered to learn out how to make multiple class instances
-  #in python without the list addresses overlapping.
-  #Let me know if you know a good solution :)! /Nekos4Lyfe
-  
       def validate(self, string) :
         cond1 = isinstance(string , str)
         cond2 = (string == None)
@@ -97,12 +87,6 @@ class StringList2 :
 class StringList3 :
   #The class StringList3 stores token names as a list
   #It also stores functions which modify this list  
-
-  #This is a copy of the class StringList, because I simply cannot 
-  #be bothered to learn out how to make multiple class instances
-  #in python without the list addresses overlapping.
-  #Let me know if you know a good solution :)! /Nekos4Lyfe
-  
       def validate(self, string) :
         cond1 = isinstance(string , str)
         cond2 = (string == None)
@@ -134,3 +118,4 @@ class StringList3 :
         self.check(index)
         self.data[index] = None
 #End of StringList3 class
+#-------------------------------------------------------------------------------

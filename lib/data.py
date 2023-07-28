@@ -4,6 +4,7 @@ from modules import script_callbacks, shared, sd_hijack
 from modules.shared import cmd_opts
 from pandas import Index
 from pandas.core.groupby.groupby import OutputFrameOrSeries
+from pydantic.env_settings import BaseSettings
 import torch, os
 from modules.textual_inversion.textual_inversion import Embedding
 import collections, math, random , numpy
@@ -13,14 +14,9 @@ from torch.nn.modules import ConstantPad1d, container
 
 from lib.toolbox.vector import Vector
 from lib.toolbox.negative import Negative
-from lib.toolbox.positive import Positive
+from lib.toolbox.temporary import Temporary
 from lib.toolbox.tools import Tools
-
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , MAX_SIMILAR_EMBS , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
+from lib.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
 
 class Data :
@@ -38,6 +34,13 @@ class Data :
 
     cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
     distance = torch.nn.PairwiseDistance(p=2)
+
+    #Count the negatives
+    no_of_negatives = 0
+    for neg_index in range(MAX_NUM_MIX):
+      if self.negative.isEmpty.get(neg_index): continue
+      no_of_negatives += 1
+    #####
 
     dist = None
     candidate_vec = None
@@ -79,9 +82,7 @@ class Data :
     N = self.vector.itermax
     T = 1/N  
 
-    radialRandom = (1 - randomGain) + randomGain*(2*random.random() - 1)
-    if not (self.vector.allow_negative_gain): 
-      if radialRandom<0: radialRandom = abs(radialRandom)
+    radialRandom = 1
 
     similarity_score = 0 #similarity index from 0 to 1, where 0 is no similarity at all
     similarity_minimum = None #similarity between output and the least similar input token
@@ -90,11 +91,11 @@ class Data :
     maxtoken = None #Token with most similarity
 
     for step in range (N):
-      rand_vec  = (torch.rand(size) - 0.5* torch.ones(size)).unsqueeze(0)
+      rand_vec  = (2*torch.rand(size) - torch.ones(size)).unsqueeze(0)
       rdist = distance(rand_vec, origin).numpy()[0]
       rando = (1/rdist) * rand_vec #Create random unit vector
 
-      candidate_vec = (step * norm_expected  + (N - step)* rando) * T
+      candidate_vec = norm_expected * (1 - randomGain)  + rando*randomGain
 
       minimum = 20000 #set initial minimum at impossible 200% similarity 
       maximum = -10000 #Set initial maximum at impossible -100% similarity
@@ -109,16 +110,44 @@ class Data :
 
         #Compute similarity of current token to 
         #candidate_vec
-        tmp = 100*cos(current, candidate_vec).numpy()[0]
-        similarity_sum += tmp
-        #*weight
+        similarity = 100*cos(current, candidate_vec).numpy()[0]
+
+        #######
+        #Check negatives
+        if no_of_negatives > 0: 
+          worst_nsim = None
+          worst_neg_index = None
+          nsim = None
+          tmp = None
+          neg_vec = None
+          strength = self.negative.strength/100
+          negative_similarity = None
+          for neg_index in range(MAX_NUM_MIX) :
+            if self.negative.isEmpty.get(neg_index): continue
+            neg_vec = self.negative.get(neg_index)
+            tmp = math.floor((100*100*cos(neg_vec, candidate_vec)).numpy()[0])
+            if tmp<0 : tmp = -tmp
+            nsim = tmp/100
+            #######
+            if worst_nsim == None : 
+              worst_nsim = nsim
+              worst_neg_index = neg_index
+            #######
+            if nsim > worst_nsim : 
+              worst_nsim = nsim
+              worst_neg_index = neg_index
+          ########
+          negative_similarity = 100 - worst_nsim
+        ########### #Done checking negatives
         
-        if tmp == min(minimum , tmp) :
+        similarity_sum += similarity * (1 - strength) + negative_similarity*strength
+        
+        if similarity == min(minimum , similarity) :
           minimum = tmp
           mintoken = i
 
-        if tmp == max(maximum , tmp) :
-          maximum = tmp
+        if similarity == max(maximum , similarity) :
+          maximum = similarity
           maxtoken = i
    
       #Check if this candidate vector is better then
@@ -148,6 +177,10 @@ class Data :
     similarity_maximum = round(similarity_maximum,1)
     dist_expected = round(dist_expected, 2)
     dist_of_mean = round(dist_of_mean , 2)
+
+    negsim = None
+    if negative_similarity != None :
+      negsim = round(100-negative_similarity , 3) #Invert the value
     
     log.append ('Merged ' + str(no_of_tokens) + ' tokens into single token')
     log.append('Lowest similarity : ' + str(similarity_minimum)+' % to token #' + str(mintoken) + \
@@ -155,6 +188,11 @@ class Data :
 
     log.append('Highest similarity : ' + str(similarity_maximum)+' % to token #' + str(maxtoken) + \
       '( ' + self.vector.name.get(maxtoken) + ')')
+
+    if negsim != None :
+      name = self.negative.name.get(worst_neg_index)
+      log.append('Max similarity to negative tokens : ' + str(negsim) + ' %' + \
+      "to token '" + name + "'")
 
     log.append('Average length of the input tokens : ' + str(dist_expected) )
     log.append('Length of the token average : ' + str(dist_of_mean) )
@@ -235,8 +273,8 @@ class Data :
 
       #Count the negatives
       no_of_negatives = 0
-      for k in range(MAX_NUM_MIX):
-        if self.negative.isEmpty.get(k): continue
+      for neg_index in range(MAX_NUM_MIX):
+        if self.negative.isEmpty.get(neg_index): continue
         no_of_negatives += 1
       #####
 
@@ -249,65 +287,87 @@ class Data :
       rand_vec = None
 
       #Randomization parameters: 
-      radialRandom = (1 - randomGain) + randomGain*(2*random.random() - 1)
-      if not (self.vector.allow_negative_gain): 
-        if radialRandom<0: radialRandom = -radialRandom
+      #radialRandom = (1 - randomGain) + randomGain*(2*random.random() - 1)
+      #if radialRandom<0: radialRandom = -radialRandom
+      radialRandom = 1
       lowerBound  = costheta  + (100 - costheta) * (randomGain * random.random())
 
       #Get vectors with similarity > lowerBound
+      combined_similarity_score = None
+      worst_neg_index = None 
+      negative_similarity = None
+      worst_nsim = None
+      tmp = None
+      strength = self.negative.strength/100
+      #######
+      best_similarity_score = None
+      best_negative_similarity = None
+      best_similarity = None
+      best_worst_neg_index = None
+      best = None
+      #######
       for step in range (N):
         iters+=1
+        #Check similarity to original token
         rand_vec  = (torch.rand(size) - 0.5* torch.ones(size)).unsqueeze(0)
         rdist = distance(rand_vec , origin)
         rando = (1/rdist) * rand_vec 
-        candidate_vec = (step * current + (N - step)* rando) * T 
+        candidate_vec = rando * randomGain +  current * (1 - randomGain)
         similarity = (100*cos(current, candidate_vec)).numpy()[0]
-        if (similarity > lowerBound) : 
-          good_vecs.append(candidate_vec)
-          good_sims.append(similarity)
-          if no_of_negatives <= 0: break
-      ######
-
-      nsim = None
-      negative_score = None
-      best_score = 0
-      best_vec = None
-      best_sim = None
-
-      #Among the vectors that were found in the previous step
-      #find the vector that is the least similar 
-      #to the negatives
-      for k in range(len(good_sims)) :
-        if no_of_negatives <= 0: 
-          break
-
-        vec = good_vecs[k]
-        sim = good_sims[k]
-        negative_score = 0
-        for k in range(MAX_NUM_MIX):
-          if self.negative.isEmpty.get(k): continue
-          neg_vec = self.negative.get(k).cpu()
-          nsim = 100*cos(neg_vec, vec).numpy()[0]
-          if nsim < 0: nsim = -nsim
-          negative_score = negative_score + (100 - nsim)
-        #####
-        negative_score = negative_score/no_of_negatives
-        if negative_score > best_score :
-          best_score = negative_score
-          best_vec = vec.cpu()
-          best_sim = sim
-      ######
-
-      if best_sim != None and no_of_negatives>0 : 
-        candidate_vec = best_vec
-        similarity = best_sim
-        negative_score = best_score
-
+        if similarity<0 : similarity = -similarity
+        #######
+        #Check negatives
+        if no_of_negatives > 0: 
+          for neg_index in range(MAX_NUM_MIX) :
+            if self.negative.isEmpty.get(neg_index): continue
+            neg_vec = self.negative.get(neg_index)
+            tmp = math.floor((100*100*cos(neg_vec, candidate_vec)).numpy()[0])
+            if tmp<0 : tmp = -tmp
+            nsim = tmp/100
+            #######
+            if worst_nsim == None : 
+              worst_nsim = nsim
+              worst_neg_index = neg_index
+            #######
+            if nsim > worst_nsim : 
+              worst_nsim = nsim
+              worst_neg_index = neg_index
+            #######
+            negative_similarity = 100 - worst_nsim
+        ###########
+        if negative_similarity == None: combined_similarity_score = similarity
+        else: combined_similarity_score = similarity *(1 - strength) + negative_similarity*strength
+        ###########
+        assert candidate_vec != None , "candidate_vec is NoneType!"
+        if best == None: 
+            best_similarity_score = combined_similarity_score
+            best_negative_similarity = negative_similarity
+            best_similarity = similarity
+            best_worst_neg_index = worst_neg_index
+            best = candidate_vec
+        ##########
+        if combined_similarity_score > best_similarity_score:
+            best_similarity_score = combined_similarity_score
+            best_negative_similarity = negative_similarity
+            best_similarity = similarity
+            best_worst_neg_index = worst_neg_index
+            best = candidate_vec
+      #############
+      
+      #If negative similarity condition was not fulfilled
+      #get the best candidate vector
+      if best != None : 
+          combined_similarity_score = best_similarity_score 
+          negative_similarity = best_negative_similarity
+          similarity = best_similarity
+          worst_neg_index = best_worst_neg_index 
+          candidate_vec = best
+                
       #length of candidate vector
       cdist = distance(candidate_vec , origin).numpy()[0]
 
       #length of output vector
-      output_length = gain * dist_expected * radialRandom 
+      output_length = gain * dist_expected
 
       #Cap the length of the output vector according to radialGain slider setting 
       if output_length>dist_expected: output_length = min(output_length , dist_expected/radialGain)
@@ -323,18 +383,26 @@ class Data :
       req_similarity = round (self.vector.costheta , 1)
       dist_expected = round(dist_expected, 2)
       lowerBound = round(lowerBound , 1)
-      negative_sim  = None
-     
+      #######
+      if combined_similarity_score != None : 
+        combined_similarity_score = round(combined_similarity_score , 1)
+      negsim = None
+      if negative_similarity != None :
+        negsim = round(100-negative_similarity , 3) #Invert the value
+
+      #print the result
       log.append('Similar Mode : Token #' + str(i) + ' with length ' + \
        str(dist_expected) + ' was replaced by new token ' + \
       'with ' + str(similarity) + '% similarity and ' + str(output_length) + \
       ' length')
-
-      if negative_score != None :
-        negative_sim = round(100 - negative_score , 1)
-        log.append('Average similarity to negative tokens : ' + str(negative_sim) + ' %')
-      
+      ######
+      if negsim != None :
+        name = self.negative.name.get(worst_neg_index)
+        log.append('Max similarity to negative tokens : ' + str(negsim) + ' %' + \
+        "to token '" + name + "'")
+      ######
       log.append('Search took ' + str(iters) + ' iterations')
+
       return similar_token , '\n'.join(log)
 
   def merge_if_similar(self, similar_mode):
@@ -519,9 +587,9 @@ class Data :
       loaded_emb = self.tools.loaded_embs.get(text, None)
 
       if loaded_emb == None:
-        for k in self.tools.loaded_embs.keys():
-            if text == k.lower():
-                loaded_emb = self.tools.loaded_embs.get(k, None)
+        for neg_index in self.tools.loaded_embs.keys():
+            if text == neg_index.lower():
+                loaded_emb = self.tools.loaded_embs.get(neg_index, None)
                 break
 
       if loaded_emb!=None:
@@ -552,7 +620,7 @@ class Data :
   
   
   def place(self, index , vector = None , ID = None ,  name = None , \
-    weight = None , to_negative = None , to_mixer = None , to_positive = None):
+    weight = None , to_negative = None , to_mixer = None , to_temporary = None):
 
     def _place_values_in(target) :
       if vector != None: target.place(vector.cpu(),index)
@@ -561,7 +629,7 @@ class Data :
       if weight != None : target.weight.place(float(weight) , index)
     #### End of helper function
 
-    if to_negative == None and to_mixer == None and to_positive == None:
+    if to_negative == None and to_mixer == None and to_temporary == None:
       _place_values_in(self.vector)
     else:
     
@@ -571,10 +639,8 @@ class Data :
       if to_mixer != None : 
         if to_mixer : _place_values_in(self.vector)
 
-      if to_positive != None : 
-        if to_positive : _place_values_in(self.positive)
-
-
+      if to_temporary != None : 
+        if to_temporary : _place_values_in(self.temporary)
   #### End of place function
 
 
@@ -587,10 +653,12 @@ class Data :
   def update_loaded_embs(self):
       self.tools.update_loaded_embs()
 
-  def clear (self, index , to_negative = None , to_mixer = None , to_positive = None):
+  def clear (self, index , to_negative = None , to_mixer = None , to_temporary = None):
 
-    if to_negative == None and to_mixer == None and to_positive == None:
+    if to_negative == None and to_mixer == None and to_temporary == None:
       self.vector.clear(index)
+      self.negative.clear(index)
+      self.temporary.clear(index)
     else:
 
       if to_negative != None:
@@ -599,8 +667,8 @@ class Data :
       if to_mixer!= None:
         if to_mixer: self.vector.clear(index)
 
-      if to_positive!= None:
-        if to_positive: self.positive.clear(index)
+      if to_temporary!= None:
+        if to_temporary: self.temporary.clear(index)
 
   def __init__(self):
     #Check if new embeddings have been added 
@@ -613,7 +681,6 @@ class Data :
     Data.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')
     Data.vector = Vector(self.emb_vec.shape[1])
     Data.negative = Negative(self.emb_vec.shape[1])
-    Data.positive = Positive(self.emb_vec.shape[1])
-    Data.show_tutorial = True
+    Data.temporary = Temporary(self.emb_vec.shape[1])
 #End of Data class
 dataStorage = Data() #Create data

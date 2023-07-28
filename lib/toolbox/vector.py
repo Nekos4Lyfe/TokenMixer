@@ -14,12 +14,7 @@ from lib.toolbox.floatlist import FloatList
 from lib.toolbox.intlist import IntList 
 from lib.toolbox.boolist import BooList
 from lib.toolbox.stringlist import StringList
-
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , MAX_SIMILAR_EMBS , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
+from lib.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
 
 class Vector :
@@ -54,7 +49,41 @@ class Vector :
     self.isEmpty.clear(index)
     self.ID.clear(index)
     self.name.clear(index)
-    #self.weight.clear(index)
+    self.weight.clear(index)
+
+  def swap(self, target , index1 , index2) : 
+    self.tmp = copy.copy(target.get(index1))
+    target.place(target.get(index2) , index1)
+    target.place(self.tmp , index2)
+
+  def shuffle(self):
+    randlist = []
+    for i in range(MAX_NUM_MIX):
+      randlist.append(i)
+      if self.isEmpty.get(i) : break
+    
+    random.shuffle(randlist)
+
+    index_list = []
+    for i in range(MAX_NUM_MIX):
+      if i < len(randlist): index_list.append(randlist[i])
+      else: index_list.append(i)
+
+    for index1 in range(MAX_NUM_MIX):
+      for index2 in index_list : 
+        if self.isEmpty.get(index1): continue
+        if self.isEmpty.get(index2): continue
+
+        self.swap(self.ID      , index1 , index2)
+        self.swap(self.name    , index1 , index2)
+        self.swap(self.isEmpty , index1 , index2)
+        self.swap(self.weight  , index1 , index2)
+        #####
+        self.tmp = self.data[index1].cpu()
+        self.data[index1] = self.data[index2]
+        self.data[index2] = self.tmp
+  ####### End of shuffle function
+
 
   def __init__(self , size):
     Vector.size = size
@@ -67,6 +96,7 @@ class Vector :
     Vector.gain = 1
     Vector.allow_negative_gain = False
     Vector.data = []
+    Vector.tmp = None
 
     for i in range (MAX_NUM_MIX):
       tmp = torch.zeros(size).unsqueeze(0).cpu()

@@ -10,11 +10,7 @@ import re #used to parse string to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
 
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , MAX_SIMILAR_EMBS , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
+from lib.toolbox.constants import MAX_NUM_MIX
 
 from lib.data import dataStorage
 
@@ -32,17 +28,20 @@ class MiniTokenizer:
     id_mode = args[2]
     send_to_negatives = args[3]
     random_token_length = args[4]
-    send_to_positives = args[5]
-    mix_inputs = args[6:MAX_NUM_MIX+6]
-    vectors = args[MAX_NUM_MIX+7:2*MAX_NUM_MIX+7]
+    send_to_temporary = args[5]
+    mix_input = args[6]
+    stack_mode = args[7]
 
     assert not (
           sendtomix == None or
           id_mode == None or
           send_to_negatives == None or
           random_token_length == None or
-          send_to_positives == None
+          send_to_temporary == None
           ) , "NoneType in Tokenizer input!"
+
+    tokenmixer_vectors = mix_input
+    if sendtomix and not stack_mode : tokenmixer_vectors= ''
 
     distance = torch.nn.PairwiseDistance(p=2)
     origin = self.data.vector.origin.cpu()
@@ -57,17 +56,13 @@ class MiniTokenizer:
     tokenbox = ''
     splitbox = ''
     negbox = ''
-    posbox = ''
     emb_name = None
     emb_vecs = None
     found_IDs = None
     ID_index = None
 
-    emptyList = [None]*MAX_NUM_MIX
-    tokenmixer_vectors= [None]*MAX_NUM_MIX
-
     if mini_input == None : 
-      return *emptyList, '' , '' , ''
+      return tokenmixer_vectors , '' , '' , ''
 
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
@@ -80,8 +75,8 @@ class MiniTokenizer:
     for i in range(MAX_NUM_MIX):
       self.data.clear(i , 
           to_negative = send_to_negatives , 
-          to_mixer = sendtomix , 
-          to_positive = send_to_positives)
+          to_mixer = sendtomix and not stack_mode , 
+          to_temporary = send_to_temporary)
     ######
 
     no_of_tokens = 0
@@ -97,21 +92,20 @@ class MiniTokenizer:
     no_of_internal_embs = self.data.tools.no_of_internal_embs
 
     for i in range(MAX_NUM_MIX):
-      
-      if i>0:
-        neg_name = self.data.negative.name.get(i-1)
+      if sendtomix and not self.data.vector.isEmpty.get(i): continue
+
+      ######
+      if i>0: #Store the values from the previous iteration
+        neg_name = self.data.negative.name.get(i - 1)
         if neg_name != None :
           if (negbox != '') : negbox = negbox + ' , ' 
           negbox = negbox + neg_name
-
-        pos_name = self.data.positive.name.get(i-1)
-        if pos_name != None :
-          if (posbox != '') : posbox = posbox + ' , ' 
-          posbox = posbox + pos_name
-
-        tokenmixer_vectors[i-1] = self.data.vector.name.get(i-1)
-        if tokenmixer_vectors[i-1] == None : tokenmixer_vectors[i-1] = ''
-      #####
+        ######
+        name = self.data.vector.name.get(i - 1)
+        if name != None and sendtomix:
+          if tokenmixer_vectors != '': tokenmixer_vectors = tokenmixer_vectors + ' , '
+          tokenmixer_vectors = tokenmixer_vectors + name
+      ######
 
       if not split_index>0: continue
       string = splitList[split_length-split_index]
@@ -123,21 +117,21 @@ class MiniTokenizer:
         emb_vec = (random_token_length/dist)*emb_vec
         emb_id = 0
         emb_name = "random_" + str(i)
+
         self.data.place(i , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  emb_id ,
             name = emb_name , 
             to_negative = send_to_negatives ,
             to_mixer = sendtomix , 
-            to_positive = send_to_positives
+            to_temporary = send_to_temporary
             )
 
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
-
         tokenbox =  tokenbox + emb_name + '_#' + str(emb_id)
-
         split_index -=1 
         continue
+      ##########
 
       #Extract emb_vec from emb_id if id_mode is selected
       if (id_mode and string.isdigit()):
@@ -145,18 +139,17 @@ class MiniTokenizer:
         if emb_id >= no_of_internal_embs: continue
         emb_vec = self.data.tools.internal_embs[emb_id]
         emb_name = self.data.emb_id_to_name(emb_id)
+       
         self.data.place(i , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  emb_id  ,
             name = emb_name , 
             to_negative = send_to_negatives , 
             to_mixer = sendtomix , 
-            to_positive = send_to_positives)
+            to_temporary = send_to_temporary)
 
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
-
         tokenbox =  tokenbox + emb_name + '_#' + str(emb_id)
-
         split_index -=1 
         continue
       #########
@@ -175,20 +168,11 @@ class MiniTokenizer:
 
       if tmp == None : tmp = string.strip().lower()
       emb_name, emb_ids, emb_vecs , loaded_emb  = self.data.get_embedding_info(tmp)
-
-      there_is_embedding_among_inputs = \
-        not ( emb_name==None or 
-            emb_ids == None or 
-            emb_vecs ==None)
-
-      if there_is_embedding_among_inputs:
-        no_of_tokens = min (len(emb_vecs) , MAX_NUM_MIX)
+      no_of_tokens = min(emb_vecs.shape[0] , MAX_NUM_MIX)
 
 
 ###########################
       if no_of_tokens > 1:           
-
-          if (not self.data.vector.isEmpty.get(i)) : continue
           if (token_num>end): continue
           if (token_num+1>no_of_tokens) :
             no_of_tokens = 0
@@ -203,15 +187,14 @@ class MiniTokenizer:
           tmp = copy.deepcopy(tmp)
 
           self.data.place(i , 
-            vector = (emb_vecs[token_num]).unsqueeze(0) ,
-            ID = 0 ,
-            name = emb_name + '_' + str(token_num) , 
-            to_negative = send_to_negatives , 
-            to_mixer = sendtomix , 
-            to_positive = send_to_positives)
+              vector = (emb_vecs[token_num]).unsqueeze(0) ,
+              ID = 0 ,
+              name = emb_name + '_' + str(token_num) , 
+              to_negative = send_to_negatives , 
+              to_mixer = sendtomix , 
+              to_temporary = send_to_temporary)
 
           if (splitbox != '') : splitbox = splitbox + ' , '    
-
           splitbox =  splitbox + emb_name + '_' + str(token_num)
           token_num += 1
 
@@ -226,28 +209,27 @@ class MiniTokenizer:
         emb_name = self.data.emb_id_to_name(_ID)
         emb_vec = self.data.emb_id_to_vec(_ID)
         assert emb_vec != None , "emb_vec is None!"
+
+
         self.data.place(i , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  _ID ,
             name = emb_name ,
             to_negative = send_to_negatives ,
             to_mixer = sendtomix , 
-            to_positive = send_to_positives)
+            to_temporary = send_to_temporary)
 
         ID_index+=1 
-        #Go to next word if there are 
-        #no more IDs for current word
         if ID_index+1> no_of_IDs : 
             found_IDs = None
             split_index -=1 
      
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
-        
         tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
 
 ####################################
         
-    return *tokenmixer_vectors , tokenbox , splitbox , negbox , posbox
+    return tokenmixer_vectors , tokenbox , splitbox , negbox
        
     
   def setupIO_with (self, module):
@@ -261,24 +243,23 @@ class MiniTokenizer:
       output_list.append(self.inputs.mini_input)
       output_list.append(self.outputs.tokenbox)
       self.buttons.reset.click(fn = self.Reset, inputs = input_list , outputs = output_list)
-      return 1
 
 
     if (module.ID == "TokenMixer") :
-      input_list.append(self.inputs.mini_input) #1
-      input_list.append(self.inputs.sendtomix)  #2
-      input_list.append(self.inputs.id_mode)    #3
-      input_list.append(self.inputs.negatives)  #4
-      input_list.append(self.inputs.randlen)    #5
-      input_list.append(self.inputs.positives) #6
-
-      for i in range(MAX_NUM_MIX):
-        input_list.append(module.inputs.mix_inputs[i])
-        output_list.append(module.inputs.mix_inputs[i])
-      output_list.append(self.outputs.tokenbox)
-      output_list.append(self.outputs.splitbox)
-      output_list.append(module.inputs.negbox)
-      output_list.append(module.inputs.posbox)
+      input_list.append(self.inputs.mini_input)   #0
+      input_list.append(self.inputs.sendtomix)    #1
+      input_list.append(self.inputs.id_mode)      #2
+      input_list.append(self.inputs.negatives)    #3
+      input_list.append(self.inputs.randlen)      #4
+      input_list.append(self.inputs.positives)    #5
+      input_list.append(module.inputs.mix_input)  #6
+      input_list.append(self.inputs.stack_mode)   #7
+      #######
+      output_list.append(module.inputs.mix_input) #0
+      output_list.append(self.outputs.tokenbox)   #1
+      output_list.append(self.outputs.splitbox)   #2
+      output_list.append(module.inputs.negbox)    #3
+      #######
       self.buttons.tokenize.click(fn=self.Tokenize , inputs = input_list , outputs = output_list)
 
   #End of setupIO_with()
@@ -300,6 +281,7 @@ class MiniTokenizer:
         Inputs.id_mode = []
         Inputs.randlen = []
         Inputs.positives = []
+        Inputs.stack_mode = []
 
     class Buttons :
       def __init__(self):
@@ -314,20 +296,22 @@ class MiniTokenizer:
     #test = gr.Label('Prompt MiniTokenizer' , color = "red")
     #create UI
     with gr.Accordion(label , open=False , visible = vis) as show :
+      gr.Markdown("Get CLIP tokens and embedding vectors")
       with gr.Row() :  
           self.buttons.tokenize = gr.Button(value="Tokenize", variant="primary")
           self.buttons.reset = gr.Button(value="Reset", variant = "secondary")
       with gr.Row() : 
-        self.inputs.mini_input = gr.Textbox(label="Input", lines=2, \
-        placeholder="Enter a short prompt (loaded embeddings or modifiers are not supported)" , interactive = True)
+        self.inputs.mini_input = gr.Textbox(label='', lines=2, \
+        placeholder="Enter a short prompt or name of embedding" , interactive = True)
       with gr.Row() : 
         self.outputs.tokenbox = gr.Textbox(label="CLIP tokens", lines=2, interactive = False)
         self.outputs.splitbox = gr.Textbox(label="Embedded vectors", lines=2, interactive = False)
       with gr.Row():
-          self.inputs.sendtomix = gr.Checkbox(value=False, label="Send to TokenMixer", interactive = True)
+          self.inputs.sendtomix = gr.Checkbox(value=False, label="Send to input", interactive = True)
           self.inputs.id_mode = gr.Checkbox(value=False, label="ID input mode", interactive = True)
-          self.inputs.negatives = gr.Checkbox(value=False, label="Send to negatives", interactive = True , visible = False) #Experimental
+          self.inputs.negatives = gr.Checkbox(value=False, label="Send to negatives", interactive = True , visible = True) 
           self.inputs.positives = gr.Checkbox(value=False, label="Send to positives", interactive = True , visible = False) #Experimental
+          self.inputs.stack_mode = gr.Checkbox(value=False, label="Stack Mode", interactive = True)
       with gr.Accordion("Random ' _ ' token settings" ,open=False , visible = False) as randset : 
         self.inputs.randlen = gr.Slider(minimum=0, maximum=10, step=0.01, label="Randomized ' _ ' token length", default=0.35 , interactive = True)
       

@@ -11,18 +11,22 @@ import re #used to parse string to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
 
-from lib.toolbox.floatlist import FloatList2
-from lib.toolbox.intlist import IntList2
-from lib.toolbox.boolist import BooList2
-from lib.toolbox.stringlist import StringList2
-
+from lib.toolbox.floatlist import FloatList3
+from lib.toolbox.intlist import IntList3
+from lib.toolbox.boolist import BooList3
+from lib.toolbox.stringlist import StringList3
 from lib.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
 
-class Negative :
-#Negative is a class which stores torch tensors as a list
+class Temporary :
+#Temporary is a class which stores torch tensors as a list
+
+#This class should be used akin to volatile memory in a cpu , i.e
+#as a place to store temporary tensors before saving them 
+#in the 'Vector' class.
+
 #It also stores functions which modify this tensor list
-#The Negative class also contains StringList lists 
+#The Temporary class also contains StringList lists 
 #and Boolist lists 
 
   def get(self,index) :
@@ -54,25 +58,25 @@ class Negative :
     self.weight.clear(index)
 
   def __init__(self , size):
-    Negative.size = size
-    Negative.origin = torch.zeros(size).unsqueeze(0).cpu()
-    Negative.costheta = 0
-    Negative.radius = 0
-    Negative.randomization = 0
-    Negative.interpolation = 0
-    Negative.itermax = 1000
-    Negative.gain = 1
-    Negative.allow_negative_gain = False
-    Negative.data = []
+    Temporary.size = size
+    Temporary.origin = torch.zeros(size).unsqueeze(0).cpu()
+    Temporary.costheta = 0
+    Temporary.radius = 0
+    Temporary.randomization = 0
+    Temporary.interpolation = 0
+    Temporary.itermax = 1000
+    Temporary.gain = 1
+    Temporary.allow_negative_gain = False
+    Temporary.data = []
 
     for i in range (MAX_NUM_MIX):
       tmp = torch.zeros(size).unsqueeze(0).cpu()
-      Negative.data.append(tmp)
+      Temporary.data.append(tmp)
       tmp=None
 
-    Negative.ID = IntList2(0)
-    Negative.name = StringList2()
-    Negative.isEmpty = BooList2(True)
-    Negative.weight = FloatList2(1)
-    Negative.strength = 0
-#End of Negative class
+    Temporary.ID = IntList3(0)
+    Temporary.name = StringList3()
+    Temporary.isEmpty = BooList3(True)
+    Temporary.weight = FloatList3(1)
+    Temporary.strength = 0
+#End of Temporary class

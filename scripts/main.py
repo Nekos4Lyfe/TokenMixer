@@ -12,12 +12,6 @@ from torch.nn.modules import ConstantPad1d, container
 
 #---------------------------------
 
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , MAX_SIMILAR_EMBS , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
-
 from lib.modules.minitokenizer import MiniTokenizer
 from lib.modules.embedding_inspector import EmbeddingInspector
 from lib.modules.token_mixer import TokenMixer      
@@ -32,11 +26,13 @@ def add_tab():
   "tokens and/or embeddings. \n \n Above this tab ↑ you see a number of modules . \n \n " + \
   "These modules will take a token and/or embedding vector as an input ,  " + \
   "split them into individual vectors which are then passed " + \
-  "on to the TokenMixer on the right → . \n \n " + \
-  "The TokenMixer then proceses these vectors embeddings which you can use in the prompt. \n \n" + \
+  "on to the Embedding generator on the right → . \n \n " + \
+  "The Embedding generator then proceses these vectors into embeddings which you can use in your prompts. \n \n" + \
   "If you wish to see an in-depth tutorial for each module, enable the 'Show tutorial' " + \
-  "checkbox and press the 'Update' button. \n \n This will append a 'Tutorial : What is this?' " + \
-  "tab to relevant section where a description of the given module is provided."
+  "checkbox inside the 'Remove/add modules' tab ↑ and press the 'Update modules' button. \n \n This will append a 'Tutorial : What is this?' " + \
+  "tab to the relevant section, where information about the given module is provided. \n \n" + \
+  "You can also refer to the examples provided at the TokenMixer github page: \n" + \
+  "https://github.com/Nekos4Lyfe/TokenMixer"
 
   no_of_minit = gr.Slider(value = 1, minimum=0, maximum=5, step=1, label="Number of MiniTokenizers", default=1 , interactive = True)
   no_of_embin = gr.Slider(value = 1 , minimum=0, maximum=5, step=1, label="Number of Embedding Inspectors", default=1 , interactive = True)
@@ -58,10 +54,14 @@ def add_tab():
     with gr.Tabs():
         with gr.Row(): 
             gr.HTML("<header><h1>TokenMixer </h1></header>") #Top Bar
+        with gr.Row():
+            gr.Markdown("Create, merge , randomize or interpolate tokens to create new embeddings ")
         with gr.Row():    
             gr.Textbox(label="", lines=2, placeholder="Rearrange embeddings here", interactive = True)
         with gr.Row(): 
             with left_column.render() : #Left Column 
+                    gr.Markdown(" ")
+                    gr.Markdown("### Modules :")
   
                     #####
                     minit = MiniTokenizer("MiniTokenizer" , True)
@@ -87,6 +87,7 @@ def add_tab():
                     tokex3 = TokenExtrapolator("Token Extrapolator#3")
                     tokex4 = TokenExtrapolator("Token Extrapolator#4")
                     tokex5 = TokenExtrapolator("Token Extrapolator#5")
+                    gr.Markdown(" ")
 
 
                     with gr.Accordion('Remove/add modules',open=False):
@@ -100,16 +101,16 @@ def add_tab():
                         show_output_logs = gr.Checkbox(value=True, label="Show output logs", interactive = True)
                         show_rand_settings = gr.Checkbox(value=True, label="Show random '_' token settings ", interactive = True)
                       module_update_button.render()  
-                      with gr.Accordion('How do I use this extension?',open=False):
+                    with gr.Accordion('How do I use this extension?',open=False):
                         gr.Markdown(tutorial_string)  
                         
 
             with right_column.render() : #Right Column
-              tokm = TokenMixer("TokenMixer", True , True)
-              tokm2 = TokenMixer("TokenMixer#2") 
-              tokm3 = TokenMixer("TokenMixer#3")
-              tokm4 = TokenMixer("TokenMixer#4")
-              tokm5 = TokenMixer("TokenMixer#5")
+              tokm = TokenMixer("Embedding generator", True , True)
+              tokm2 = TokenMixer("Embedding generator #2") 
+              tokm3 = TokenMixer("Embedding generator #3")
+              tokm4 = TokenMixer("Embedding generator #4")
+              tokm5 = TokenMixer("Embedding generator #5")
         with gr.Row() : 
           with gr.Accordion('Hide Columns',open=False):
               show_left_column = gr.Checkbox(value=True, label="Show left column", interactive = True)
@@ -158,8 +159,29 @@ def add_tab():
     logs_input_list = [show_output_logs]
     ######
 
+    minits = [minit , minit2 , minit3 , minit4 , minit5] # 5x Minitokenizer modules
+    embins = [embin , embin2 , embin3 , embin4 , embin5] # 5x Embedding Inspector modules
+    tocals = [tocal , tocal2 , tocal3 , tocal4 , tocal5] # 5x Token Calculator modules
+    tokexs = [tokex , tokex2 , tokex3 , tokex4 , tokex5] # 5x Token Extrapolator modules
+    tokm_modules = minits + embins + tocals + tokexs
+    tokms =  [tokm , tokm2 , tokm3 , tokm4 , tokm5] #5x TokenMixers
+
+    #Assign functionality to buttons in the first TokenMixer
+    #and the rest of the modules
+    for _module in tokm_modules : 
+      _module.setupIO_with(tokm)
+
     def Show (no_of_minit , no_of_embin , no_of_tocal , no_of_tokex , no_of_tokm , 
-    show_tutorial , show_rand_settings , show_output_logs) : 
+    show_tutorial , show_rand_settings , show_output_logs) :
+
+      #Assign functionality to buttons in the rest of
+      # the TokenMixer (if revealed by the user)
+      if no_of_tokm>1:
+        for _module in tokm_modules :
+          for k in range(len(tokms)):
+            if k> no_of_tokm : continue
+            _module.setupIO_with(tokms[k])
+
       return  {
               minit_list[0]  : gr.Accordion.update(visible=no_of_minit>0) ,
               minit_list[1]  : gr.Accordion.update(visible=no_of_minit>1) ,
@@ -299,6 +321,7 @@ def add_tab():
 
               } 
 
+    ######
     output_list = \
     module_output_list + tutorial_output_list + randset_output_list + logs_output_list
 
@@ -306,22 +329,10 @@ def add_tab():
     module_input_list + tutorial_input_list + randset_input_list + logs_input_list
 
     module_update_button.click(fn = Show , inputs = input_list , outputs =  output_list)
+    ######
+    
 
-    minits = [minit , minit2 , minit3 , minit4 , minit5]
-    embins = [embin , embin2 , embin3 , embin4 , embin5]
-    tocals = [tocal , tocal2 , tocal3 , tocal4 , tocal5]
-    tokexs = [tokex , tokex2 , tokex3 , tokex4 , tokex5]
-    tokm_modules = minits + embins + tocals + tokexs
-    #tokms =  [tokm , tokm2 , tokm3 , tokm4 , tokm5] 
-    #(Ignore writing to extra tokm modules as this will just
-    # reduce performance for no real benefit. 
-    #Extra tokm modules can still be used, 
-    #since they share the data class , but their input fields
-    #will appear blank /Nekos)
 
-    #Assign functionality to buttons
-    for _module in tokm_modules : 
-      _module.setupIO_with(tokm)
 
   #End of UI
   return [(ui, "TokenMixer", "TokenMixer")]

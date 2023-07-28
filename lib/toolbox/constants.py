@@ -1,6 +1,4 @@
-MAX_NUM_MIX = 40 # number of embeddings that can be mixed
-SHOW_NUM_MIX = 20 # number of mixer lines to show initially
-MAX_SIMILAR_EMBS = 30 # number of similar embeddings to show
+MAX_NUM_MIX = 400 # number of embeddings that can be mixed
 VEC_SHOW_TRESHOLD = 1 # change to 10000 to see all values
 VEC_SHOW_PROFILE = 'default' #change to 'full' for more precision
 SEP_STR = '-'*60 # separator string

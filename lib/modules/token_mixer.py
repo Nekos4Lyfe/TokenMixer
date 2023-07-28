@@ -10,19 +10,22 @@ import re #used to parse string to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
 
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , MAX_SIMILAR_EMBS , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
+from lib.toolbox.constants import MAX_NUM_MIX
 
 from lib.data import dataStorage
 
 class TokenMixer :
 
-  def Reset (self, *args):
-    mix_input_names = ['']*MAX_NUM_MIX
-    return '' , '' , *mix_input_names
+  def Reset (self):
+
+    for index in range(MAX_NUM_MIX):
+      self.data.clear(
+        index, 
+        to_negative = True ,
+        to_mixer = True ,
+        to_temporary = True)
+
+    return '' , '' , '' , ''
 
   def Run(self, save_name) :
     log = []
@@ -30,8 +33,14 @@ class TokenMixer :
     anything_saved =  False
 
     tmp = 1
+    if (self.local.order_randomize_mode):
+      log.append(str(tmp) + '. ' + 'Randomize token order selected: Order of the input tokens ' + \
+      'will be randomized prior to embedding generation')
+      tmp+=1
+      log.append('-------------------------------------------')
+
     if(self.local.similar_mode):
-      log.append(str(tmp) + '. ' + 'Similar mode selected: Input tokens will first be replaced ' + \
+      log.append(str(tmp) + '. ' + 'Similar mode selected: Input tokens will be replaced ' + \
       'by similar tokens prior to embedding generation')
       tmp+=1
       log.append('-------------------------------------------')
@@ -51,6 +60,7 @@ class TokenMixer :
       log.append('-------------------------------------------')
     
 #BEGIN PROCESSING THE VECTORS
+    if (self.local.order_randomize_mode): self.data.vector.shuffle()
     tot_vec = None
     if(self.local.interpolate_mode):
       tot_vec , message = self.data.merge_if_similar(self.local.similar_mode)
@@ -70,7 +80,7 @@ class TokenMixer :
         'use the modules on the left')
         return '\n'.join(log), None
     else:
-            if REMOVE_ZEROED_VECTORS:
+            if False: # Remove zeroed vectors
                 old_count = tot_vec.shape[0]
                 tot_vec = tot_vec[torch.count_nonzero(tot_vec,dim=1)>0]
                 new_count = tot_vec.shape[0]
@@ -130,20 +140,16 @@ class TokenMixer :
     allow_negative_gain = args[14]
     negative_strength = args[15]
     autoselect = args[16]
-    positive_strength = args[16]
+    positive_strength = args[17]
+    mix_input = args[18]
+    order_randomize_mode = args[19]
+    neg_input = args[20]
 
-    mix_values = args[17: 17+MAX_NUM_MIX]
-    
-
-    tmp = len(mix_values)
-    mix_input_names = args[17 + tmp : 17 + tmp + MAX_NUM_MIX]
-    if (mix_input_names == None): return 'No embeddings stored. Nothing to save' , None , *emptyList
-    assert not mix_values == None , "Warning: mix_values are 'None' in Save()"
     assert not self.data == None , "Warning: data class is null"
 
     #Store mixer multipliers
     for i in range(MAX_NUM_MIX):
-      self.data.vector.weight.place(mix_values[i] , i)
+      self.data.vector.weight.place(1  , i) # will fix later
     
     #Store relevant variables in our own class 
     #so they can be fetched by the Run() function
@@ -152,10 +158,10 @@ class TokenMixer :
     self.local.interpolate_mode = copy.copy(interpolate_mode)
     self.local.similar_mode = copy.copy(similar_mode)
     self.local.five_sets_mode = copy.copy(five_sets_mode)
+    self.local.order_randomize_mode = copy.copy(order_randomize_mode)
 
     #Set the strength of the token negatives from input
     self.data.negative.strength = copy.copy(negative_strength)
-    self.data.positive.strength = copy.copy(positive_strength)
 
     log = [] 
     emptyList = [None]*MAX_NUM_MIX 
@@ -174,7 +180,7 @@ class TokenMixer :
       log.append('-------------------------------------------')
     else :
       log.append('Please enter a name for the embedding')
-      return '\n'.join(log), None , *emptyList
+      return '\n'.join(log), None , None
 
     #Check if five-sets-mode is enabled and if the user has
     #assigned a sub_name for the embedding
@@ -245,16 +251,20 @@ class TokenMixer :
       message , save_filename = self.Run(save_name) 
       log.append(message)
       if save_filename == None : 
-        return '\n'.join(log), None , *emptyList
-
-    #Load names from the data class and send them to the mixer inputs
-    mix_name_output = []
-    for index in range (MAX_NUM_MIX):
-      mix_name_output.append(self.data.vector.name.get(index)) 
+        return '\n'.join(log), None , None
 
     if (five_sets_mode) : save_name = embox_output
 
-    return '\n'.join(log), save_name , *mix_name_output
+    #Load names from the data class and send them to the mixer inputs
+    mix_name_output = ''
+    for index in range (MAX_NUM_MIX):
+      name = self.data.vector.name.get(index)
+      if name != None :
+        if mix_name_output != '' : mix_name_output = mix_name_output + ' , '
+        mix_name_output = mix_name_output + self.data.vector.name.get(index)
+    if (mix_name_output == ''): return 'No embeddings stored. Nothing to save' , None , mix_name_output
+
+    return '\n'.join(log), save_name , mix_name_output
 #End of the TokenMixer Save() Function
 
 
@@ -284,31 +294,38 @@ class TokenMixer :
       input_list.append(self.inputs.override_box)                   #12
       input_list.append(self.inputs.sub_name)                       #13
       input_list.append(self.inputs.settings.allow_negative_gain)   #14
-      input_list.append(self.inputs.sliders.negative_weight)   #15
-      input_list.append(self.inputs.settings.autoselect) #16
-      input_list.append(self.inputs.sliders.positive_weight) #17
-      
-      for i in range (MAX_NUM_MIX):
-        input_list.append(self.inputs.mix_sliders[i])     #16:16+MAX_NUM_MIX
-
-      for i in range (MAX_NUM_MIX):
-        input_list.append(self.inputs.mix_inputs[i]) #17+MAX_NUM_MIX : 17+2*MAX_NUM_MIX
+      input_list.append(self.inputs.sliders.negative_weight)        #15
+      input_list.append(self.inputs.settings.autoselect)            #16
+      input_list.append(self.inputs.sliders.positive_weight)        #17
+      input_list.append(self.inputs.mix_input)                      #18
+      input_list.append(self.inputs.settings.order_randomize_mode)  #19
+      input_list.append(self.inputs.negbox)                         #20
+      ########
 
       output_list.append(self.outputs.log)            #1
       output_list.append(self.outputs.embedding_box)  #2
-
-      for i in range (MAX_NUM_MIX):
-        output_list.append(self.inputs.mix_inputs[i]) #3 : 3 + MAX_NUM_MIX
+      output_list.append(self.inputs.mix_input)       #3
       
       self.buttons.save.click(fn=self.Save , inputs = input_list , outputs = output_list)
-     # self.buttons.reset.click(fn=self.Save , inputs = input_list , outputs = output_list)
+      
+
+      reset_output_list = []
+      self.buttons.reset.click(
+        fn=self.Reset , 
+        inputs = None , 
+        outputs = \
+        [
+          self.outputs.log , 
+          self.outputs.embedding_box , 
+          self.inputs.mix_input ,
+          self.inputs.negbox])
 
     
     if (module.ID == "EmbeddingInspector") :
-      return 1    
+       module.setupIO_with(self)    
 
     if (module.ID == "EmbeddingAnalyzer") :
-      return 1    
+       module.setupIO_with(self)
 
 
   def __init__(self , label , vis = False , op = False):
@@ -326,13 +343,12 @@ class TokenMixer :
                 Settings.section_extrapolation = []
                 Settings.random_walk_extrapolation = []
                 Settings.expansion_extrapolation = []
-                #Settings.weight_randomize_mode = []
                 Settings.angle_randomize_mode = []
-                #Settings.order_randomize_mode = []
                 Settings.preset_names = []
                 Settings.presets_dropdown = []
                 Settings.allow_negative_gain = []
                 Settings.autoselect = []
+                Settings.order_randomize_mode = []
 
           class Local :
             #Class to store local variables
@@ -345,6 +361,7 @@ class TokenMixer :
               Local.weight_randomize_mode = False
               Local.save_name = ''
               Local.sub_name = ''
+              Local.order_randomize_mode = False
 
 
           class Sliders :
@@ -365,7 +382,7 @@ class TokenMixer :
                 Inputs.save_name = []
                 #Inputs.eval_box = [0]
                 Inputs.save_vector_name = []
-                Inputs.mix_inputs =  []
+                Inputs.mix_input =  []
                 Inputs.mix_sliders =[]
                 Inputs.override_box = []
                 Inputs.sub_name = []
@@ -393,44 +410,21 @@ class TokenMixer :
           self.ID = "TokenMixer"
 
           with gr.Accordion(label ,open=op , visible = vis) as show:
+                        gr.Markdown("Create embeddings from module output tokens")
                         with gr.Row():  
-                          gr.Markdown("Create, merge , randomize or interpolate tokens to create new embeddings ")
-                        with gr.Row():   
-                          global SHOW_NUM_MIX
-                          if SHOW_NUM_MIX>MAX_NUM_MIX: SHOW_NUM_MIX=MAX_NUM_MIX
-                          with gr.Accordion('TokenMixer Inputs',open=False):
-                            gr.Markdown("Finetune the length of the tokens using the sliders")
-                            for n in range(SHOW_NUM_MIX):
-                              with gr.Row():
-                                with gr.Column():
-                                     self.inputs.mix_inputs.append(gr.Textbox(label="Name " + \
-                                     str(n), lines=1, interactive = False))
-                                with gr.Column():
-                                   self.inputs.mix_sliders.append(gr.Slider(label="Not Implemented",value=1.0, \
-                                   minimum=-1.0, maximum=1.0, step=0.1 , interactive = True))
-                          if MAX_NUM_MIX>SHOW_NUM_MIX:
-                             with gr.Accordion('TokenMixer Inputs (continued)',open=False):
-                                for n in range(SHOW_NUM_MIX,MAX_NUM_MIX):
-                                  with gr.Row():
-                                      self.inputs.mix_inputs.append(gr.Textbox(label="Name "+str(n), lines=1, \
-                                          interactive = False))
-                                  with gr.Row():
-                                    with gr.Column(scale=1):
-                                      self.inputs.mix_sliders.append(gr.Slider(label="Token weights",value=1.0, \
-                                      minimum=-1.0, maximum=1.0, step=0.1 , interactive = True))
-                                    #ith gr.Column(scale=9):
-                                      #self.inputs.settings.random_walk_extrapolation = \
-                                      #gr.Checkbox(value=False,label="lock", interactive = True) #Not implemented                                       
-
+                          self.inputs.mix_input = gr.Textbox(label='', lines=3, interactive = False)                                 
+                        with gr.Row(): 
+                          self.inputs.negbox = gr.Textbox(label= 'Negatives' , lines=3 , interactive = False)                                   
                         with gr.Row():                        
                           with gr.Column():
-                                self.buttons.save = gr.Button(value="Save mixed", variant="primary")
+                                self.buttons.save = gr.Button(value="Create embedding", variant="primary")
                                 self.inputs.save_name = gr.Textbox(label="New embedding name",lines=1,placeholder='Enter file name to save', interactive = True)
                                 self.inputs.settings.enable_overwrite = gr.Checkbox(value=False,label="Enable overwrite", interactive = True)
         
                                 with gr.Accordion('TokenMixer modes of operation',open=True):
-                                  self.inputs.settings.merge_mode = gr.Checkbox(value=False,label="Merge Mode : Merge all tokens into single token ", interactive = True)
-                                  self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Similar Mode  : Replace tokens with similar tokens", interactive = True)
+                                  self.inputs.settings.order_randomize_mode = gr.Checkbox(value=False,label="Randomize token order ", interactive = True)
+                                  self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Similar Mode  : Replace input tokens with similar tokens", interactive = True)
+                                  self.inputs.settings.merge_mode = gr.Checkbox(value=False,label="Merge Mode : Find single token with greatest similarity to all input tokens ", interactive = True)
                                   self.inputs.settings.interpolate_mode = gr.Checkbox(value=False,label="Interpolate Mode  : Merge tokens with similarity (Work in progress)", interactive = True)       
                                   with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_1 :
                                       gr.Markdown("The TokenMixer has four modes of operation: Concat Mode (default) , " + \
@@ -493,9 +487,6 @@ class TokenMixer :
                                         " in the Embeddings/TokenMixer/* folder under an autoselector name. ")
 
                                 with gr.Accordion('Experimental',open=False , visible = False): #Experimental                                             
-                                  with gr.Accordion('Positives',open=False): 
-                                    self.inputs.sliders.negative_weight = gr.Slider(minimum=0, maximum=100, step=0.1, label="Negative weight %", default=0 , interactive = True)
-                                    self.inputs.negbox = gr.Textbox(label="Discourage similarity with the following tokens:", lines=3 , interactive = False)
                                   with gr.Accordion('Negatives',open=False): 
                                     self.inputs.sliders.positive_weight = gr.Slider(minimum=0, maximum=100, step=0.1, label="Positive weight %", default=0 , interactive = True)
                                     self.inputs.posbox = gr.Textbox(label="Encourage similarity with the following tokens", lines=3 , interactive = False)
@@ -507,13 +498,19 @@ class TokenMixer :
                                     "settings from a previous session. ")  
                                       
                           with gr.Column(): 
-                              self.buttons.reset = gr.Button(value="Reset mixer")
+                              self.buttons.reset = gr.Button(value="Clear")
                               self.outputs.embedding_box = gr.Textbox(label="------> Output",lines=1,placeholder='Embedding name output')
                               gr.Markdown("### TokenMixer Operation Settings")
                               with gr.Accordion('General Settings',open=True):
+                                self.inputs.sliders.negative_weight = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
+                                label="Negative token strength % ", default=50 , interactive = True) 
+                                self.inputs.sliders.randomize = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
+                                label="Sample randomization %", default=50 , interactive = True)
+
                                 self.inputs.sliders.gain = gr.Slider(minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
                                 self.inputs.sliders.iterations = gr.Slider(minimum=0, maximum=6000, step=1, label="Similarity samples max", default=1000 , interactive = True)
-                                self.inputs.sliders.randomize = gr.Slider(minimum=0, maximum=100, step=0.1, label="Randomization %", default=0 , interactive = True)
+                               
+                                
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_3 : 
                                   gr.Markdown("These sliders set general values for the 'Similar Mode' , 'Merge Mode' and " + \
                                   "'Interpolate Mode' operations on the TokenMixer. These operations can be enabled " + \
@@ -529,8 +526,8 @@ class TokenMixer :
 
                               with gr.Accordion('Similar Mode Settings',open=False):
                                 self.inputs.sliders.angle = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. vector cos(theta) similarity %", default=60 , interactive = True)
-                                self.inputs.sliders.length = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. vector length similarity %", default=80 , interactive = True)           
-                                self.inputs.settings.allow_negative_gain = gr.Checkbox(value=False,label="Allow negative gain", interactive = True)         
+                                self.inputs.sliders.length = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. vector length similarity %", default=80 , interactive = True)          
+                                self.inputs.settings.allow_negative_gain = gr.Checkbox(value=False,label="Allow negative gain", interactive = True , visible = False)         
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_4 : 
                                   gr.Markdown("These sliders control the allowed range for the similar vector output. \n \n" + \
                                   "The 'Req. vector cos(theta) similarity' slider sets the allowed angle deviation between the TokenMixer input token " + \
@@ -580,6 +577,4 @@ class TokenMixer :
           self.buttons.reset.style(size="lg")
           self.setupIO_with(self)
           
-
-      #self.functions.Reset.append(funcs.Reset)
 ## end  of class TokenMixer 
