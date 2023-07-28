@@ -524,7 +524,7 @@ class TokenMixer :
                                   "gain is the value of the 'Vector gain multiplier' slider , |X| is the vector length of input token X and " + \
                                   "norm() is a function which normalizes a given vector , i.e sets its length of the given vector to 1. ") 
 
-                              with gr.Accordion('Similar Mode Settings',open=False):
+                              with gr.Accordion('Similar Mode Settings',open=False , visible = False): # Deprecated
                                 self.inputs.sliders.angle = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. vector cos(theta) similarity %", default=60 , interactive = True)
                                 self.inputs.sliders.length = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. vector length similarity %", default=80 , interactive = True)          
                                 self.inputs.settings.allow_negative_gain = gr.Checkbox(value=False,label="Allow negative gain", interactive = True , visible = False)         
