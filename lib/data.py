@@ -140,6 +140,7 @@ class Data :
           negative_similarity = 100 - worst_nsim
         ########### #Done checking negatives
         
+        if negative_similarity == None : negative_similarity = 0
         similarity_sum += similarity * (1 - strength) + negative_similarity*strength
         
         if similarity == min(minimum , similarity) :
