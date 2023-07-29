@@ -47,10 +47,10 @@ class Tools :
         embedder = model.cond_stage_model.wrapped
         internal_emb_dir = None
         if model.is_sd1: internal_emb_dir = embedder.transformer.text_model.embeddings
-        elif model.is_sdxl : internal_emb_dir = embedder.roberta.embeddings
+        elif model.is_sdxl : internal_emb_dir = embedder.roberta.embeddings # SDXL :Check if this works
         elif model.is_sd2 : internal_emb_dir = embedder.model
         
-        internal_embs = internal_emb_dir.token_embedding.wrapped.weight
+        internal_embs = internal_emb_dir.token_embedding.wrapped.weight # SDXL : See comment above
 
         #########
 
