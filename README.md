@@ -1,5 +1,7 @@
 # TokenMixer
-This extension will allow you to modify tokens at will and take full control of the latent space. Features include:
+This extension will allow you to modify tokens at will and take full control of the latent space. 
+
+Feature summary:
 
 --Embedding Generator
 *Creating exact blends between CLIP tokens , embeddings and other kinds of latent vectors
@@ -11,7 +13,15 @@ This extension will allow you to modify tokens at will and take full control of 
 
 --Minitokenizer
 *Transform any prompt to tokens
-*Split embeddings
+*Split embeddings into individual vectors
+*Send output to the Embedding generator
+
+--Token Calculator
+*Perform numerical addition or subraction of tokens
+*Send output to the Embedding generator
+
+--Embedding inspector
+
 
 
 
