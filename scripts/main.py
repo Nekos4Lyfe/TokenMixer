@@ -17,6 +17,7 @@ from lib.modules.embedding_inspector import EmbeddingInspector
 from lib.modules.token_mixer import TokenMixer      
 from lib.modules.token_calculator import TokenCalculator 
 from lib.modules.token_extrapolator import TokenExtrapolator 
+from lib.modules.cross_attention_mixer import CrossAttentionMixer
 
 
 def add_tab():
@@ -111,6 +112,11 @@ def add_tab():
               tokm3 = TokenMixer("Embedding generator #3")
               tokm4 = TokenMixer("Embedding generator #4")
               tokm5 = TokenMixer("Embedding generator #5")
+              #####
+              catm = CrossAttentionMixer("Cross Attention Visualizer" , True)
+
+
+
         with gr.Row() : 
           with gr.Accordion('Hide Columns',open=False):
               show_left_column = gr.Checkbox(value=True, label="Show left column", interactive = True)
