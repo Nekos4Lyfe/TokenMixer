@@ -1,4 +1,4 @@
-# TokenMixer for Automatic1111
+# TokenMixer Extension
 
 ![TokenMixer3](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/48b1b3e7-d2f3-40c4-81c6-d282326df130)
 
