@@ -1,10 +1,11 @@
 import gradio as gr
-from modules import script_callbacks, shared, sd_hijack
+from modules import script_callbacks, shared, sd_hijack , sd_models , sd_hijack_open_clip , textual_inversion
 from modules.shared import cmd_opts
 from pandas import Index
 from pandas.core.groupby.groupby import OutputFrameOrSeries
 import torch, os
 from modules.textual_inversion.textual_inversion import Embedding
+
 import collections, math, random , numpy
 import re #used to parse string to int
 import copy
@@ -25,21 +26,41 @@ class Tools :
         return savepath
 
       def get(self):
+
+        #Check if a valid model is loaded
+        model = shared.sd_model
+        model.is_sdxl = hasattr(model, 'conditioner')
+        model.is_sd2 = not model.is_sdxl and hasattr(model.cond_stage_model, 'model')
+        model.is_sd1 = not model.is_sdxl and not model.is_sd2
+
+        valid_model = model.is_sdxl or model.is_sd2 or model.is_sd1
+        if not valid_model:
+          return None , None , None
+        ########
+
+        #Fetch the loaded embeddings
         loaded_embs = collections.OrderedDict(
         sorted(sd_hijack.model_hijack.embedding_db.word_embeddings.items(),
             key=lambda x: str(x[0]).lower()))
-        embedder = shared.sd_model.cond_stage_model.wrapped
-        if embedder.__class__.__name__=='FrozenCLIPEmbedder': # SD1.x detected
-          tokenizer = embedder.tokenizer
-          internal_embs = embedder.transformer.text_model.embeddings.token_embedding.wrapped.weight
-        elif embedder.__class__.__name__=='FrozenOpenCLIPEmbedder': # SD2.0 detected
+
+        #Fetch the internal_embedding directory
+        embedder = model.cond_stage_model.wrapped
+        internal_emb_dir = None
+        if model.is_sd1: internal_emb_dir = embedder.transformer.text_model.embeddings
+        elif model.is_sdxl : internal_emb_dir = embedder.roberta.embeddings
+        elif model.is_sd2 : internal_emb_dir = embedder.model
+        
+        internal_embs = internal_emb_dir.token_embedding.wrapped.weight
+
+        #########
+
+        #Fetch the tokenizer
+        if model.is_sd2 : 
           from modules.sd_hijack_open_clip import tokenizer as open_clip_tokenizer
           tokenizer = open_clip_tokenizer
-          internal_embs = embedder.model.token_embedding.wrapped.weight
-        else:
-          tokenizer = None
-          internal_embs = None
-        return tokenizer, internal_embs, loaded_embs # return these useful references
+        else : tokenizer = embedder.tokenizer
+
+        return tokenizer, internal_embs, loaded_embs
 
       def update_loaded_embs(self):
         tokenizer , internal_embs , loaded_embs = self.get()
@@ -79,7 +100,12 @@ class Tools :
         return  best_ids , sorted_scores
 
       def __init__(self):
+        
         tokenizer , internal_embs , loaded_embs = self.get()
+        assert tokenizer != None and internal_embs != None and loaded_embs != None , \
+        "Loaded Stable Diffusion Model is not compatible with TokenMixer Extension"
+
+
         Tools.tokenizer = tokenizer
         Tools.internal_embs = internal_embs
         Tools.loaded_embs = loaded_embs
