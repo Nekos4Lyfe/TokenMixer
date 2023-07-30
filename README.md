@@ -1,4 +1,6 @@
 # TokenMixer
+![TokenMixer](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/1b778d54-624a-4802-a319-06d5f63f7d38)
+
 This extension will allow you to modify tokens at will and take full control of the latent space. 
 
 The TokenMixer consists of 7 modules : 
