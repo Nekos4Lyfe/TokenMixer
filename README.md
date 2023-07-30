@@ -1,7 +1,16 @@
 # TokenMixer
 This extension will allow you to modify tokens at will and take full control of the latent space. 
 
-The TokenMixer consists of 7 modules : Embedding Generator , MiniTokenizer , Embedding Inspector , Token Calculator , Token Extrapolator and Cross Attention Visualizer, all of which are integrated into a single hub. Tokens can be transferred freely between the modules, allowing the artist to freely experiment with various vectors to find the exact type of token configuration they need for the current project. 
+The TokenMixer consists of 7 modules : 
+ - Embedding Generator
+ - MiniTokenizer
+ - Embedding Inspector
+ - Token Calculator
+ - Token Extrapolator
+ - Cross Attention Visualizer
+ - Token Synonymizer
+ 
+All of which are integrated into a single hub. Tokens can be transferred freely between the modules, allowing the artist to freely experiment with various vectors to find the exact type of token configuration they need for the current project. 
 
 Feature summary:
 
