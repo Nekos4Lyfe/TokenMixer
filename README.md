@@ -1,4 +1,5 @@
 # TokenMixer
+The TokenMixer is an StableDiffusion extension for Automatic1111 webui
 ![TokenMixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0285fba9-78d6-49fb-981b-92084786aa51)
 
 This extension will allow you to modify tokens at will and take full control of the latent space. 
