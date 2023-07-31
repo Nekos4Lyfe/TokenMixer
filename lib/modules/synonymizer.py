@@ -31,49 +31,31 @@ class Synonymizer:
       self.languages = self.languages + " , "
     self.languages = self.languages + language
 
-  def Synonymize (self  , *args) :
-
-    #Get the inputs
-    mini_input = args[0]
-    sendtomix = args[1]
-    definition_mode = args[2]
-    send_to_negatives = args[3]
-    random_token_length = args[4]
-    hypernym_mode = args[5]
-    mix_input = args[6]
-    stack_mode = args[7]
-    hyponym_mode = args[8]
-    meronym_mode = args[9]
-    holonym_mode = args[10]
-    entailment_mode = args[11]
-    antonym_mode = args[12]
-    ######################
-    english = args[13]          
-    standard_Arabic = args[14]
-    bulgarian = args[15]        
-    catalan = args[16]       
-    danish = args[17]          
-    greek = args[18]           
-    basque = args[19]         
-    finnish = args[20]         
-    french = args[21]         
-    galician = args[22]         
-    hebrew = args[23]          
-    croatian = args[24]       
-    indian = args[25]        
-    islandic = args[26]      
-    italian = args[27]       
-    japanese = args[28]       
-    lithuanian = args[29]    
-    dutch = args[30]    
-    norwegian = args[31]   
-    polish = args[32]       
-    portuguese = args[33]    
-    spanish = args[34]       
-    swedish = args[35]   
-    ######
-    compact_mode = args[36]      
-    ########
+  def _get_languages(self, *args) :
+    english         = args[0]          
+    standard_Arabic = args[1]
+    bulgarian       = args[2]        
+    catalan         = args[3]       
+    danish          = args[4]          
+    greek           = args[5]           
+    basque          = args[6]         
+    finnish         = args[7]         
+    french          = args[8]         
+    galician        = args[9]         
+    hebrew          = args[10]          
+    croatian        = args[11]       
+    indian          = args[12]        
+    islandic        = args[13]      
+    italian         = args[14]       
+    japanese        = args[15]       
+    lithuanian      = args[16]    
+    dutch           = args[17]    
+    norwegian       = args[18]   
+    polish          = args[19]       
+    portuguese      = args[20]    
+    spanish         = args[21]       
+    swedish         = args[22]
+    #########
     english_id = ['eng']
     standard_Arabic_id = ['arb']
     bulgarian_id = ['bul']
@@ -81,7 +63,7 @@ class Synonymizer:
     danish_id = ['dan']
     greek_id = ['ell']
     basque_id = ['eus']
-    finish_id = ['fin']
+    finnish_id = ['fin']
     french_id = ['fra']
     galician_id = ['glg']
     hebrew_id = ['heb']
@@ -97,84 +79,176 @@ class Synonymizer:
     portuguese_id = ['por']
     spanish_id = ['spa']
     swedish_id = ['swe']
-    #######
+    ########   
     self.languages = ''
     langs = []
     #######
     if english : 
-      languages = self._add("English")
+      self._add("English")
       langs = langs + english_id
     if standard_Arabic : 
-      languages = self._add("Standard_Arabic")
+      self._add("Standard_Arabic")
       langs = langs + standard_Arabic_id
     if bulgarian : 
-      languages = self._add("Bulgarian")
+      self._add("Bulgarian")
       langs = langs + bulgarian_id      
     if catalan : 
-      languages = self._add("Catalan")
+      self._add("Catalan")
       langs = langs + catalan_id   
     if danish : 
-      languages = self._add("Danish")
+      self._add("Danish")
       langs = langs + danish_id        
     if greek : 
-      languages = self._add("Greek")
+      self._add("Greek")
       langs = langs + greek_id        
     if basque : 
-      languages = self._add("Basque")
+      self._add("Basque")
       langs = langs + basque_id      
     if finnish : 
-      languages = self._add("Finnish")
+      self._add("Finnish")
       langs = langs + finnish_id       
     if french : 
-      languages = self._add("French")
+      self._add("French")
       langs = langs + french_id    
     if galician : 
-      languages = self._add("Galician")
+      self._add("Galician")
       langs = langs + galician_id     
     if hebrew : 
-      languages = self._add("Hebrew")
+      self._add("Hebrew")
       langs = langs + hebrew_id       
     if croatian : 
-      languages = self._add("Croatian")
+      self._add("Croatian")
       langs = langs + croatian_id 
     if indian : 
-      languages = self._add("Indian")
+      self._add("Indian")
       langs = langs + indian_id   
     if islandic : 
-      languages = self._add("Islandic")
+      self._add("Islandic")
       langs = langs + islandic_id     
     if italian : 
-      languages = self._add("Italian")
+      self._add("Italian")
       langs = langs + italian_id   
     if japanese : 
-      languages = self._add("Japanese")
+      self._add("Japanese")
       langs = langs + japanese_id     
     if lithuanian : 
-      languages = self._add("Lithuanian")
+      self._add("Lithuanian")
       langs = langs + lithuanian_id    
     if dutch : 
-      languages = self._add("Dutch")
+      self._add("Dutch")
       langs = langs + dutch_id
     if norwegian : 
-      languages = self._add("Norwegian")
+      self._add("Norwegian")
       langs = langs + norwegian_id  
     if polish : 
-      languages = self._add("Polish")
+      self._add("Polish")
       langs = langs + polish_id
     if portuguese : 
-      languages = self._add("Portuguese")
+      self._add("Portuguese")
       langs = langs + portuguese_id 
     if spanish : 
-      languages = self._add("Spanish")
+      self._add("Spanish")
       langs = langs + spanish_id     
     if swedish : 
-      languages = self._add("Swedish")
+      self._add("Swedish")
       langs = langs + swedish_id
+    ######
+    self.langs = langs
+    return self.languages , self.langs
+
+  def Synonymize (self  , *args) :
+    #Get the inputs
+    mini_input = args[0]
+    sendtomix = args[1]
+    definition_mode = args[2]
+    send_to_negatives = args[3]
+    random_token_length = args[4]
+    mix_input = args[6]
+    stack_mode = args[7]
+    ######
+    hypernym_mode = args[5]
+    hyponym_mode = args[8]
+    meronym_mode = args[9]
+    holonym_mode = args[10]
+    entailment_mode = args[11]
+    antonym_mode = args[12]
+    ######################
+    english         = args[13]          
+    standard_Arabic = args[14]
+    bulgarian       = args[15]        
+    catalan         = args[16]       
+    danish          = args[17]          
+    greek           = args[18]           
+    basque          = args[19]         
+    finnish         = args[20]         
+    french          = args[21]         
+    galician        = args[22]         
+    hebrew          = args[23]          
+    croatian        = args[24]       
+    indian          = args[25]        
+    islandic        = args[26]      
+    italian         = args[27]       
+    japanese        = args[28]       
+    lithuanian      = args[29]    
+    dutch           = args[30]    
+    norwegian       = args[31]   
+    polish          = args[32]       
+    portuguese      = args[33]    
+    spanish         = args[34]       
+    swedish         = args[35]
+    #########
+    languages , langs = self._get_languages(
+    english , standard_Arabic , bulgarian , catalan , danish  , \
+    greek , basque , finnish , french , galician  , hebrew  , \
+    croatian , indian , islandic , italian  , japanese  , \
+    lithuanian , dutch , norwegian , polish , portuguese , \
+    spanish , swedish)          
+    ######
+    compact_mode      = args[36]   
+    inspect_mode      = args[37]
+    no_of_suggestions = args[38]   
+    ######
+
     #######
-    languages = self.languages
+    definitions , list_of_synonyms , list_of_hyponyms , \
+    list_of_hypernyms , list_of_meronyms , list_of_holonyms , \
+    list_of_entailments , list_of_antonyms , list_of_everything , \
+    tokenbox = self.get( 
+    mini_input , langs , languages , compact_mode , \
+    definition_mode , hypernym_mode , hyponym_mode , \
+    meronym_mode , holonym_mode  , entailment_mode , \
+    antonym_mode , inspect_mode , no_of_suggestions)
+    ######
+
+    if inspect_mode : 
+      tokenbox.append('##########################################################')
+      tokenbox.append(' ')
+
+    for suggestion in range(no_of_suggestions):
+      text = ''
+      for everything in list_of_everything:
+        text = text + random.choice(everything) + '   '
+      tokenbox.append(text)
+      tokenbox.append('  ')
+
+    return '' , '\n'.join(tokenbox)
+
+  def get(self, *args) :
+    mini_input      = args[0]
+    langs           = args[1]
+    languages       = args[2]
+    compact_mode    = args[3]
+    definition_mode = args[4]
+    hypernym_mode   = args[5]
+    hyponym_mode    = args[6]
+    meronym_mode    = args[7]
+    holonym_mode    = args[8]
+    entailment_mode = args[9]
+    antonym_mode    = args[10]
+    inspect_mode    = args[11]
+    no_of_suggestions = args[12]
 
     words = []
-    text= None
     definitions = []
     list_of_synonyms = []
     list_of_hyponyms = []
@@ -183,16 +257,19 @@ class Synonymizer:
     list_of_holonyms = []
     list_of_entailments = []
     list_of_antonyms = []
-
+    list_of_everything = []
     tokenbox = []
     tokenmixer_vectors= ''
     text = ''
     found = False
+    first = True
     defcount = 0
 
     tokenbox.append('Running Token Synonymizer...')
     tokenbox.append(' ')
     tokenbox.append('Languages :  ' + languages)
+    tokenbox.append(' ')
+    tokenbox.append('Number of synonym prompt suggestions :  ' + str(no_of_suggestions))
     tokenbox.append(' ')
     tokenbox.append('##########################################################')
 
@@ -204,6 +281,7 @@ class Synonymizer:
       meronyms  = []
       entailments = []
       antonyms = []
+      everything = []
       words.append(word)
       ######
       definition = None
@@ -216,52 +294,65 @@ class Synonymizer:
             if not entailment_mode: break
             for lang in langs:
               for name in entailment.lemma_names(lang):
-                entailments.append(name)        
+                entailments.append(name)
+                everything.append(name)        
         ##################
         for meronym in synset.part_meronyms() :
             if not meronym_mode: break
             for lang in langs:
               for name in meronym.lemma_names(lang):
                 meronyms.append(name)
+                everything.append(name)  
         ###########################
         for holonym in synset.part_holonyms() :
             if not holonym_mode: break
             for lang in langs:
               for name in holonym.lemma_names(lang):
                 holonyms.append(name)
+                everything.append(name)  
         ###########################
         for hyponym in synset.hyponyms() :
             if not hyponym_mode: break
             for lang in langs:
               for name in hyponym.lemma_names(lang):
                 hyponyms.append(name)
+                everything.append(name)  
         ###########################
         for hypernym in synset.hypernyms() :
             if not hypernym_mode: break
             for lang in langs:
               for name in hypernym.lemma_names(lang):
                 hypernyms.append(name)
+                everything.append(name)  
         ############################
         for lang in langs:
           for synonym in synset.lemma_names(lang) :
             synonyms.append(synonym)
+            everything.append(synonym)  
         ############################
         for lang in langs:
           if not antonym_mode: break
           for lemma in synset.lemmas(lang) :
             for antonym in lemma.antonyms():
               antonyms.append(antonym.name())
+              everything.append(antonym.name()) 
         ############################
         defcount +=1
+        if not first and inspect_mode :
+          tokenbox.append(' ')  
+          tokenbox.append('##########################################################')
+        else : first = False
         
-        if definition_mode :
-            tokenbox.append("Interpretation #" + str(defcount) + " of '" + word + "' :")
+        if definition_mode and inspect_mode :
+            tokenbox.append("Interpretation no. " + str(defcount) + " of '" + word + "' :")
             tokenbox.append("definition :   " + "'" + definition + "'")
-        tokenbox.append('------------------------------------------------' + \
-        '---------------------------------------------')
-        found = True 
+            found = True 
+        
+        if inspect_mode : 
+          tokenbox.append('------------------------------------------------' + \
+          '---------------------------------------------')
         ######################
-        if True :
+        if inspect_mode :
           prev = found 
           text = ''
           found = False
@@ -283,7 +374,7 @@ class Synonymizer:
             "................................." + \
             ".....................................")
         #######################
-        if meronym_mode :
+        if meronym_mode and inspect_mode :
             prev = found
             text = ''
             found = False
@@ -305,7 +396,7 @@ class Synonymizer:
                 "................................." + \
                 ".....................................") 
         #######################
-        if antonym_mode:
+        if antonym_mode and inspect_mode :
             prev = found
             text = ''
             found = False
@@ -327,7 +418,7 @@ class Synonymizer:
                 "................................." + \
                 ".....................................")
         #######################
-        if entailment_mode:
+        if entailment_mode and inspect_mode :
             prev = found
             text = ''
             found = False
@@ -349,7 +440,7 @@ class Synonymizer:
                 "................................." + \
                 ".....................................")
         #######################
-        if holonym_mode:
+        if holonym_mode and inspect_mode :
             prev = found
             text = ''
             found = False
@@ -371,7 +462,7 @@ class Synonymizer:
                 "................................." + \
                 ".....................................")
         #######################
-        if hyponym_mode:
+        if hyponym_mode and inspect_mode :
             prev = found
             text = ''
             found = False
@@ -393,7 +484,7 @@ class Synonymizer:
                 "................................." + \
                 ".....................................")
         #######################
-        if hypernym_mode:
+        if hypernym_mode and inspect_mode :
             prev = found
             text = ''
             found = False
@@ -416,11 +507,20 @@ class Synonymizer:
       list_of_synonyms.append(list(set(synonyms)))
       list_of_hyponyms.append(list(set(hyponyms)))
       list_of_hypernyms.append(list(set(hypernyms)))
+      list_of_antonyms.append(list(set(antonyms)))
+      list_of_everything.append(list(set(everything)))
     ######
+    return  definitions , \
+    list_of_synonyms , \
+    list_of_hyponyms , \
+    list_of_hypernyms , \
+    list_of_meronyms , \
+    list_of_holonyms , \
+    list_of_entailments , \
+    list_of_antonyms , \
+    list_of_everything , \
+    tokenbox 
 
-    return '' , '\n'.join(tokenbox)
-       
-    
   def setupIO_with (self, module):
     #Tell the buttons in this class what to do when 
     #pressed by the user
@@ -474,6 +574,8 @@ class Synonymizer:
       input_list.append(self.lang.swedish)            #35
       ######
       input_list.append(self.inputs.compact_mode)     #36
+      input_list.append(self.inputs.inspect_mode)     #37
+      input_list.append(self.inputs.suggestions)      #38
       #######
       output_list.append(module.inputs.mix_input) #0
       output_list.append(self.outputs.tokenbox)   #1
@@ -506,6 +608,8 @@ class Synonymizer:
         Inputs.entailment_mode = []
         Inputs.antonym_mode = []
         Inputs.compact_mode = []
+        Inputs.inspect_mode = []
+        Inputs.suggestions = []
 
     class Lang :
       def __init__(self):
@@ -543,12 +647,17 @@ class Synonymizer:
     self.buttons= Buttons()
     self.lang = Lang()
     self.ID = "Synonymizer"
-    self.languages = 'Languages : '
+    self.languages = None
+    self.langs = []
+
 
     #test = gr.Label('Prompt MiniTokenizer' , color = "red")
     #create UI
     with gr.Accordion(label , open=False , visible = vis) as show :
       gr.Markdown("Get CLIP tokens and embedding vectors")
+      with gr.Row() :
+        self.inputs.suggestions = gr.Slider(label="No. of suggestions",value=5, \
+                                minimum=0, maximum=100, step=1 , interactive = True)
       with gr.Row() :  
           self.buttons.tokenize = gr.Button(value="Synonymize", variant="primary")
           self.buttons.reset = gr.Button(value="Reset", variant = "secondary")
@@ -566,6 +675,7 @@ class Synonymizer:
             with gr.Row():
               self.inputs.compact_mode = gr.Checkbox(value=False, label="Ignore empty sets", interactive = True)
               self.inputs.definition_mode = gr.Checkbox(value=True, label="Include definition", interactive = True)
+              self.inputs.inspect_mode = gr.Checkbox(value=True, label="Inspect Mode", interactive = True)
               self.inputs.holonym_mode = gr.Checkbox(value=True, label="Less specific (Holonyms)", interactive = True , visible = True) 
               self.inputs.meronym_mode = gr.Checkbox(value=True, label="More specific (Meronyms)", interactive = True , visible = True) 
               self.inputs.hypernym_mode = gr.Checkbox(value=True, label="Less specific (Hypernyms)", interactive = True , visible = True) 
