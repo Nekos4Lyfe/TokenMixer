@@ -29,9 +29,12 @@ class Tools :
 
         #Check if a valid model is loaded
         model = shared.sd_model
-        model.is_sdxl = hasattr(model, 'conditioner')
-        model.is_sd2 = not model.is_sdxl and hasattr(model.cond_stage_model, 'model')
-        model.is_sd1 = not model.is_sdxl and not model.is_sd2
+        if model == None : 
+          return None , None , None
+
+        is_sdxl = hasattr(model, 'conditioner')
+        is_sd2 = not model.is_sdxl and hasattr(model.cond_stage_model, 'model')
+        is_sd1 = not model.is_sdxl and not model.is_sd2
 
         valid_model = model.is_sdxl or model.is_sd2 or model.is_sd1
         if not valid_model:
@@ -46,9 +49,9 @@ class Tools :
         #Fetch the internal_embedding directory
         embedder = model.cond_stage_model.wrapped
         internal_emb_dir = None
-        if model.is_sd1: internal_emb_dir = embedder.transformer.text_model.embeddings
-        elif model.is_sdxl : internal_emb_dir = embedder.roberta.embeddings # SDXL :Check if this works
-        elif model.is_sd2 : internal_emb_dir = embedder.model
+        if is_sd1: internal_emb_dir = embedder.transformer.text_model.embeddings
+        elif is_sdxl : internal_emb_dir = embedder.roberta.embeddings # SDXL :Check if this works
+        elif is_sd2 : internal_emb_dir = embedder.model
         
         internal_embs = internal_emb_dir.token_embedding.wrapped.weight # SDXL : See comment above
 

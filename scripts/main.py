@@ -18,7 +18,7 @@ from lib.modules.token_mixer import TokenMixer
 from lib.modules.token_calculator import TokenCalculator 
 from lib.modules.token_extrapolator import TokenExtrapolator 
 from lib.modules.cross_attention_mixer import CrossAttentionMixer
-
+from lib.modules.synonymizer import Synonymizer
 
 def add_tab():
 
@@ -88,6 +88,8 @@ def add_tab():
                     tokex3 = TokenExtrapolator("Token Extrapolator#3")
                     tokex4 = TokenExtrapolator("Token Extrapolator#4")
                     tokex5 = TokenExtrapolator("Token Extrapolator#5")
+
+                    saur = Synonymizer("Token Synonymizer" , True)
                     gr.Markdown(" ")
 
 
@@ -114,7 +116,7 @@ def add_tab():
               tokm5 = TokenMixer("Embedding generator #5")
               #####
               catm = CrossAttentionMixer("Cross Attention Visualizer" , True)
-
+              
 
 
         with gr.Row() : 
@@ -169,7 +171,7 @@ def add_tab():
     embins = [embin , embin2 , embin3 , embin4 , embin5] # 5x Embedding Inspector modules
     tocals = [tocal , tocal2 , tocal3 , tocal4 , tocal5] # 5x Token Calculator modules
     tokexs = [tokex , tokex2 , tokex3 , tokex4 , tokex5] # 5x Token Extrapolator modules
-    tokm_modules = minits + embins + tocals + tokexs
+    tokm_modules = minits + embins + tocals + tokexs + [saur]
     tokms =  [tokm , tokm2 , tokm3 , tokm4 , tokm5] #5x TokenMixers
 
     #Assign functionality to buttons in the first TokenMixer
