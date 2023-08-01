@@ -570,7 +570,8 @@ class TokenExtrapolator:
     self.emb_name = None
     self.emb_vec = None
 
-    self.no_of_internal_embs = len(self.data.tools.internal_embs) - 1
+
+    self.no_of_internal_embs = self.data.tools.no_of_internal_embs
 
     class Outputs :
       def __init__(self):

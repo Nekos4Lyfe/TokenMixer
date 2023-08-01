@@ -681,9 +681,16 @@ class Data :
       sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
       
     Data.tools = Tools()
-    Data.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')
-    Data.vector = Vector(self.emb_vec.shape[1])
-    Data.negative = Negative(self.emb_vec.shape[1])
-    Data.temporary = Temporary(self.emb_vec.shape[1])
+
+    if self.tools.loaded:
+      Data.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')
+      Data.vector = Vector(self.emb_vec.shape[1])
+      Data.negative = Negative(self.emb_vec.shape[1])
+      Data.temporary = Temporary(self.emb_vec.shape[1])
+    else: 
+      Data.vector = Vector(3)
+      Data.negative = Negative(3)
+      Data.temporary = Temporary(3)
+
 #End of Data class
 dataStorage = Data() #Create data
