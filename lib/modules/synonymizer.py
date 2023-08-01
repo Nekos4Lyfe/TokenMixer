@@ -206,26 +206,48 @@ class Synonymizer:
     ######
     compact_mode      = args[36]   
     inspect_mode      = args[37]
-    no_of_suggestions = args[38]   
+    no_of_suggestions = args[38]
+    everything_mode   = args[39]   
     ######
+
+    params = [ langs , languages , compact_mode , \
+    definition_mode , hypernym_mode , hyponym_mode , \
+    meronym_mode , holonym_mode  , entailment_mode , \
+    antonym_mode , inspect_mode , no_of_suggestions]
 
     #######
     definitions , list_of_synonyms , list_of_hyponyms , \
     list_of_hypernyms , list_of_meronyms , list_of_holonyms , \
     list_of_entailments , list_of_antonyms , list_of_everything , \
-    tokenbox = self.get( 
-    mini_input , langs , languages , compact_mode , \
-    definition_mode , hypernym_mode , hyponym_mode , \
-    meronym_mode , holonym_mode  , entailment_mode , \
-    antonym_mode , inspect_mode , no_of_suggestions)
-    ######
+    tokenbox = self.get(mini_input , *params)
+    ###### 
 
-    if inspect_mode : 
+    if everything_mode:
+        k=0
+        text = ''
+        word = None
+        words = mini_input.strip().split()
+        for everything in list_of_everything :
+          word = words[k]
+          k+=1
+          tokenbox.append(' ')
+          tokenbox.append('##########################################################')
+          tokenbox.append("Found variants of the word '" + word + "' : ")
+          tokenbox.append(' ')
+          text = ''
+          for name in everything :
+            text = text  + name + '     '
+          tokenbox.append(text) 
+        #######  
+
+    if inspect_mode or everything_mode:
+      tokenbox.append(' ') 
       tokenbox.append('##########################################################')
-      tokenbox.append(' ')
+      tokenbox.append(str(no_of_suggestions) + " synonym prompt suggestions: ")
+      tokenbox.append(' ') 
 
     for suggestion in range(no_of_suggestions):
-      text = ''
+      text = " " + str(suggestion) + ".  "
       for everything in list_of_everything:
         text = text + random.choice(everything) + '   '
       tokenbox.append(text)
@@ -268,10 +290,6 @@ class Synonymizer:
     tokenbox.append('Running Token Synonymizer...')
     tokenbox.append(' ')
     tokenbox.append('Languages :  ' + languages)
-    tokenbox.append(' ')
-    tokenbox.append('Number of synonym prompt suggestions :  ' + str(no_of_suggestions))
-    tokenbox.append(' ')
-    tokenbox.append('##########################################################')
 
     for word in mini_input.strip().split() :  
       synonyms  = []
@@ -338,11 +356,11 @@ class Synonymizer:
               everything.append(antonym.name()) 
         ############################
         defcount +=1
-        if not first and inspect_mode :
+        if inspect_mode :
           tokenbox.append(' ')  
           tokenbox.append('##########################################################')
-        else : first = False
-        
+          tokenbox.append('Inspect mode : ')
+
         if definition_mode and inspect_mode :
             tokenbox.append("Interpretation no. " + str(defcount) + " of '" + word + "' :")
             tokenbox.append("definition :   " + "'" + definition + "'")
@@ -576,6 +594,7 @@ class Synonymizer:
       input_list.append(self.inputs.compact_mode)     #36
       input_list.append(self.inputs.inspect_mode)     #37
       input_list.append(self.inputs.suggestions)      #38
+      input_list.append(self.inputs.everything_mode)  #39
       #######
       output_list.append(module.inputs.mix_input) #0
       output_list.append(self.outputs.tokenbox)   #1
@@ -610,6 +629,7 @@ class Synonymizer:
         Inputs.compact_mode = []
         Inputs.inspect_mode = []
         Inputs.suggestions = []
+        Inputs.everything_mode = []
 
     class Lang :
       def __init__(self):
@@ -670,19 +690,20 @@ class Synonymizer:
           self.inputs.sendtomix = gr.Checkbox(value=False, label="Send to input", interactive = True)
           self.inputs.negatives = gr.Checkbox(value=False, label="Send to negatives", interactive = True , visible = True) 
           self.inputs.stack_mode = gr.Checkbox(value=True, label="Stack Mode", interactive = True)
+          self.inputs.inspect_mode = gr.Checkbox(value=False, label="Inspect Mode", interactive = True)
       with gr.Row():
           with gr.Accordion("Output options" ,open=False , visible = True):
             with gr.Row():
-              self.inputs.compact_mode = gr.Checkbox(value=False, label="Ignore empty sets", interactive = True)
+              self.inputs.compact_mode = gr.Checkbox(value=True, label="Ignore empty sets", interactive = True)
               self.inputs.definition_mode = gr.Checkbox(value=True, label="Include definition", interactive = True)
-              self.inputs.inspect_mode = gr.Checkbox(value=True, label="Inspect Mode", interactive = True)
               self.inputs.holonym_mode = gr.Checkbox(value=True, label="Less specific (Holonyms)", interactive = True , visible = True) 
               self.inputs.meronym_mode = gr.Checkbox(value=True, label="More specific (Meronyms)", interactive = True , visible = True) 
               self.inputs.hypernym_mode = gr.Checkbox(value=True, label="Less specific (Hypernyms)", interactive = True , visible = True) 
               self.inputs.hyponym_mode = gr.Checkbox(value=True, label="More specific (Hyponyms)", interactive = True , visible = True) 
               self.inputs.entailment_mode = gr.Checkbox(value=True, label="More specific (Entailments)", interactive = True , visible = True)
-              self.inputs.antonym_mode = gr.Checkbox(value=True, label="Opposites (Antonyms)", interactive = True , visible = True)
-          
+              self.inputs.antonym_mode = gr.Checkbox(value=False, label="Opposites (Antonyms)", interactive = True , visible = True)
+              self.inputs.everything_mode = gr.Checkbox(value=True, label="Show results", interactive = True , visible = True)
+  
             with gr.Row():
               with gr.Accordion("Include language" ,open=False , visible = True):
                 with gr.Row(): 
@@ -729,3 +750,23 @@ class Synonymizer:
 
     self.setupIO_with(self)
 ## End of class MiniTokenizer--------------------------------------------------#
+
+   # tmp = [] #Don't care about printing 2nd pass stuff
+   # new_synonyms = []
+   # new_hyponyms = []
+   # new_hypernyms = []
+   # new_meronyms = []
+   # new_holonyms = []
+   # new_entailments = []
+   # new_antonyms  = []
+   # new_everything = []
+    ######
+   # new_list_of_synonyms = []
+   # new_list_of_hyponyms = []
+   # new_list_of_hypernyms = []
+   # new_list_of_meronyms = []
+   # new_list_of_holonyms = []
+   # new_list_of_entailments = []
+   # new_list_of_antonyms = []
+   # new_list_of_everything = []
+    ######

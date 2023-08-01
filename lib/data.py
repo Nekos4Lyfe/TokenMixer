@@ -592,8 +592,8 @@ class Data :
       if loaded_emb == None:
         for neg_index in self.tools.loaded_embs.keys():
             if text == neg_index.lower():
-                loaded_emb = self.tools.loaded_embs.get(neg_index, None)
-                break
+              loaded_emb = self.tools.loaded_embs.get(neg_index, None)
+              break
 
       if loaded_emb!=None:
         emb_name = loaded_emb.name
@@ -613,7 +613,7 @@ class Data :
       if val!=None: emb_id = val
       else:
         emb_ids = self.text_to_emb_ids(text)
-        if len(emb_ids)==0: return None, None, None, None
+        if emb_ids == None : return None, None, None, None
         emb_id = emb_ids[0] # emb_id is int for internal embeddings
 
       emb_name = self.emb_id_to_name(emb_id)
