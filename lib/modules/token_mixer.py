@@ -508,7 +508,7 @@ class TokenMixer :
                                 label="Sample randomization %", default=50 , interactive = True)
 
                                 self.inputs.sliders.gain = gr.Slider(minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
-                                self.inputs.sliders.iterations = gr.Slider(minimum=0, maximum=6000, step=1, label="Similarity samples max", default=1000 , interactive = True)
+                                self.inputs.sliders.iterations = gr.Slider(value = 200 , minimum=0, maximum=3000, step=1, label="Similarity samples max", default=200 , interactive = True)
                                
                                 
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_3 : 
@@ -570,7 +570,7 @@ class TokenMixer :
           self.inputs.sliders.length.value = 80
           self.inputs.sliders.randomize.value = 0
           self.inputs.sliders.interpolate.value = 50
-          self.inputs.sliders.iterations.value = 2000
+          self.inputs.sliders.iterations.value = 500
 
 
           self.buttons.save.style(size="lg")

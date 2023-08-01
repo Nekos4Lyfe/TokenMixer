@@ -124,7 +124,6 @@ class MiniTokenizer:
         emb_id = 0
         emb_name = "random_" + str(index)
 
-        assert emb_vec != None , "emb_vec is NoneType"
         self.data.place(index , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  emb_id ,
@@ -226,12 +225,15 @@ class MiniTokenizer:
           ID_index = 0
         
 
-        _ID = found_IDs[ID_index]
+        _ID = found_IDs[ID_index] 
+        
         emb_name = self.data.emb_id_to_name(_ID)
         emb_vec = self.data.emb_id_to_vec(_ID)
 
         assert emb_vec != None , "emb_vec is NoneType"
-        self.data.place(index , 
+
+        if not _ID ==318:
+          self.data.place(index , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  _ID ,
             name = emb_name ,
@@ -244,7 +246,7 @@ class MiniTokenizer:
             found_IDs = None
             word_index -=1 
      
-        if (tokenbox != '') : tokenbox = tokenbox + ' , '
+        if (tokenbox != '') and not _ID ==318 : tokenbox = tokenbox + ' , '
         tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
     ####### End loop
         
