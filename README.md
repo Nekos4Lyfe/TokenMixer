@@ -24,39 +24,38 @@ All of which are integrated into a single hub. Tokens can be transferred freely 
 
 Feature summary:
 
---Embedding Generator
-*Creating exact blends between CLIP tokens , embeddings and other kinds of latent vectors
+Embedding Generator
+- Creating exact blends between CLIP tokens , embeddings and other kinds of latent vectors
 
-*Creating completely new tokens using semi-random sampling of a token or embedding vector
+- Creating completely new tokens using semi-random sampling of a token or embedding vector
 
-*Creating similar tokens/vectors of an existing vector/token
+- Creating similar tokens/vectors of an existing vector/token
+  
+- Merging multiple tokens/vectors into a vector with the greatest similarity to all inputs
 
-*Merging multiple tokens/vectors into a vector with the greatest similarity to all inputs
+- Assigning token negatives that must be perpendicular to the generated token
+  
+- Concactinate tokens or embeddings into new embeddings
 
-*Assigning token negatives that must be perpendicular to the generated token
+Minitokenizer
+- Transform any prompt to tokens
 
-*Concactinate tokens or embeddings into new embeddings
+- Split embeddings into individual vectors
 
---Minitokenizer
-*Transform any prompt to tokens
+- Send output to the Embedding generator
 
-*Split embeddings into individual vectors
+Token Calculator
+- Perform numerical addition or subraction of tokens
 
-*Send output to the Embedding generator
+Embedding inspector
+- Find all similar tokens to embedding
 
---Token Calculator
-*Perform numerical addition or subraction of tokens
-
-*Send output to the Embedding generator
-
---Embedding inspector
-*Find all similar tokens to embedding
-
+Token Synonymizer
+- Find all similar words in 20 languages using the NLTK Toolkit
 
 ![TokenMixer3](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/48b1b3e7-d2f3-40c4-81c6-d282326df130)
 
-An A1111 extension for interpolating tokens into embeddings. 
-If you are reading then you are seeing an early version of this extension. 
+
 
 
 ![Tokenmixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/acd006f2-3e5a-4f2e-af1e-3f6d7e834385)
