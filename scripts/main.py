@@ -40,7 +40,6 @@ def add_tab():
   no_of_tocal = gr.Slider(value = 1 , minimum=0, maximum=5, step=1, label="Number of Token Calculators", default=1 , interactive = True)
   no_of_tokex = gr.Slider(value = 1 , minimum=0, maximum=5, step=1, label="Number of Token Extrapolators", default=1 , interactive = True)
   no_of_tokm = gr.Slider(value = 1 , minimum=0, maximum=5, step=1, label="Number of Token Mixers", default=1 , interactive = True)
-  no_of_synz = gr.Slider(value = 1 , minimum=0, maximum=5, step=1, label="Number of Synonymizers", default=1 , interactive = True)
 
   left_column = gr.Column(scale=1)
   right_column = gr.Column(scale=2)
@@ -62,10 +61,9 @@ def add_tab():
             gr.Textbox(label="", lines=2, placeholder="Rearrange embeddings here", interactive = True)
         with gr.Row(): 
             with left_column.render() : #Left Column 
+                    ###########
                     gr.Markdown(" ")
                     gr.Markdown("### Modules :")
-  
-                    #####
                     minit = MiniTokenizer("MiniTokenizer" , True)
                     minit2 = MiniTokenizer("MiniTokenizer #2")
                     minit3 = MiniTokenizer("MiniTokenizer #3")
@@ -90,13 +88,8 @@ def add_tab():
                     tokex4 = TokenExtrapolator("Token Extrapolator#4")
                     tokex5 = TokenExtrapolator("Token Extrapolator#5")
 
-                    synz = Synonymizer("Token Synonymizer" , True)
-                    synz2 = Synonymizer("Token Synonymizer #2")
-                    synz3 = Synonymizer("Token Synonymizer #3")
-                    synz4 = Synonymizer("Token Synonymizer #4")
-                    synz5 = Synonymizer("Token Synonymizer #5")
+                    saur = Synonymizer("Token Synonymizer" , True)
                     gr.Markdown(" ")
-
 
                     with gr.Accordion('Remove/add modules',open=False):
                       no_of_minit.render()
@@ -104,14 +97,14 @@ def add_tab():
                       no_of_tocal.render()
                       no_of_tokex.render()
                       no_of_tokm.render()
-                      no_of_synz.render()
                       with gr.Row():
                         show_tutorial = gr.Checkbox(value=False, label="Show tutorials", interactive = True)
                         show_output_logs = gr.Checkbox(value=True, label="Show output logs", interactive = True)
                         show_rand_settings = gr.Checkbox(value=True, label="Show random '_' token settings ", interactive = True)
                       module_update_button.render()  
                     with gr.Accordion('How do I use this extension?',open=False):
-                        gr.Markdown(tutorial_string)  
+                        gr.Markdown(tutorial_string) 
+                    ######### 
                         
 
             with right_column.render() : #Right Column
@@ -147,17 +140,15 @@ def add_tab():
     tocal_list = tocal.show + tocal2.show + tocal3.show + tocal4.show + tocal5.show
     tokex_list = tokex.show + tokex2.show + tokex3.show + tokex4.show + tokex5.show
     tokm_list = tokm.show + tokm2.show + tokm3.show + tokm4.show + tokm5.show
-    synz_list  = synz.show  + synz2.show  + synz3.show  + synz4.show  + synz5.show
-    module_output_list = minit_list + embin_list + tocal_list + tokex_list + tokm_list + synz_list
-    module_input_list = [no_of_minit , no_of_embin , no_of_tocal , no_of_tokex, no_of_tokm , no_of_synz]
+    module_output_list = minit_list + embin_list + tocal_list + tokex_list + tokm_list
+    module_input_list = [no_of_minit , no_of_embin , no_of_tocal , no_of_tokex, no_of_tokm]
     #######
     tutorial_output_list = \
     minit.tutorials + minit2.tutorials + minit3.tutorials + minit4.tutorials + minit5.tutorials + \
     embin.tutorials + embin2.tutorials + embin3.tutorials + embin4.tutorials + embin5.tutorials + \
     tocal.tutorials + tocal2.tutorials + tocal3.tutorials + tocal4.tutorials + tocal5.tutorials + \
     tokex.tutorials + tokex2.tutorials + tokex3.tutorials + tokex4.tutorials + tokex5.tutorials + \
-    tokm.tutorials + tokm2.tutorials + tokm3.tutorials + tokm4.tutorials + tokm5.tutorials + \
-    synz.tutorials + synz2.tutorials + synz3.tutorials + synz4.tutorials + synz5.tutorials
+    tokm.tutorials + tokm2.tutorials + tokm3.tutorials + tokm4.tutorials + tokm5.tutorials
     tutorial_input_list = [show_tutorial]
     #######
     minit_randset_list = \
@@ -179,18 +170,15 @@ def add_tab():
     embins = [embin , embin2 , embin3 , embin4 , embin5] # 5x Embedding Inspector modules
     tocals = [tocal , tocal2 , tocal3 , tocal4 , tocal5] # 5x Token Calculator modules
     tokexs = [tokex , tokex2 , tokex3 , tokex4 , tokex5] # 5x Token Extrapolator modules
-    synzs =  [synz , synz2 , synz3 , synz4 , synz5] # 5x Synonymizers
-    tokm_modules = minits + embins + tocals + tokexs + synzs
-    ######
+    tokm_modules = minits + embins + tocals + tokexs + [saur]
     tokms =  [tokm , tokm2 , tokm3 , tokm4 , tokm5] #5x TokenMixers
-    
 
     #Assign functionality to buttons in the first TokenMixer
     #and the rest of the modules
     for _module in tokm_modules : 
       _module.setupIO_with(tokm)
 
-    def Show (no_of_minit , no_of_embin , no_of_tocal , no_of_tokex , no_of_tokm , no_of_synz ,  
+    def Show (no_of_minit , no_of_embin , no_of_tocal , no_of_tokex , no_of_tokm , 
     show_tutorial , show_rand_settings , show_output_logs) :
 
       #Assign functionality to buttons in the rest of
@@ -231,12 +219,6 @@ def add_tab():
               tokm_list[2]  : gr.Accordion.update(visible=no_of_tokm>2) ,
               tokm_list[3]  : gr.Accordion.update(visible=no_of_tokm>3) ,
               tokm_list[4]  : gr.Accordion.update(visible=no_of_tokm>4) ,
-
-              synz_list[0]  : gr.Accordion.update(visible=no_of_synz>0) ,
-              synz_list[1]  : gr.Accordion.update(visible=no_of_synz>1) ,
-              synz_list[2]  : gr.Accordion.update(visible=no_of_synz>2) ,
-              synz_list[3]  : gr.Accordion.update(visible=no_of_synz>3) ,
-              synz_list[4]  : gr.Accordion.update(visible=no_of_synz>4) ,
 
               tutorial_output_list[0]   : gr.Accordion.update(visible=show_tutorial) ,
               tutorial_output_list[1]   : gr.Accordion.update(visible=show_tutorial) ,
@@ -307,12 +289,6 @@ def add_tab():
               tutorial_output_list[62]  : gr.Accordion.update(visible=show_tutorial) ,
               tutorial_output_list[63]  : gr.Accordion.update(visible=show_tutorial) ,
               tutorial_output_list[64]  : gr.Accordion.update(visible=show_tutorial) ,
-
-              tutorial_output_list[65]  : gr.Accordion.update(visible=show_tutorial) ,
-              tutorial_output_list[66]  : gr.Accordion.update(visible=show_tutorial) ,
-              tutorial_output_list[67]  : gr.Accordion.update(visible=show_tutorial) ,
-              tutorial_output_list[68]  : gr.Accordion.update(visible=show_tutorial) ,
-              tutorial_output_list[69]  : gr.Accordion.update(visible=show_tutorial) ,
 
               minit_randset_list[0]  : gr.Accordion.update(visible=show_rand_settings) ,
               minit_randset_list[1]  : gr.Accordion.update(visible=show_rand_settings) ,

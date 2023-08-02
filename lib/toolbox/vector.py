@@ -84,6 +84,48 @@ class Vector :
         self.data[index2] = self.tmp
   ####### End of shuffle function
 
+  def sample(self) :
+
+    log = []
+    log.append("Sample Mode:")
+
+    distance = torch.nn.PairwiseDistance(p=2)
+    cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
+    r = self.randomization/100
+    rand = None 
+    prev = None
+    current = None
+    origin = self.origin 
+    tokenCount = 0
+    tmp = None
+    for index in range(MAX_NUM_MIX):
+      if self.isEmpty.get(index): continue
+      name = self.name.get(index)
+      rand = 2*torch.rand(self.size) - torch.ones(self.size)
+      rdist = distance(rand , origin).numpy()[0]
+      #########
+      prev = self.data[index]
+      prev_dist = distance(prev , origin).numpy()[0]
+      current = prev*(1 - r)*(1/prev_dist) + rand * r * (1/rdist)
+      #########
+      curr_dist = distance(current , origin).numpy()[0]
+      self.data[index] = (current * (prev_dist/curr_dist)).cpu()
+      ########
+      tmp = self.data[index]
+      similarity = 100*cos(tmp, prev).numpy()[0]
+      if similarity < 0 : similarity = -similarity
+      dist = distance(tmp , origin).numpy()[0]
+      tokenCount +=1
+      similarity = round(similarity ,1)
+      dist = round(dist ,2)
+      log.append("Token '" + name + "' was replaced by new vector with " + \
+       "length " + str(dist)  + " and similarity " + str(similarity) + " %")
+      log.append('New embedding has' + str(tokenCount) + " tokens")
+      log.append('-------------------------------------------')
+    #########
+    return '\n'.join(log)
+
+
 
   def __init__(self , size):
     Vector.size = size

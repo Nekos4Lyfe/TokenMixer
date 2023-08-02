@@ -619,6 +619,42 @@ class Data :
       emb_name = self.emb_id_to_name(emb_id)
       emb_vec = self.tools.internal_embs[emb_id].unsqueeze(0)
       return emb_name, emb_id, emb_vec, None # return embedding name, ID, vector
+
+  def shuffle(self , to_negative = None , to_mixer = None , to_temporary = None):
+    if to_negative == None and to_mixer == None and to_temporary == None:
+      self.data.vector.shuffle()
+    else:
+      if to_negative != None :
+        if to_negative : self.data.negative.shuffle()
+      #####
+      if to_mixer != None : 
+        if to_mixer : self.data.vector.shuffle()
+      #####
+      if to_temporary != None : 
+        if to_temporary : self.data.temporary.shuffle()
+  ######## End of shuffle function
+
+  def sample(self , to_negative = None , to_mixer = None , to_temporary = None):
+
+    message = ''
+
+    if to_negative == None and to_mixer == None and to_temporary == None:
+      message = self.vector.sample()
+    else:
+      if to_negative != None :
+        if to_negative  : pass #Not implemented
+      #####
+      if to_mixer != None : 
+        if to_mixer : message = self.vector.sample()
+      #####
+      if to_temporary != None : 
+        if to_temporary : pass #Not implemented
+    #####
+
+    return message
+
+
+
     
   
   

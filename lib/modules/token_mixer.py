@@ -39,6 +39,13 @@ class TokenMixer :
       tmp+=1
       log.append('-------------------------------------------')
 
+    if (self.local.sample_mode):
+      log.append(str(tmp) + '. ' + "Sample Mode selected : Input token 'X' will be " + \
+      "replaced with vector 'X*(1-r) + R*(r)' , where 'R' is a random vector and 'r' " + \
+      "is the randomization % value")
+      tmp+=1
+      log.append('-------------------------------------------')
+
     if(self.local.similar_mode):
       log.append(str(tmp) + '. ' + 'Similar mode selected: Input tokens will be replaced ' + \
       'by similar tokens prior to embedding generation')
@@ -60,7 +67,11 @@ class TokenMixer :
       log.append('-------------------------------------------')
     
 #BEGIN PROCESSING THE VECTORS
-    if (self.local.order_randomize_mode): self.data.vector.shuffle()
+    message = ''
+    if (self.local.order_randomize_mode): self.data.shuffle()
+    if (self.local.sample_mode): 
+      message = self.data.sample()
+      log.append(message)
     tot_vec = None
     if(self.local.interpolate_mode):
       tot_vec , message = self.data.merge_if_similar(self.local.similar_mode)
@@ -144,6 +155,7 @@ class TokenMixer :
     mix_input = args[18]
     order_randomize_mode = args[19]
     neg_input = args[20]
+    sample_mode = args[21]
 
     assert not self.data == None , "Warning: data class is null"
 
@@ -159,6 +171,7 @@ class TokenMixer :
     self.local.similar_mode = copy.copy(similar_mode)
     self.local.five_sets_mode = copy.copy(five_sets_mode)
     self.local.order_randomize_mode = copy.copy(order_randomize_mode)
+    self.local.sample_mode = copy.copy(sample_mode)
 
     #Set the strength of the token negatives from input
     self.data.negative.strength = copy.copy(negative_strength)
@@ -300,6 +313,7 @@ class TokenMixer :
       input_list.append(self.inputs.mix_input)                      #18
       input_list.append(self.inputs.settings.order_randomize_mode)  #19
       input_list.append(self.inputs.negbox)                         #20
+      input_list.append(self.inputs.settings.sample_mode)           #21
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -349,6 +363,7 @@ class TokenMixer :
                 Settings.allow_negative_gain = []
                 Settings.autoselect = []
                 Settings.order_randomize_mode = []
+                Settings.sample_mode = []
 
           class Local :
             #Class to store local variables
@@ -362,6 +377,7 @@ class TokenMixer :
               Local.save_name = ''
               Local.sub_name = ''
               Local.order_randomize_mode = False
+              Local.sample_mode = False
 
 
           class Sliders :
@@ -423,6 +439,7 @@ class TokenMixer :
         
                                 with gr.Accordion('TokenMixer modes of operation',open=True):
                                   self.inputs.settings.order_randomize_mode = gr.Checkbox(value=False,label="Randomize token order ", interactive = True)
+                                  self.inputs.settings.sample_mode = gr.Checkbox(value=False,label="Sample Mode  : Replace input token with sample vector", interactive = True)
                                   self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Similar Mode  : Replace input tokens with similar tokens", interactive = True)
                                   self.inputs.settings.merge_mode = gr.Checkbox(value=False,label="Merge Mode : Find single token with greatest similarity to all input tokens ", interactive = True)
                                   self.inputs.settings.interpolate_mode = gr.Checkbox(value=False,label="Interpolate Mode  : Merge tokens with similarity (Work in progress)", interactive = True)       
