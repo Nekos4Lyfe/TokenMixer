@@ -517,10 +517,11 @@ class TokenExtrapolator:
     #Tell the buttons in this class what to do when 
     #pressed by the user
 
+    cond = self.data.tools.loaded
     input_list = []
     output_list = []
 
-    if (module.ID == "Extrapolator") :
+    if (module.ID == "Extrapolator") and cond:
       #input_list.append(self.inputs.first)
       #input_list.append(self.outputs.tokenbox)
       #output_list.append(self.inputs.first)
@@ -529,7 +530,7 @@ class TokenExtrapolator:
       return 1
 
 
-    if (module.ID == "TokenMixer") :
+    if (module.ID == "TokenMixer") and cond:
       input_list.append(self.inputs.first)                #0
       input_list.append(self.inputs.first_padding)        #1
       input_list.append(self.inputs.last)                 #2
@@ -768,5 +769,5 @@ class TokenExtrapolator:
     self.buttons.extrapolate.style(size="sm")
     self.buttons.reset.style(size="sm")
 
-    self.setupIO_with(self)
+    if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class Extrapolator----------------------

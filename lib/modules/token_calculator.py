@@ -228,17 +228,18 @@ class TokenCalculator:
     #Tell the buttons in this class what to do when 
     #pressed by the user
 
+    cond = self.data.tools.loaded
     input_list = []
     output_list = []
 
-    if (module.ID == "TokenCalculator") :
+    if (module.ID == "TokenCalculator") and cond:
       output_list.append(self.inputs.calc_input)
       output_list.append(self.outputs.sumbox)
       self.buttons.reset.click(fn = self.Reset, inputs = input_list , outputs = output_list)
       return 1
 
 
-    if (module.ID == "TokenMixer") :
+    if (module.ID == "TokenMixer") and cond:
       input_list.append(self.inputs.calc_input)  #0
       input_list.append(self.inputs.sendtomix)   #1
       input_list.append(self.inputs.id_mode)     #2
@@ -353,5 +354,5 @@ class TokenCalculator:
     self.inputs.randlen.value = 0.35
     self.buttons.calculate.style(size="sm")
     self.buttons.reset.style(size="sm")
-    self.setupIO_with(self)
+    if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class TokenCalculator--------------------------------------------------#

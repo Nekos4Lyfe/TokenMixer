@@ -104,13 +104,15 @@ class CrossAttentionMixer:
     #Tell the buttons in this class what to do when 
     #pressed by the user
 
+    cond = self.data.tools.loaded
+
     input_list = []
     output_list = []
 
-    if (module.ID == "MiniTokenizer") :
+    if (module.ID == "MiniTokenizer") and cond:
       return 1
 
-    if (module.ID == "CrossAttentionMixer") :
+    if (module.ID == "CrossAttentionMixer") and cond :
       self.vxa_generate.click(
             fn=self.generate_vxa,
             inputs=[self.input_image, self.vxa_prompt, \
@@ -164,11 +166,14 @@ class CrossAttentionMixer:
                 self.vxa_prompt = gr.Textbox(label="Prompt", lines=2, placeholder="Prompt to be visualized")
                 self.vxa_token_indices = gr.Textbox(value="", label="Indices of tokens to be visualized", lines=2, placeholder="Example: 1, 3 means the sum of the first and the third tokens. 1 is suggected for a single token. Leave blank to visualize all tokens.")
                 self.vxa_time_embedding = gr.Textbox(value="1.0", label="Time embedding")
-                for n, m in shared.sd_model.named_modules():
+                ##########
+                if self.data.tools.loaded : 
+                  for n, m in shared.sd_model.named_modules():
                     if(isinstance(m, CrossAttention)):
                         self.hidden_layers[n] = m
-                self.hidden_layer_names = list(filter(lambda s : "attn2" in s, self.hidden_layers.keys())) 
-                self.hidden_layer_select = gr.Dropdown(value=self.default_hidden_layer_name, label="Cross-attention layer", choices=self.hidden_layer_names)
+                  self.hidden_layer_names = list(filter(lambda s : "attn2" in s, self.hidden_layers.keys())) 
+                  self.hidden_layer_select = gr.Dropdown(value=self.default_hidden_layer_name, label="Cross-attention layer", choices=self.hidden_layer_names)
+                ##########
                 self.vxa_output_mode = gr.Dropdown(value="masked", label="Output mode", choices=["masked", "grey"])
                 self.vxa_generate = gr.Button(value="Visualize Cross-Attention", elem_id="vxa_gen_btn")
             with gr.Column():
@@ -194,5 +199,5 @@ class CrossAttentionMixer:
     self.tutorials = [tutorial_0]
     self.show = [show]
 
-    self.setupIO_with(self)
+    if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class MiniTokenizer--------------------------------------------------#

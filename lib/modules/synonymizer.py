@@ -249,6 +249,7 @@ class Synonymizer:
     for suggestion in range(no_of_suggestions):
       text = " " + str(suggestion) + ".  "
       for everything in list_of_everything:
+        if everything == [] or everything == None : continue
         text = text + random.choice(everything) + '   '
       tokenbox.append(text)
       tokenbox.append('  ')
@@ -543,16 +544,17 @@ class Synonymizer:
     #Tell the buttons in this class what to do when 
     #pressed by the user
 
+    cond = self.data.tools.loaded
     input_list = []
     output_list = []
 
-    if (module.ID == "Synonymizer") :
+    if (module.ID == "Synonymizer") and cond:
       output_list.append(self.inputs.mini_input)
       output_list.append(self.outputs.tokenbox)
       self.buttons.reset.click(fn = self.Reset, inputs = input_list , outputs = output_list)
 
 
-    if (module.ID == "TokenMixer") :
+    if (module.ID == "TokenMixer") and cond:
       input_list.append(self.inputs.mini_input)       #0
       input_list.append(self.inputs.sendtomix)        #1
       input_list.append(self.inputs.definition_mode)  #2
@@ -748,7 +750,7 @@ class Synonymizer:
     self.buttons.tokenize.style(size="sm")
     self.buttons.reset.style(size="sm")
 
-    self.setupIO_with(self)
+    if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class MiniTokenizer--------------------------------------------------#
 
    # tmp = [] #Don't care about printing 2nd pass stuff

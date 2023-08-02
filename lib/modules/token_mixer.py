@@ -271,14 +271,14 @@ class TokenMixer :
   def setupIO_with (self, module):
     #Tell the buttons in this class what to do when 
     #pressed by the user
-
+    cond = self.data.tools.loaded
     input_list = []
     output_list = []
 
-    if (module.ID == "MiniTokenizer") :
+    if (module.ID == "MiniTokenizer") and cond:
       module.setupIO_with(self)
 
-    if (module.ID == "TokenMixer") :
+    if (module.ID == "TokenMixer") and cond:
       input_list.append(self.inputs.save_name)                      #0
       input_list.append(self.inputs.settings.enable_overwrite)      #1
       input_list.append(self.inputs.settings.merge_mode)            #2
@@ -575,6 +575,6 @@ class TokenMixer :
 
           self.buttons.save.style(size="lg")
           self.buttons.reset.style(size="lg")
-          self.setupIO_with(self)
+          if self.data.tools.loaded : self.setupIO_with(self)
           
 ## end  of class TokenMixer 
