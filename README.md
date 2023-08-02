@@ -65,6 +65,7 @@ Token Extrapolator
 
 Seecoder (Not yet implemented)
 - Convert any image to latent vectors for use in the TokenMixer
+- https://github.com/SHI-Labs/Prompt-Free-Diffusion
 
 Embedding Visualizer
 - See which areas of a given input image is targeted by a given embeddings
