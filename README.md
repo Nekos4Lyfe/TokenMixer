@@ -18,6 +18,9 @@ The TokenMixer consists of 7 modules :
  
 All of which are integrated into a single hub. Tokens can be transferred freely between the modules, allowing the artist to freely experiment with various vectors to find the exact type of token configuration they need for the current project. 
 
+![Uploading Sample_mode.png…]()
+
+
 Feature summary:
 
 --Embedding Generator
