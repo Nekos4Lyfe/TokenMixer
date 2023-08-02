@@ -53,9 +53,7 @@ Embedding inspector
 Token Synonymizer
 - Find all similar words in 20 languages using the NLTK Toolkit
 
-![TokenMixer3](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/48b1b3e7-d2f3-40c4-81c6-d282326df130)
-
-
+This ReadMe file is a work in progress
 
 
 ![Tokenmixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/acd006f2-3e5a-4f2e-af1e-3f6d7e834385)
