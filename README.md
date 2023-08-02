@@ -53,6 +53,8 @@ Embedding inspector
 Token Synonymizer
 - Find all similar words in 20 languages using the NLTK Toolkit
 
+![Synonymizer_2 0](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/5e7d9c1d-4189-4a10-af99-31780299b9ba)
+
 This ReadMe file is a work in progress
 
 
