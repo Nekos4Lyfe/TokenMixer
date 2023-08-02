@@ -36,22 +36,40 @@ Embedding Generator
 - Assigning token negatives that must be perpendicular to the generated token
   
 - Concactinate tokens or embeddings into new embeddings
+  
+- Create batches of different embeddings from a given input
 
 Minitokenizer
-- Transform any prompt to tokens
-
+- Convert any prompt to tokens
 - Split embeddings into individual vectors
-
 - Send output to the Embedding generator
 
 Token Calculator
 - Perform numerical addition or subraction of tokens
+- Remove or add traits to a given token, i.e
+  'King' - 'Man' + 'Woman' to get a 'Queen' token
 
 Embedding inspector
-- Find all similar tokens to embedding
+- Find all similar tokens to a given token or embedding vector
+- Find all similar IDs to a given token or embedding vector
+- Credit to: https://github.com/tkalayci71/embedding-inspector
 
 Token Synonymizer
 - Find all similar words in 20 languages using the NLTK Toolkit
+- Find Holonyms, Hypernyms , Meronyms , synonyms and Entailments to a given word
+
+Token Extrapolator
+- Expand a single or a pair of tokens into multiple tokens
+- Navigate the ID list in the CLIP tokenizer
+- Randomly sample the ID list in the CLIP tokenizer
+
+Seecoder (Not yet implemented)
+- Convert any image to latent vectors for use in the TokenMixer
+
+Embedding Visualizer
+- See which areas of a given input image is targeted by a given embeddings
+- Will have imporvements in the future
+- Credit : https://github.com/benkyoujouzu/stable-diffusion-webui-visualize-cross-attention-extension
 
 ![Synonymizer_2 0](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/5e7d9c1d-4189-4a10-af99-31780299b9ba)
 
