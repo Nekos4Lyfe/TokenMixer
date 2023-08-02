@@ -100,7 +100,6 @@ class Vector :
     tmp = None
     for index in range(MAX_NUM_MIX):
       if self.isEmpty.get(index): continue
-      name = self.name.get(index)
       rand = 2*torch.rand(self.size) - torch.ones(self.size)
       rdist = distance(rand , origin).numpy()[0]
       #########
@@ -118,9 +117,9 @@ class Vector :
       tokenCount +=1
       similarity = round(similarity ,1)
       dist = round(dist ,2)
-      log.append("Token '" + name + "' was replaced by new vector with " + \
+      log.append("Token '" + self.name.get(index) + "' was replaced by new vector with " + \
        "length " + str(dist)  + " and similarity " + str(similarity) + " %")
-      log.append('New embedding has' + str(tokenCount) + " tokens")
+      log.append('New embedding has ' + str(tokenCount) + " tokens")
       log.append('-------------------------------------------')
     #########
     return '\n'.join(log)

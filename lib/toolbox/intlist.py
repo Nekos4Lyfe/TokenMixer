@@ -39,7 +39,7 @@ class IntList :
           tmp = math.floor(integer)
           self.validate(tmp)
           self.check(index)
-          self.data[index] = tmp
+          self.data[index] = copy.copy(tmp)
 
       def clear(self , index):
         self.validate(self.default)
@@ -79,7 +79,7 @@ class IntList2 :
           tmp = math.floor(integer)
           self.validate(tmp)
           self.check(index)
-          self.data[index] = tmp
+          self.data[index] = copy.copy(tmp)
 
       def clear(self , index):
         self.validate(self.default)
@@ -119,7 +119,7 @@ class IntList3 :
           tmp = math.floor(integer)
           self.validate(tmp)
           self.check(index)
-          self.data[index] = tmp
+          self.data[index] = copy.copy(tmp)
 
       def clear(self , index):
         self.validate(self.default)

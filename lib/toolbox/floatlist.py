@@ -38,7 +38,7 @@ class FloatList :
       def place(self , dec , index) :
           self.validate(dec)
           self.check(index)
-          self.data[index] = dec
+          self.data[index] = copy.copy(dec)
 
       def clear(self , index):
         self.validate(self.default)
@@ -71,7 +71,7 @@ class FloatList2 :
       def place(self , dec , index) :
           self.validate(dec)
           self.check(index)
-          self.data[index] = dec
+          self.data[index] = copy.copy(dec)
 
       def clear(self , index):
         self.validate(self.default)
@@ -104,7 +104,7 @@ class FloatList3 :
       def place(self , dec , index) :
           self.validate(dec)
           self.check(index)
-          self.data[index] = dec
+          self.data[index] = copy.copy(dec)
 
       def clear(self , index):
         self.validate(self.default)

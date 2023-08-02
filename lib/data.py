@@ -682,6 +682,37 @@ class Data :
         if to_temporary : _place_values_in(self.temporary)
   #### End of place function
 
+  def memorize(self) : 
+    #######
+    for index in range(MAX_NUM_MIX):
+      if self.vector.isEmpty.get(index) : continue
+      self.vec = self.vector.get(index).cpu()
+      self.ID = copy.copy(self.vector.ID.get(index))
+      self.name = copy.copy(self.vector.name.get(index))
+      self.weight = copy.copy(self.vector.weight.get(index))
+      ########
+      self.temporary.clear(index)
+      self.temporary.place(self.vec , index)
+      self.temporary.ID.place(self.ID , index)
+      self.temporary.name.place(self.name , index)
+      self.temporary.weight.place(self.weight , index)
+  ###### End of memorize()
+
+  def recall(self) :
+    for index in range(MAX_NUM_MIX):
+      if self.temporary.isEmpty.get(index) : continue
+      self.vec = self.temporary.get(index).cpu()
+      self.ID = copy.copy(self.temporary.ID.get(index))
+      self.name = copy.copy(self.temporary.name.get(index))
+      self.weight = copy.copy(self.temporary.weight.get(index))
+      #######
+      self.vector.clear(index)
+      self.vector.place(self.vec , index)
+      self.vector.ID.place(self.ID , index)
+      self.vector.name.place(self.name, index)
+      self.vector.weight.place(self.weight , index)
+  ###### End of recall()
+
 
   def get(self , index):
     vector = self.vector.get(index)
@@ -718,11 +749,18 @@ class Data :
       
     Data.tools = Tools()
 
+    Data.vec= None
+    Data.ID = None
+    Data.name = None
+    Data.weight = None 
+
     if self.tools.loaded:
       Data.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')
       Data.vector = Vector(self.emb_vec.shape[1])
       Data.negative = Negative(self.emb_vec.shape[1])
       Data.temporary = Temporary(self.emb_vec.shape[1])
+      self.memorize()
+      self.recall()
     else: 
       Data.vector = Vector(3)
       Data.negative = Negative(3)

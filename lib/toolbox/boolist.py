@@ -40,7 +40,7 @@ class BooList :
       def place(self , cond , index) :
           self.validate(cond)
           self.check(index)
-          self.data[index] = cond
+          self.data[index] = copy.copy(cond)
 
       def clear(self , index):
         self.validate(self.default)
@@ -80,7 +80,7 @@ class BooList2 :
       def place(self , cond , index) :
           self.validate(cond)
           self.check(index)
-          self.data[index] = cond
+          self.data[index] = copy.copy(cond)
 
       def clear(self , index):
         self.validate(self.default)
@@ -120,7 +120,7 @@ class BooList3 :
       def place(self , cond , index) :
           self.validate(cond)
           self.check(index)
-          self.data[index] = cond
+          self.data[index] = copy.copy(cond)
 
       def clear(self , index):
         self.validate(self.default)

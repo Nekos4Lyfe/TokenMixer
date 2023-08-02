@@ -41,7 +41,7 @@ class StringList :
           self.validate(string)
           self.check(index)
           if string == None: self.data[index] = None
-          else: self.data[index] = string
+          else: self.data[index] = copy.copy(string)
 
       def clear(self , index):
         assert self.default == None , "Default is not NoneType!"
@@ -76,7 +76,7 @@ class StringList2 :
           self.validate(string)
           self.check(index)
           if string == None: self.data[index] = None
-          else: self.data[index] = string
+          else: self.data[index] = copy.copy(string)
 
       def clear(self , index):
         assert self.default == None , "Default is not NoneType!"
@@ -111,7 +111,7 @@ class StringList3 :
           self.validate(string)
           self.check(index)
           if string == None: self.data[index] = None
-          else: self.data[index] = string
+          else: self.data[index] = copy.copy(string)
 
       def clear(self , index):
         assert self.default == None , "Default is not NoneType!"

@@ -67,6 +67,8 @@ class TokenMixer :
       log.append('-------------------------------------------')
     
 #BEGIN PROCESSING THE VECTORS
+
+    self.data.memorize() #Store all initial vector values in a temporary list
     message = ''
     if (self.local.order_randomize_mode): self.data.shuffle()
     if (self.local.sample_mode): 
@@ -89,6 +91,7 @@ class TokenMixer :
         'or write them into the TokenMixer inputs directly. \n \n Note that when writing a text or embedding into the TokenMixer ' +\
         'directly only the first token will be processed. \n \n To process embeddings or prompts greater then one token, ' +\
         'use the modules on the left')
+        self.data.recall() #Restore initial values
         return '\n'.join(log), None
     else:
             if False: # Remove zeroed vectors
@@ -126,7 +129,8 @@ class TokenMixer :
             sd_hijack.model_hijack.embedding_db.dir_mtime=0
             sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
         self.data.update_loaded_embs() 
-    
+        
+    self.data.recall() #Restore initial values
     return '\n'.join(log) , save_filename
 
 
