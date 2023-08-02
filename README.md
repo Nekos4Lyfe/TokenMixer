@@ -69,7 +69,6 @@ Seecoder (Not yet implemented)
 
 Embedding Visualizer
 - See which areas of a given input image is targeted by a given embeddings
-- Will have imporvements in the future
 - Credit : https://github.com/benkyoujouzu/stable-diffusion-webui-visualize-cross-attention-extension
 
 ![Synonymizer_2 0](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/5e7d9c1d-4189-4a10-af99-31780299b9ba)
