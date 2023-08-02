@@ -76,9 +76,6 @@ Embedding Visualizer
 This ReadMe file is a work in progress
 
 
-![Tokenmixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/acd006f2-3e5a-4f2e-af1e-3f6d7e834385)
-
-
 
 
 
