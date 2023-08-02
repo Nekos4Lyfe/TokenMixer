@@ -7,7 +7,7 @@ This extension is still an early-access version. Informal discussions about the 
 
 ![TokenMixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0285fba9-78d6-49fb-981b-92084786aa51)
 
-The TokenMixer consists of 7 modules : 
+The TokenMixer consists of 7 integrated modules: 
  - Embedding Generator
  - MiniTokenizer
  - Embedding Inspector
@@ -62,10 +62,6 @@ Token Extrapolator
 - Expand a single or a pair of tokens into multiple tokens
 - Navigate the ID list in the CLIP tokenizer
 - Randomly sample the ID list in the CLIP tokenizer
-
-Seecoder (Not yet implemented)
-- Convert any image to latent vectors for use in the TokenMixer
-- https://github.com/SHI-Labs/Prompt-Free-Diffusion
 
 Embedding Visualizer
 - See which areas of a given input image is targeted by a given embeddings
