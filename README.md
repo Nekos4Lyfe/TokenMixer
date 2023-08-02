@@ -22,7 +22,7 @@ All of which are integrated into a single hub. Tokens can be transferred freely 
 ![Sample_mode2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f95aa750-cd80-410d-b852-fff382c42d04)
 
 
-Feature summary:
+# Feature summary:
 
 Embedding Generator
 - Creating exact blends between CLIP tokens , embeddings and other kinds of latent vectors
