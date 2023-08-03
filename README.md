@@ -7,7 +7,7 @@ Prior to running this extension, check that the Python NLTK package is installed
 
 For Mac/Linux users : `pip install --user -U nltk` 
 
-For Windows users, please refer to this guide : https://www.nltk.org/install.html
+NLTK instalation guide : https://www.nltk.org/install.html
 
 This extension is still an early-access version. Informal discussions about the TokenMixer can be found here: https://discord.com/channels/1101998836328697867/1133883185101541548
 
