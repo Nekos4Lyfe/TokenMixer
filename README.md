@@ -5,7 +5,7 @@ The main feature of the TokenMixer is the ability to find similar tokens to give
 
 Prior to running this extension, check that the Python NLTK package is installed on your device. 
 
-For Mac/Linux users : ' pip install --user -U nltk '
+For Mac/Linux users : `pip install --user -U nltk` 
 
 For Windows users, please refer to this guide : https://www.nltk.org/install.html
 
