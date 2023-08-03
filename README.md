@@ -3,6 +3,12 @@ The TokenMixer is an StableDiffusion extension for Automatic1111 webui for modif
 
 The main feature of the TokenMixer is the ability to find similar tokens to given input tokens. This can be done either as similar latent vectors or as semantically similar tokens using the python Natural Language Toolkit (NLTK) toolset. The latter feature includes the ability to translate tokens into other languages, as well as finding tokens that are more specific ("hypernyms") or less specific ("hyponyms") then the given input token.
 
+Prior to running this extension, check that the Python NLTK package is installed on your device. 
+
+For Mac/Linux users : 'pip install --user -U nltk'
+
+For Windows users, please refer to this guide : https://www.nltk.org/install.html
+
 This extension is still an early-access version. Informal discussions about the TokenMixer can be found here: https://discord.com/channels/1101998836328697867/1133883185101541548
 
 ![TokenMixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0285fba9-78d6-49fb-981b-92084786aa51)
