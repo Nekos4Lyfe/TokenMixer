@@ -21,6 +21,7 @@ The TokenMixer consists of 7 integrated modules:
  - Token Extrapolator
  - Cross Attention Visualizer
  - Token Synonymizer
+ - SeeCoder (work in progress)
  
 All of which are integrated into a single hub. Tokens can be transferred freely between the modules, allowing the artist to freely experiment with various vectors to find the exact type of token configuration they need for the current project. 
 
