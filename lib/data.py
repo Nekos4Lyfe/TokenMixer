@@ -586,6 +586,7 @@ class Data :
     return emb_name # return embedding name for embedding ID
 
   def get_embedding_info(self, string):
+      emb_id = None
       text = copy.copy(string.lower())
       loaded_emb = self.tools.loaded_embs.get(text, None)
 
@@ -614,7 +615,12 @@ class Data :
       else:
         emb_ids = self.text_to_emb_ids(text)
         if emb_ids == None : return None, None, None, None
-        emb_id = emb_ids[0] # emb_id is int for internal embeddings
+        
+        if isinstance (emb_ids , int):
+          emb_id = emb_ids
+        else : emb_id = emb_ids[0] # emb_id is int for internal embeddings
+          
+
 
       emb_name = self.emb_id_to_name(emb_id)
       emb_vec = self.tools.internal_embs[emb_id].unsqueeze(0)
