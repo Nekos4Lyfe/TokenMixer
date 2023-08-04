@@ -46,7 +46,7 @@ class MiniTokenizer:
           ) , "NoneType in Tokenizer input!"
 
     tokenmixer_vectors = mix_input
-    if sendtomix and not stack_mode : tokenmixer_vectors= ''
+    if sendtomix : tokenmixer_vectors= ''
 
     distance = torch.nn.PairwiseDistance(p=2)
     origin = self.data.vector.origin.cpu()
