@@ -595,8 +595,7 @@ class Data :
             if text == neg_index.lower():
               loaded_emb = self.tools.loaded_embs.get(neg_index, None)
               break
-
-      if loaded_emb!=None:
+      else: 
         emb_name = loaded_emb.name
         emb_id = '['+ loaded_emb.checksum()+']' # emb_id is string for loaded embeddings
         emb_vec = loaded_emb.vec.cpu()
@@ -620,8 +619,6 @@ class Data :
           emb_id = emb_ids
         else : emb_id = emb_ids[0] # emb_id is int for internal embeddings
           
-
-
       emb_name = self.emb_id_to_name(emb_id)
       emb_vec = self.tools.internal_embs[emb_id].unsqueeze(0)
       return emb_name, emb_id, emb_vec, None # return embedding name, ID, vector
@@ -631,13 +628,13 @@ class Data :
       self.vector.shuffle()
     else:
       if to_negative != None :
-        if to_negative : self.data.negative.shuffle()
+        if to_negative : self.negative.shuffle()
       #####
       if to_mixer != None : 
-        if to_mixer : self.data.vector.shuffle()
+        if to_mixer : self.vector.shuffle()
       #####
       if to_temporary != None : 
-        if to_temporary : self.data.temporary.shuffle()
+        if to_temporary : self.temporary.shuffle()
   ######## End of shuffle function
 
   def sample(self , to_negative = None , to_mixer = None , to_temporary = None):

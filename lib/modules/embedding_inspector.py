@@ -92,11 +92,12 @@ class EmbeddingInspector :
 
 
     loaded_emb = self.data.tools.loaded_embs.get(text, None)
-    emb_id = self.data.tools.no_of_internal_embs
+    emb_id = None
 
     if id_mode and  text.isdigit(): 
       emb_id = copy.copy(int(text))
       assert isinstance(emb_id , int) , "emb_id is not int!"
+    else: emb_id = self.data.tools.no_of_internal_embs
 
 
     #ID input mode
@@ -154,7 +155,7 @@ class EmbeddingInspector :
       best_ids_list = []
       sorted_scores_list = []
 
-      if isinstance(emb_id, int):
+      if type(emb_id)==int:
         _best_ids , _sorted_scores = \
         self.data.tools.get_best_ids(emb_id , similarity , max_similar_embs , None)
         best_ids_list.append(_best_ids)
@@ -172,6 +173,7 @@ class EmbeddingInspector :
       results.append("emb vec size : " + str(emb_vec.shape[0]) + \
       ' x '  + str(emb_vec.shape[1]))
       results.append("required size :  1 x " + str(self.data.vector.size))
+      return '' , '' , '\n'.join(results) , '\n'.join(log) 
 
     #Start loop
 
