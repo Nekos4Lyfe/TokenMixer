@@ -30,6 +30,12 @@ class EmbeddingInspector :
     send_to_negatives = args[9]
     neg_input = args[10]
 
+    #Check if new embeddings have been added 
+    try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
+    except: 
+      sd_hijack.model_hijack.embedding_db.dir_mtime=0
+      sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
+    self.data.update_loaded_embs() 
 
     negbox = neg_input
     if neg_input == None : negbox = ''
