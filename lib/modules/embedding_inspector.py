@@ -161,13 +161,15 @@ class EmbeddingInspector :
       best_ids_list = []
       sorted_scores_list = []
 
-      if type(emb_id)==int:
+      if type(emb_id)==int and loaded_emb == None :
         _best_ids , _sorted_scores = \
         self.data.tools.get_best_ids(emb_id , similarity , max_similar_embs , None)
         best_ids_list.append(_best_ids)
         sorted_scores_list.append(_sorted_scores)
 
       else:
+        assert loaded_emb != None , "loaded emb is NoneType yet ID is not int!"
+        emb_vec = loaded_emb.vec.cpu()
         for k in range (emb_vec.shape[0]):
           _best_ids , _sorted_scores = \
           self.data.tools.get_best_ids(emb_id , similarity , max_similar_embs , emb_vec[k])
