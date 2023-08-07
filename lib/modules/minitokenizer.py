@@ -168,7 +168,7 @@ class MiniTokenizer:
       #the mini_input
       ##########
       tmp = word.strip().lower()
-      if (word.find('[')>=0 and word.find(']')>=0):
+      if (word.find('[')>=0 and word.find(']')>=0 and (word.find('[]')<0)):
           tmp =  word.split('[')[0]
           tmp = tmp.strip().lower()
           section = word.split('[')[1]
