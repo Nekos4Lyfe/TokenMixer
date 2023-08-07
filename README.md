@@ -21,7 +21,7 @@ The TokenMixer consists of 7 integrated modules:
  - Token Extrapolator
  - Cross Attention Visualizer
  - Token Synonymizer
- - SeeCoder (work in progress)
+ - CLIP image encoder
  
 All of which are integrated into a single hub. Tokens can be transferred freely between the modules, allowing the artist to freely experiment with various vectors to find the exact type of token configuration they need for the current project. 
 
@@ -71,6 +71,9 @@ Token Extrapolator
 Embedding Visualizer
 - See which areas of a given input image is targeted by a given embeddings
 - Credit : https://github.com/benkyoujouzu/stable-diffusion-webui-visualize-cross-attention-extension
+
+CLIP image encoder
+-Get the cross modal embedding which is used by CLIP to find similar tokens
 
 ![Synonymizer_2 0](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/5e7d9c1d-4189-4a10-af99-31780299b9ba)
 
