@@ -586,6 +586,8 @@ class Data :
     return emb_name # return embedding name for embedding ID
 
   def get_embedding_info(self, string):
+      #self.tools.update_loaded_embs()
+
       emb_id = None
       text = copy.copy(string.lower())
       loaded_emb = self.tools.loaded_embs.get(text, None)
@@ -595,30 +597,23 @@ class Data :
             if text == neg_index.lower():
               loaded_emb = self.tools.loaded_embs.get(neg_index, None)
               break
-      else: 
+              
+      if loaded_emb != None: 
         emb_name = loaded_emb.name
         emb_id = '['+ loaded_emb.checksum()+']' # emb_id is string for loaded embeddings
         emb_vec = loaded_emb.vec.cpu()
         return emb_name, emb_id, emb_vec, loaded_emb #also return loaded_emb reference
 
-      # support for #nnnnn format
-      val = None
-      if text.startswith('#'):
-        try:
-            val = int(text[1:])
-            if (val<0) or (val>=self.tools.internal_embs.shape[0]): val = None
-        except: val = None
 
-      # obtain internal embedding ID
-      if val!=None: emb_id = val
-      else:
-        emb_ids = self.text_to_emb_ids(text)
-        if emb_ids == None : return None, None, None, None
+      if emb_id == None:
+          emb_ids = self.text_to_emb_ids(text)
+          if emb_ids == None : return None, None, None, None
         
-        if isinstance (emb_ids , int):
-          emb_id = emb_ids
-        else : emb_id = emb_ids[0] # emb_id is int for internal embeddings
-          
+          if type(emb_ids) == int:
+            emb_id = emb_ids
+          elif type(emb_ids) == list : emb_id = emb_ids[0] # emb_id is int for internal embeddings
+          else: return None, None, None, None
+
       emb_name = self.emb_id_to_name(emb_id)
       emb_vec = self.tools.internal_embs[emb_id].unsqueeze(0)
       return emb_name, emb_id, emb_vec, None # return embedding name, ID, vector
