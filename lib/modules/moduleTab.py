@@ -19,6 +19,8 @@ from lib.modules.token_calculator import TokenCalculator
 from lib.modules.token_extrapolator import TokenExtrapolator 
 from lib.modules.cross_attention_mixer import CrossAttentionMixer
 from lib.modules.synonymizer import Synonymizer
+from lib.modules.image_encoder import ImageEncoder
+from lib.modules.text_encoder import TextEncoder
 
 from lib.data import dataStorage
 
@@ -79,6 +81,9 @@ class Modules :
       self.synz3 = Synonymizer("Token Synonymizer #3")
       self.synz4 = Synonymizer("Token Synonymizer #4")
       self.synz5 = Synonymizer("Token Synonymizer #5")
+      ########
+      self.imen = ImageEncoder("Image encoder" , vis = first)
+      self.txen = TextEncoder("Text encoder" , False) #Hide this experimental module
       gr.Markdown(" ")
       ########
       with gr.Accordion('Remove/add modules',open=False):
@@ -125,6 +130,7 @@ class Modules :
           self.show_tutorial = gr.Checkbox(value=False, label="Show tutorials", interactive = True)
           self.show_output_logs = gr.Checkbox(value=True, label="Show output logs", interactive = True)
           self.show_rand_settings = gr.Checkbox(value=True, label="Show random '_' token settings ", interactive = True)
+          self.show_encoder = gr.Checkbox(value=False, label="Show image encoder", interactive = True)
         with gr.Row():
           self.module_update_button = gr.Button(value="Update modules", variant="primary")
           self.module_update_button.style(size="sm")
@@ -139,7 +145,7 @@ class Modules :
 
   def Show (self , no_of_minit , no_of_embin , \
     no_of_tocal , no_of_tokex, no_of_tokm , no_of_synz , \
-    show_tutorial , show_rand_settings , show_output_logs) :
+    show_tutorial , show_rand_settings , show_output_logs , show_encoder) :
 
       #Assign functionality to buttons in the rest of
       # the TokenMixer (if revealed by the user)
@@ -186,6 +192,8 @@ class Modules :
               self.synz_list[2]  : gr.Accordion.update(visible=no_of_synz>2) ,
               self.synz_list[3]  : gr.Accordion.update(visible=no_of_synz>3) ,
               self.synz_list[4]  : gr.Accordion.update(visible=no_of_synz>4) ,
+
+              self.imen_list[0]  : gr.Accordion.update(visible=show_encoder) ,
 
               self.tutorial_output_list[0]   : gr.Accordion.update(visible=show_tutorial) ,
               self.tutorial_output_list[1]   : gr.Accordion.update(visible=show_tutorial) ,
@@ -263,6 +271,8 @@ class Modules :
               self.tutorial_output_list[68]  : gr.Accordion.update(visible=show_tutorial) ,
               self.tutorial_output_list[69]  : gr.Accordion.update(visible=show_tutorial) ,
 
+              self.tutorial_output_list[70]  : gr.Accordion.update(visible=show_tutorial) ,
+
               self.minit_randset_list[0]  : gr.Accordion.update(visible=show_rand_settings) ,
               self.minit_randset_list[1]  : gr.Accordion.update(visible=show_rand_settings) ,
               self.minit_randset_list[2]  : gr.Accordion.update(visible=show_rand_settings) ,
@@ -318,6 +328,7 @@ class Modules :
     self.tokms =  [tokm , tokm2 , tokm3 , tokm4 , tokm5] #5x TokenMixers
 
 
+    self.imen.setupIO_with(tokm)
     ######
     input_list = []
     output_list = []
@@ -332,8 +343,12 @@ class Modules :
     self.tocal_list = self.tocal.show + self.tocal2.show + self.tocal3.show + self.tocal4.show + self.tocal5.show
     self.tokex_list = self.tokex.show + self.tokex2.show + self.tokex3.show + self.tokex4.show + self.tokex5.show
     self.synz_list = self.synz.show   + self.synz2.show  + self.synz3.show  + self.synz4.show  + self.synz5.show
+    self.imen_list = self.imen.show
+    
     self.tokm_list = tokm.show + tokm2.show + tokm3.show + tokm4.show + tokm5.show
-    self.module_output_list = self.minit_list + self.embin_list + self.tocal_list + self.tokex_list + self.tokm_list + self.synz_list
+    self.module_output_list = self.minit_list + self.embin_list + self.tocal_list + \
+      self.tokex_list + self.tokm_list + self.synz_list +  self.imen_list
+    
     self.module_input_list = \
     [self.no_of_minit , self.no_of_embin , \
     self.no_of_tocal , self.no_of_tokex, self.no_of_tokm ,self.no_of_synz]
@@ -345,7 +360,9 @@ class Modules :
     self.tocal.tutorials + self.tocal2.tutorials + self.tocal3.tutorials + self.tocal4.tutorials + self.tocal5.tutorials + \
     self.tokex.tutorials + self.tokex2.tutorials + self.tokex3.tutorials + self.tokex4.tutorials + self.tokex5.tutorials + \
     tokm.tutorials + tokm2.tutorials + tokm3.tutorials + tokm4.tutorials + tokm5.tutorials + \
-    self.synz.tutorials  + self.synz2.tutorials  + self.synz3.tutorials  + self.synz4.tutorials  + self.synz5.tutorials
+    self.synz.tutorials  + self.synz2.tutorials  + self.synz3.tutorials  + self.synz4.tutorials  + self.synz5.tutorials + \
+    self.imen.tutorials
+
 
     self.tutorial_input_list = [self.show_tutorial]
     #######
@@ -370,7 +387,7 @@ class Modules :
 
     input_list =  \
     self.module_input_list + self.tutorial_input_list + \
-    self.randset_input_list + self.logs_input_list
+    self.randset_input_list + self.logs_input_list  + [self.show_encoder]
 
     self.module_update_button.click(fn = self.Show , inputs = input_list , outputs =  output_list)
     ######
