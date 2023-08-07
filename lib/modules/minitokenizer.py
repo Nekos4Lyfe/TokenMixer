@@ -32,6 +32,7 @@ class MiniTokenizer:
     mix_input = args[6]
     stack_mode = args[7]
     literal_mode = args[8]
+    random_token_length_randomization = (1/100) * args[9]
 
     if mini_input == None : 
       return tokenmixer_vectors , '' , '' , ''
@@ -120,7 +121,9 @@ class MiniTokenizer:
       if word == "_":
         emb_vec = torch.rand(self.data.vector.size)
         dist = distance(emb_vec , origin).numpy()[0]
-        emb_vec = (random_token_length/dist)*emb_vec
+        tmp = random_token_length * \
+        (1 - random_token_length_randomization*random.random())
+        emb_vec = (tmp/dist)*emb_vec
         emb_id = 0
         emb_name = "random_" + str(index)
 
@@ -277,6 +280,7 @@ class MiniTokenizer:
       input_list.append(module.inputs.mix_input)  #6
       input_list.append(self.inputs.stack_mode)   #7
       input_list.append(self.inputs.literal_mode) #8
+      input_list.append(self.inputs.randlenrand) #9
       #######
       output_list.append(module.inputs.mix_input) #0
       output_list.append(self.outputs.tokenbox)   #1
@@ -306,6 +310,7 @@ class MiniTokenizer:
         Inputs.positives = []
         Inputs.stack_mode = []
         Inputs.literal_mode =[]
+        Inputs.randlenrand = []
 
     class Buttons :
       def __init__(self):
@@ -337,8 +342,11 @@ class MiniTokenizer:
           self.inputs.positives = gr.Checkbox(value=False, label="Send to positives", interactive = True , visible = False) #Experimental
           self.inputs.stack_mode = gr.Checkbox(value=False, label="Stack Mode", interactive = True)
           self.inputs.literal_mode = gr.Checkbox(value=False, label="String Literal Mode", interactive = True)
-      with gr.Accordion("Random ' _ ' token settings" ,open=False , visible = False) as randset : 
-        self.inputs.randlen = gr.Slider(minimum=0, maximum=10, step=0.01, label="Randomized ' _ ' token length", default=0.35 , interactive = True)
+      with gr.Accordion("Random ' _ ' token settings" ,open=False , visible = True) as randset : 
+        self.inputs.randlen = gr.Slider(minimum=0, maximum=10, step=0.01, label="Randomized ' _ ' token max length", default=0.35 , interactive = True)
+        self.inputs.randlenrand = \
+          gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
+          label="Randomized ' _ ' token length randomization %", default=50 , interactive = True)
       
       with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_0 :
           gr.Markdown("The Minitokenizer is a tool which allows you to get CLIP tokens " + \

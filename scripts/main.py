@@ -15,6 +15,8 @@ from torch.nn.modules import ConstantPad1d, container
 from lib.modules.token_mixer import TokenMixer     
 from lib.modules.moduleTab import Modules
 from lib.modules.cross_attention_mixer import CrossAttentionMixer
+from lib.modules.image_encoder import ImageEncoder
+from lib.modules.text_encoder import TextEncoder
 
 def add_tab():
 
@@ -42,6 +44,8 @@ def add_tab():
               modules5 = Modules("tokex" , True)
               modules6 = Modules("synom" , True)
             #####
+              imen = ImageEncoder("Image encoder" , True)
+              txen = TextEncoder("Text encoder" , False) #Hide this experimental module
                       
             with right_column.render() : #Right Column
               tokm = TokenMixer("Embedding generator", True , True)
@@ -72,6 +76,8 @@ def add_tab():
     inputs = [show_left_column , show_right_column] , \
     outputs = [left_column , right_column , modules.tab])
     
+    imen.setupIO_with(tokm)
+    txen.setupIO_with(tokm)
     modules.setupIO_with(tokm , tokm2 , tokm3 , tokm4 , tokm5)
     modules2.setupIO_with(tokm , tokm2 , tokm3 , tokm4 , tokm5)
     modules3.setupIO_with(tokm , tokm2 , tokm3 , tokm4 , tokm5)

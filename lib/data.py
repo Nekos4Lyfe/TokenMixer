@@ -628,7 +628,7 @@ class Data :
 
   def shuffle(self , to_negative = None , to_mixer = None , to_temporary = None):
     if to_negative == None and to_mixer == None and to_temporary == None:
-      self.data.vector.shuffle()
+      self.vector.shuffle()
     else:
       if to_negative != None :
         if to_negative : self.data.negative.shuffle()

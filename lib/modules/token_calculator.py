@@ -41,7 +41,9 @@ class TokenCalculator:
         size = self.size
         rand = 2*torch.rand(size)-torch.ones(size)
         dist , rand = self.get_length(rand)
-        rand = (self.random_vector_length/dist)*rand
+        tmp = self.random_token_length * \
+        (1 - self.random_token_length_randomization*random.random())
+        rand = (tmp/dist)*rand
         dist , rand = self.get_length(rand)
 
         log.append("random vector with length " + str(dist))
@@ -81,11 +83,13 @@ class TokenCalculator:
     sendtomix = args[1]
     id_mode = args[2]
     output_length = args[3]
-    self.random_vector_length = copy.copy(args[4])
+    self.random_token_length = copy.copy(args[4])
     mix_input = args[5]
     stack_mode = args[6]
     send_to_negatives = args[7]
     neg_input = args[8]
+    self.random_token_length_randomization = copy.copy((1/100) * args[9])
+    output_length_rand = (1/100) * args[10]
 
     tokenizer = self.data.tools.tokenizer
     internal_embs = self.data.tools.internal_embs
@@ -185,7 +189,9 @@ class TokenCalculator:
     output = calc_sum.unsqueeze(0).cpu()
     dist = distance(output , 0*output).numpy()[0]
 
-    output = (output_length /dist)*output
+    tmp = output_length * \
+    (1 - output_length_rand*random.random())    
+    output = (tmp /dist)*output
     dist = round(distance(output , 0*output).numpy()[0] , 2)
 
     log.append("------------------------")
@@ -249,6 +255,8 @@ class TokenCalculator:
       input_list.append(self.inputs.stack_mode)  #6
       input_list.append(self.inputs.negatives)   #7
       input_list.append(module.inputs.negbox)    #8
+      input_list.append(self.inputs.randlenrand) #9
+      input_list.append(self.inputs.lenrand) #10
 
 
       output_list.append(module.inputs.mix_input) #0
@@ -273,7 +281,8 @@ class TokenCalculator:
     self.size = copy.copy(self.data.vector.size)
     self.origin = torch.zeros(self.size).unsqueeze(0).cpu()
     self.distance = torch.nn.PairwiseDistance(p=2)
-    self.random_vector_length = 0
+    self.random_token_length = 0
+    self.random_token_length_randomization = 0
 
 
     class Outputs :
@@ -289,6 +298,8 @@ class TokenCalculator:
         Inputs.length = []
         Inputs.randlen = []
         Inputs.stack_mode = []
+        Inputs.randlenrand = []
+        Inputs.lenrand = []
 
     class Buttons :
       def __init__(self):
@@ -319,9 +330,16 @@ class TokenCalculator:
           self.inputs.id_mode = gr.Checkbox(value=False, label="ID input mode", interactive = True)
           self.inputs.stack_mode = gr.Checkbox(value=False, label="Stack Mode", interactive = True)
           self.inputs.negatives = gr.Checkbox(value=False, label="Send to negatives", interactive = True , visible = True) 
-      with gr.Accordion("Random ' _ ' token settings" ,open=False , visible = False) as randset: 
-        self.inputs.randlen = gr.Slider(minimum=0, maximum=10, step=0.01, \
-        label="Randomized ' _ ' token length", default=0.35 , interactive = True)     
+      with gr.Accordion("Random ' _ ' vector settings" ,open=False , visible = True) as randset: 
+        self.inputs.randlen = gr.Slider(value = 0.35 , minimum=0, maximum=10, step=0.01, \
+          label="Randomized ' _ ' vector length", default=0.35 , interactive = True) 
+        self.inputs.randlenrand = \
+          gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
+          label="Randomized ' _ ' vector length randomization %", default=50 , interactive = True)
+        self.inputs.lenrand = \
+          gr.Slider(value = 0 , minimum=0, maximum=100, step=0.1, \
+          label="Desired vector length randomization %", default=0 , interactive = True)
+
       with gr.Accordion('Output Log',open=False) as logs : 
         self.outputs.log = gr.Textbox(label="Log", lines=4, interactive = False)
       with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_0 : 
@@ -350,8 +368,7 @@ class TokenCalculator:
     self.randset = [randset]
     self.logs = [logs]
     
-    
-    self.inputs.randlen.value = 0.35
+  
     self.buttons.calculate.style(size="sm")
     self.buttons.reset.style(size="sm")
     if self.data.tools.loaded : self.setupIO_with(self)

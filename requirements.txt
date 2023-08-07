@@ -1,0 +1,4 @@
+mediapipe
+svglib
+fvcore
+nltk
