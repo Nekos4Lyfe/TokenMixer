@@ -16,7 +16,10 @@ from lib.data import dataStorage
 
 class EmbeddingInspector :
 
-  def Inspect (self, *args) :
+  def reset(self):
+    return '' , ''
+
+  def inspect (self, *args) :
 
     mini_input = args[0]
     sendtomix = args[1]
@@ -279,7 +282,9 @@ class EmbeddingInspector :
       return 1
 
     if (module.ID == "EmbeddingInspector") and cond:
-      return 1
+      output_list.append(self.outputs.results)    #2
+      output_list.append(self.outputs.log)        #3
+      self.buttons.reset.click(fn=self.reset , inputs = input_list , outputs = output_list)
 
     if (module.ID == "TokenMixer") and cond :
       input_list.append(self.inputs.mini_input)       #0
@@ -299,7 +304,7 @@ class EmbeddingInspector :
       output_list.append(module.inputs.negbox)    #1
       output_list.append(self.outputs.results)    #2
       output_list.append(self.outputs.log)        #3
-      self.buttons.inspect.click(fn=self.Inspect , inputs = input_list , outputs = output_list)
+      self.buttons.inspect.click(fn=self.inspect , inputs = input_list , outputs = output_list)
   #End of setupIO_with()
 
 
