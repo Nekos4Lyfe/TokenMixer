@@ -5,9 +5,10 @@ The main feature of the TokenMixer is the ability to find similar tokens to give
 
 This extension is still an early-access version. Informal discussions about the TokenMixer can be found here: https://discord.com/channels/1101998836328697867/1133883185101541548
 
-![TokenMixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0285fba9-78d6-49fb-981b-92084786aa51)
-
 Disclaimer : This extension is not compatible with SDXL yet
+
+
+![TokenMixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0285fba9-78d6-49fb-981b-92084786aa51)
 
 
 The TokenMixer consists of 7 integrated modules: 
