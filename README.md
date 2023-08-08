@@ -7,7 +7,6 @@ This extension is still an early-access version. Informal discussions about the 
 
 Disclaimer : This extension is not compatible with SDXL yet
 
-
 ![TokenMixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0285fba9-78d6-49fb-981b-92084786aa51)
 
 
