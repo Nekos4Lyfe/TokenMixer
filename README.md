@@ -19,8 +19,6 @@ The TokenMixer consists of 7 integrated modules:
  
 All of which are integrated into a single hub. Tokens can be transferred freely between the modules, allowing the artist to freely experiment with various vectors to find the exact type of token configuration they need for the current project. 
 
-![Sample_mode2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f95aa750-cd80-410d-b852-fff382c42d04)
-
 # Feature summary:
 
 Embedding Generator
@@ -99,7 +97,19 @@ This split can be done with any embedding or textual inversion. We can investiga
 
 ![embin1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0348f7fb-fdc9-4d20-88ba-66bcf94a6077)
 
+So far so good! But how can we make this prompt more interesting? The conventional approach would be to add more "stuff" in the prompt input. 
+Or, alternatively replace the prompt words with synonyms. The TokenMixer is capable of doing both of these things automatically, but it's 
+main feature is the ability to alter the input tokens themselves. 
 
+The most straight forward approach is to use the 'Sample Mode' feature. For a given vector X we calculate a new vector using the formula given below:
+
+![Sample Mode](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/61ebe7c1-f7ba-46c3-8c7c-295e93fcfd8c)
+
+The results can be seen below:
+
+![Sample_mode2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f95aa750-cd80-410d-b852-fff382c42d04)
+
+---------
 
 ![Synonymizer_2 0](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/5e7d9c1d-4189-4a10-af99-31780299b9ba)
 
