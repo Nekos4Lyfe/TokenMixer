@@ -1,6 +1,8 @@
 # TokenMixer
 The TokenMixer is an StableDiffusion extension for Automatic1111 webui for modifying embedding vectors and/or tokens. The TokenMixer consists of several modules in an integrated and adjustable interface. 
 
+Disclaimer : This extension is not compatible with SDXL yet
+
 The main feature of the TokenMixer is the ability to find similar tokens to given input tokens. This can be done either as similar latent vectors or as semantically similar tokens using the python Natural Language Toolkit (NLTK) toolset. The latter feature includes the ability to translate tokens into other languages, as well as finding tokens that are more specific ("hypernyms") or less specific ("hyponyms") then the given input token.
 
 This extension is still an early-access version. Informal discussions about the TokenMixer can be found here: https://discord.com/channels/1101998836328697867/1133883185101541548
