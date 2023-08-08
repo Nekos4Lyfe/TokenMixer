@@ -545,6 +545,20 @@ class TokenMixer :
                                   "gain is the value of the 'Vector gain multiplier' slider , |X| is the vector length of input token X and " + \
                                   "norm() is a function which normalizes a given vector , i.e sets its length of the given vector to 1. ") 
 
+                                  with gr.Accordion("What is 'Negative strength %'?",open=False):
+                                      gr.Markdown("Negative strength % is a metric which is only used in 'Similar Mode' at the moment. \n \n " + \
+                                          "Similar Mode works this way:  \n \n " + \
+                                          "1) Create N random vector samples (set by the 'max number of samples' slider in the global settings). \n \n " + \
+                                          "2) Then give each vector a 'similarity score' S , which has the following formula, assuming cos() always gives positive values:  \n \n " + \
+                                          "S = cos(current) * (1 - w) +  min{(1 - cos(negative) )}* w   \n \n "  + \
+                                          "where 'current' is the token in the tokenmixer input, and \n \n "  + \
+                                          "min{(1 - cos(negative) )} is 'the lowest possible  negative  similarity score for a  given  negative token among  all  of the negative tokens available'  \n \n " + \
+                                          "Negative similarity score is the inverse of similarity score, e.g  \n \n  " + \
+                                          "30% similarity = 70% negative similarity \n \n  " + \
+                                          "So min{(1-cos(negative))} here means  'find the most similar negative token among the bunch and subtract 100% with that similarity value'  \n \n " + \
+                                          "The value 'w' in this formula is the 'negative token strength %' \n \n " + \
+                                          "(For example 35% negative strength => w = 0.35)")                                      
+
                               with gr.Accordion('Similar Mode Settings',open=False , visible = False): # Deprecated
                                 self.inputs.sliders.angle = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. vector cos(theta) similarity %", default=60 , interactive = True)
                                 self.inputs.sliders.length = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. vector length similarity %", default=80 , interactive = True)          
@@ -567,6 +581,7 @@ class TokenMixer :
                                       "investigate the opposite polarity of the token 'example' , you can write  ' - example ' " + \
                                       "in the Token Calculator to get the desired output. \n \n " + \
                                       "Enabling 'Allow Negative Gain' option will have unpredictible effects on the output of the TokenMixer")
+                                  
 
                               with gr.Accordion('Interpolate Mode Settings',open=False):
                                 self.inputs.sliders.interpolate = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. similarity to merge %", default=50 , interactive = True)
