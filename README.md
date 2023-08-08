@@ -72,7 +72,7 @@ CLIP image encoder
 # Demonstration
 
 The following image will be used as a baseline for this demonstration:
-![reference](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/d96a2f95-1d8d-457a-b85a-ed90a3896109)
+![ref2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/15ce5e27-c224-4c81-80a1-c9a3c88adb2b)
 
 Prompt here is ´blonde girl with red bikini´
 
