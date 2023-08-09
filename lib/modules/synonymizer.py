@@ -675,7 +675,7 @@ class Synonymizer:
 
     #test = gr.Label('Prompt MiniTokenizer' , color = "red")
     #create UI
-    with gr.Accordion(label , open=False , visible = vis) as show :
+    with gr.Accordion(label , open=True , visible = vis) as show :
       gr.Markdown("Get CLIP tokens and embedding vectors")
       with gr.Row() :
         self.inputs.suggestions = gr.Slider(label="No. of suggestions",value=5, \

@@ -610,7 +610,7 @@ class TokenExtrapolator:
     self.buttons= Buttons()
     self.ID = "Extrapolator"
 
-    with gr.Accordion(label , open=False , visible = vis) as show :
+    with gr.Accordion(label , open=True , visible = vis) as show :
       gr.Markdown("Extrapolate tokens using the ID list in CLIP")
       with gr.Row() :
         self.inputs.skip_length = gr.Slider(label="Pursuit strength to end token %",value=20, \

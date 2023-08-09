@@ -340,7 +340,7 @@ class EmbeddingInspector :
     self.ID = "EmbeddingInspector"
 
     #create UI
-    with gr.Accordion( label ,open=False , visible = vis) as show:
+    with gr.Accordion( label ,open=True , visible = vis) as show:
       gr.Markdown("Find CLIP tokens similar to input token")
       with gr.Row() :  
           self.inputs.similarity = gr.Slider(label="Similarity upper bound %",value=100, \

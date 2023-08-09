@@ -26,7 +26,8 @@ from lib.data import dataStorage
 
 class Modules : 
 
-  def __init__(self, label , vis = False , first = False):
+  def __init__(self, label , \
+  show = [False , False , False , False , False , False]):
 
     #Pass reference to global object "dataStorage" to class
     self.data = dataStorage 
@@ -48,93 +49,73 @@ class Modules :
 
     #test = gr.Label('Prompt MiniTokenizer' , color = "red")
     #create UI
-    with gr.Tab(label , visible = vis) as tab :
+    with gr.Tab(label , visible = True) as tab :
       gr.Markdown("") 
       #######
-      self.minit = MiniTokenizer("MiniTokenizer" , vis = first)
+      self.minit = MiniTokenizer("MiniTokenizer" , vis = show[0])
       ######
       self.minit2 = MiniTokenizer("MiniTokenizer #2")
       self.minit3 = MiniTokenizer("MiniTokenizer #3")
       self.minit4 = MiniTokenizer("MiniTokenizer #4")
       self.minit5 = MiniTokenizer("MiniTokenizer #5")
       ########
-      self.embin = EmbeddingInspector("Embedding Inspector" , vis = first) 
+      self.embin = EmbeddingInspector("Embedding Inspector" , vis = show[1]) 
       self.embin2 = EmbeddingInspector("Embedding Inspector#2") 
       self.embin3 = EmbeddingInspector("Embedding Inspector#3") 
       self.embin4 = EmbeddingInspector("Embedding Inspector#4") 
       self.embin5 = EmbeddingInspector("Embedding Inspector#5") 
       ########
-      self.tocal = TokenCalculator("Token Calculator" , vis = first)
+      self.tocal = TokenCalculator("Token Calculator" , vis = show[2])
       self.tocal2 = TokenCalculator("Token Calculator#2")
       self.tocal3 = TokenCalculator("Token Calculator#3")
       self.tocal4 = TokenCalculator("Token Calculator#4")
       self.tocal5 = TokenCalculator("Token Calculator#5")
       ########
-      self.tokex = TokenExtrapolator("Token Extrapolator" , vis = first)
+      self.tokex = TokenExtrapolator("Token Extrapolator" , vis = show[3])
       self.tokex2 = TokenExtrapolator("Token Extrapolator#2")
       self.tokex3 = TokenExtrapolator("Token Extrapolator#3")
       self.tokex4 = TokenExtrapolator("Token Extrapolator#4")
       self.tokex5 = TokenExtrapolator("Token Extrapolator#5")
       ########
-      self.synz = Synonymizer("Token Synonymizer" , vis = first)
+      self.synz = Synonymizer("Token Synonymizer" , vis = show[4])
       self.synz2 = Synonymizer("Token Synonymizer #2")
       self.synz3 = Synonymizer("Token Synonymizer #3")
       self.synz4 = Synonymizer("Token Synonymizer #4")
       self.synz5 = Synonymizer("Token Synonymizer #5")
       ########
-      self.imen = ImageEncoder("Image encoder" , vis = first)
+      self.imen = ImageEncoder("Image encoder" , vis = show[5])
       self.txen = TextEncoder("Text encoder" , False) #Hide this experimental module
       gr.Markdown(" ")
       ########
       with gr.Accordion('Remove/add modules',open=False):
-        if first :
-          self.no_of_minit = gr.Slider(value = 1, minimum=0, maximum=5, \
-          step=1, label="Number of MiniTokenizers", \
-          default=1 , interactive = True)
-          self.no_of_embin = gr.Slider(value = 1 , minimum=0, maximum=5, \
-          step=1, label="Number of Embedding Inspectors", \
-          default=1 , interactive = True)
-          self.no_of_tocal = gr.Slider(value = 1 , minimum=0, maximum=5, \
-          step=1, label="Number of Token Calculators", \
-          default=1 , interactive = True)
-          self.no_of_tokex = gr.Slider(value = 1 , minimum=0, maximum=5, \
-          step=1, label="Number of Token Extrapolators", \
-          default=1 , interactive = True)
-          self.no_of_tokm = gr.Slider(value = 1 , minimum=0, maximum=5, \
-          step=1, label="Number of Token Mixers", \
-          default=1 , interactive = True)
-          self.no_of_synz = gr.Slider(value = 1 , minimum=0, maximum=5, \
-          step=1, label="Number of Synonymizers", \
-          default=1 , interactive = True)           
-        else : 
-          self.no_of_minit = gr.Slider(value = 0, minimum=0, maximum=5, \
-          step=1, label="Number of MiniTokenizers", \
-          default=0 , interactive = True)
-          self.no_of_embin = gr.Slider(value = 0 , minimum=0, maximum=5, \
-          step=1, label="Number of Embedding Inspectors", \
-          default=0 , interactive = True)
-          self.no_of_tocal = gr.Slider(value = 0 , minimum=0, maximum=5, \
-          step=1, label="Number of Token Calculators", \
-          default=0 , interactive = True)
-          self.no_of_tokex = gr.Slider(value = 0 , minimum=0, maximum=5, \
-          step=1, label="Number of Token Extrapolators", \
-          default=0 , interactive = True)
-          self.no_of_tokm = gr.Slider(value = 1 , minimum=0, maximum=5, \
-          step=1, label="Number of Token Mixers", \
-          default=1 , interactive = True)
-          self.no_of_synz = gr.Slider(value = 0 , minimum=0, maximum=5, \
-          step=1, label="Number of Synonymizers", \
-          default=0 , interactive = True)
+        self.no_of_minit = gr.Slider(value = int(show[0]), minimum=0, maximum=5, \
+        step=1, label="Number of MiniTokenizers", \
+        default=1 , interactive = True)
+        self.no_of_embin = gr.Slider(value = int(show[1]) , minimum=0, maximum=5, \
+        step=1, label="Number of Embedding Inspectors", \
+        default=1 , interactive = True)
+        self.no_of_tocal = gr.Slider(value = int(show[2]) , minimum=0, maximum=5, \
+        step=1, label="Number of Token Calculators", \
+        default=1 , interactive = True)
+        self.no_of_tokex = gr.Slider(value = int(show[3]) , minimum=0, maximum=5, \
+        step=1, label="Number of Token Extrapolators", \
+        default=1 , interactive = True)
+        self.no_of_tokm = gr.Slider(value = 1 , minimum=0, maximum=5, \
+        step=1, label="Number of Token Mixers", \
+        default=1 , interactive = True)
+        self.no_of_synz = gr.Slider(value = int(show[4]) , minimum=0, maximum=5, \
+        step=1, label="Number of Synonymizers", \
+        default=1 , interactive = True)           
         ######
         with gr.Row():
           self.show_tutorial = gr.Checkbox(value=False, label="Show tutorials", interactive = True)
           self.show_output_logs = gr.Checkbox(value=True, label="Show output logs", interactive = True)
           self.show_rand_settings = gr.Checkbox(value=True, label="Show random '_' token settings ", interactive = True)
-          self.show_encoder = gr.Checkbox(value=False, label="Show image encoder", interactive = True)
+          self.show_encoder = gr.Checkbox(value=show[5], label="Show image encoder", interactive = True)
         with gr.Row():
           self.module_update_button = gr.Button(value="Update modules", variant="primary")
           self.module_update_button.style(size="sm")
-
+        #####
         with gr.Accordion('How do I use this extension?',open=False):
           gr.Markdown(tutorial_string) 
         gr.Markdown("")

@@ -312,7 +312,7 @@ class TokenCalculator:
     self.ID = "TokenCalculator"
 
     #create UI
-    with gr.Accordion(label ,open=False , visible = vis) as show: 
+    with gr.Accordion(label ,open=True , visible = vis) as show: 
       gr.Markdown("Add or subtract tokens into a new vector")
       with gr.Row() :  
           self.inputs.length = gr.Slider(label="Desired vector length",value=0.35, \

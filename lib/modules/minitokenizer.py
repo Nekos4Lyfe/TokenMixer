@@ -9,7 +9,6 @@ import collections, math, random , numpy
 import re #used to parse word to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
-
 from lib.toolbox.constants import MAX_NUM_MIX
 
 from lib.data import dataStorage
@@ -324,8 +323,8 @@ class MiniTokenizer:
 
     #test = gr.Label('Prompt MiniTokenizer' , color = "red")
     #create UI
-    with gr.Accordion(label , open=False , visible = vis) as show :
-      gr.Markdown("Get CLIP tokens and embedding vectors")
+    #
+    with gr.Accordion(label , open=True , visible = vis) as show :
       with gr.Row() :  
           self.buttons.tokenize = gr.Button(value="Tokenize", variant="primary")
           self.buttons.reset = gr.Button(value="Reset", variant = "secondary")
