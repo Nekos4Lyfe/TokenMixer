@@ -729,7 +729,23 @@ class Data :
     return vector , ID ,  name
 
   def update_loaded_embs(self):
-      self.tools.update_loaded_embs()
+    self.refresh()
+
+  def refresh(self):
+    log = []
+    #Check if new embeddings have been added 
+    try: 
+      sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
+      log.append('Reloading all embeddings')
+    except:
+      log.append("TokenMixer: Couldn't reload embedding database!") 
+      sd_hijack.model_hijack.embedding_db.dir_mtime=0
+      sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
+    ##########
+    assert self.tools.loaded , "Data : Checkpoint model was not loaded!"
+    self.tools = Tools()
+    return '\n'.join(log)
+  ######### End of refresh()
 
   def clear (self, index , to_negative = None , to_mixer = None , to_temporary = None):
 
@@ -767,8 +783,8 @@ class Data :
       Data.vector = Vector(self.emb_vec.shape[1])
       Data.negative = Negative(self.emb_vec.shape[1])
       Data.temporary = Temporary(self.emb_vec.shape[1])
-      self.memorize()
-      self.recall()
+      #self.memorize()
+      #self.recall()
     else: 
       Data.vector = Vector(3)
       Data.negative = Negative(3)
