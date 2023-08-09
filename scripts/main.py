@@ -18,8 +18,8 @@ from lib.modules.cross_attention_mixer import CrossAttentionMixer
 
 def add_tab():
 
-  left_column = gr.Column(scale=1)
-  right_column = gr.Column(scale=2)
+  left_column = gr.Column(scale=2)
+  right_column = gr.Column(scale=3)
 
   settings_update_button = gr.Button(value="Update columns", variant="secondary")
   settings_update_button.style(size="sm")
@@ -35,22 +35,24 @@ def add_tab():
             header = gr.Textbox(label="", lines=2, placeholder="Rearrange embeddings here", interactive = True)
         with gr.Row(): 
             with left_column.render() : #Left Column
-              modules = Modules("all" , True , True) 
-              modules2  = Modules("minit" , True)
-              modules3 = Modules("embin" , True)
-              modules4 = Modules("tocal" , True)
-              modules5 = Modules("tokex" , True)
-              modules6 = Modules("synom" , True)
+              modules = Modules("minit" , [True , False , False , False , False , False]) 
+              modules2  = Modules("embin" , [False , True , False , False , False , False])
+              modules3 = Modules("tocal" , [False , False , True , False , False , False])
+              modules4 = Modules("tokex" , [False , False , False , True , False , False])
+              modules5 = Modules("synom" , [False , False , False , False , True , False])
+              modules6 = Modules("all" , [True , True , True , True , True , True])
             #####
                       
             with right_column.render() : #Right Column
-              tokm = TokenMixer("Embedding generator", True , True)
-              tokm2 = TokenMixer("Embedding generator #2") 
-              tokm3 = TokenMixer("Embedding generator #3")
-              tokm4 = TokenMixer("Embedding generator #4")
-              tokm5 = TokenMixer("Embedding generator #5")
-              #####
-              catm = CrossAttentionMixer("Cross Attention Visualizer" , True)
+              with gr.Tab(label = "Generators"  , visible = True):
+                tokm = TokenMixer("Embedding generator", True , True)
+                tokm2 = TokenMixer("Embedding generator #2") 
+                tokm3 = TokenMixer("Embedding generator #3")
+                tokm4 = TokenMixer("Embedding generator #4")
+                tokm5 = TokenMixer("Embedding generator #5")
+                #####
+              with gr.Tab(label = "Visualizers"  , visible = True):
+                catm = CrossAttentionMixer("Cross Attention Visualizer" , True)
               
         with gr.Row() : 
           with gr.Accordion('Hide Columns',open=False):
