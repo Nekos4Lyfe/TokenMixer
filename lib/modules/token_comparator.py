@@ -75,7 +75,7 @@ class TokenComparator :
         first_compound[1] , second_compound[1]) #similarity %
         compounds.append(list(compound))
       ########
-      list_of_compounds.append(list(set(compounds)))
+      list_of_compounds.append(list(compounds))
     #########
 
     #Print the results
@@ -85,9 +85,9 @@ class TokenComparator :
       ####
       for compound in compounds:
         tokenbox.append(\
-          "similarity('" + \
-          compound[0] + "' , '"  + \
-          compound[1] + "' ) = " + \
+          "similarity between '" + \
+          compound[0] + "' and '"  + \
+          compound[1] + "' is " + \
           compound[2] + " %")
       #######
     #########
