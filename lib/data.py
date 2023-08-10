@@ -661,11 +661,6 @@ class Data :
 
     return message
 
-
-
-    
-  
-  
   def place(self, index , vector = None , ID = None ,  name = None , \
     weight = None , to_negative = None , to_mixer = None , to_temporary = None):
 
@@ -724,8 +719,15 @@ class Data :
   def norm (self, tensor , origin_input , distance_fcn):
         current = tensor.to(device = "cpu")
         origin = origin_input.to(device = "cpu")
-
         return current
+
+  def distance (self, tensor1 , tensor2):
+        distance = torch.nn.PairwiseDistance(p=2).to(device = "cpu")
+        #######
+        current = tensor1.to(device = "cpu" , dtype = torch.float32)
+        ref = tensor2.to(device = "cpu" , dtype = torch.float32)
+        dist = distance(current, ref).numpy()[0]
+        return  str(round(dist , 2))
 
   def similarity (self , tensor1 , tensor2):
         distance = torch.nn.PairwiseDistance(p=2).to(device = "cpu")
