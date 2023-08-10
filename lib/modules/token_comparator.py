@@ -2,6 +2,7 @@ import gradio as gr
 from modules import script_callbacks, shared, sd_hijack
 from modules.shared import cmd_opts
 from pandas import Index
+from sqlalchemy import False_
 import torch, os
 import collections, math, random , numpy
 import re #used to parse word to int
@@ -21,10 +22,10 @@ class TokenComparator :
 
     first_text  = args[0]
     second_text = args[1]
-    sendtomix = args[2]
+    show_similarity = args[2]
     stack_mode = args[3]
     mix_input = args[4]
-    send_to_negative = args[5]
+    show_distance = args[5]
     negbox_input = args[6]
     id_mode = args[7]
     literal_mode = args[8]
@@ -33,6 +34,11 @@ class TokenComparator :
     negbox = negbox_input
     tokenbox= []
     ########
+
+    #clear temporary data
+    for index in range(MAX_NUM_MIX):
+      self.data.temporary.clear(index)
+    ####
   
     first_compounds = []
     first_compound = [None , None]
@@ -47,6 +53,11 @@ class TokenComparator :
       first_compound[1] = self.data.temporary.get(index) #vector (torch.tensor)
       first_compounds.append(list(first_compound))
     ######
+
+    #clear temporary data
+    for index in range(MAX_NUM_MIX):
+      self.data.temporary.clear(index)
+    ####
 
     second_compounds = []
     second_compound = [None , None]
@@ -63,33 +74,53 @@ class TokenComparator :
     #######
 
     #Compute the similarities
-    compound = [None , None , None]
-    compounds = []
-    list_of_compounds = []
+    compounds = set()
     #####
     for first_compound in first_compounds :
       for second_compound in second_compounds :
-        compound[0] = first_compound[0] # first vector name
-        compound[1] = second_compound[0] # second vector name
-        compound[2] = self.data.similarity(\
-        first_compound[1] , second_compound[1]) #similarity %
-        compounds.append(list(compound))
+        compound = []
+        compound.append(first_compound[0]) #first vector name
+        compound.append(second_compound[0]) #second vector name
+        #####
+        if show_similarity : 
+          compound.append(self.data.similarity(\
+            first_compound[1] , \
+            second_compound[1]))
+        else: compound.append('')
+        
+        if show_distance :
+          compound.append(self.data.distance(\
+            first_compound[1] , \
+            second_compound[1]))
+        else: compound.append('')
+        ####
+        compounds.add(tuple(compound))
       ########
-      list_of_compounds.append(list(compounds))
     #########
 
     #Print the results
-    for compounds in list_of_compounds : 
-      if compounds == None : continue
-      if compounds == [] : continue
-      ####
-      for compound in compounds:
-        tokenbox.append(\
-          "similarity between '" + \
-          compound[0] + "' and '"  + \
-          compound[1] + "' is " + \
-          compound[2] + " %")
-      #######
+    tokenbox.append("Metrics for vector pairs : ")
+
+    for compound in list(compounds):
+
+      tokenbox.append("............." + \
+      "................................." + \
+      "................................." + \
+      ".....................................")
+
+      tokenbox.append(\
+      "'" + compound[0] + "'" + \
+       "  <-->  " +  \
+       "'" + compound[1] + "'")
+
+      if show_similarity: 
+        tokenbox.append("Similarity  : " + compound[2] + "  %" )
+      
+      if show_distance :
+        tokenbox.append("Distance  : " + compound[3])
+      
+      tokenbox.append(" ")
+
     #########
 
     return tokenmixer_vectors , negbox , '\n'.join(tokenbox)
@@ -376,10 +407,10 @@ class TokenComparator :
       if (module.ID == "TokenMixer") and cond:
         input_list.append(self.inputs.first)             #0
         input_list.append(self.inputs.second)            #1
-        input_list.append(self.inputs.sendtomix)         #2
+        input_list.append(self.inputs.show_similarity)   #2
         input_list.append(self.inputs.stack_mode)        #3
         input_list.append(module.inputs.mix_input)       #4
-        input_list.append(self.inputs.send_to_negative)  #5
+        input_list.append(self.inputs.show_distance)     #5
         input_list.append(module.inputs.negbox)          #6
         input_list.append(self.inputs.id_mode)           #7
         input_list.append(self.inputs.literal_mode)      #8
@@ -407,6 +438,8 @@ class TokenComparator :
           Inputs.stack_mode = []
           Inputs.send_to_negative = []
           Inputs.length = []
+          Inputs.show_similarity = []
+          Inputs.show_distance = []
 
       class Buttons :
         def __init__(self):
@@ -419,7 +452,7 @@ class TokenComparator :
       self.refresh_symbol = "\U0001f504"  # 🔄
 
 
-      with gr.Accordion(label , open=False , visible = vis) as show :
+      with gr.Accordion(label , open=True , visible = vis) as show :
         gr.Markdown("Compare tokens or embeddings")
   
         with gr.Row() :  
@@ -427,34 +460,29 @@ class TokenComparator :
           self.buttons.reset = gr.Button(value="Reset", variant = "secondary") 
         with gr.Row() :  
           self.inputs.first = gr.Textbox(label='', lines=2, \
-            placeholder="Enter a short prompt or name of embedding" , interactive = True)
+            placeholder="Enter name of token or embedding" , interactive = True)
 
           self.inputs.second = gr.Textbox(label='', lines=2, \
-            placeholder="Enter a short prompt or name of embedding" , interactive = True)
+            placeholder="Enter name of token or embedding" , interactive = True)
 
         with gr.Row() : 
-          self.outputs.tokenbox = gr.Textbox(lines=2, interactive = False)
+          self.outputs.tokenbox = gr.Textbox(label = '' , lines=2, interactive = False)
         with gr.Row() :   
-          self.inputs.sendtomix = gr.Checkbox(value=False, label="Send to input", interactive = True)
-          self.inputs.stack_mode = gr.Checkbox(value=False, label="Stack Mode", interactive = True)
-          self.inputs.send_to_negative = gr.Checkbox(value=False, label="Send to negatives", interactive = True)
-          self.inputs.id_mode = gr.Checkbox(value=False, label="ID input mode", interactive = True)
-          self.inputs.literal_mode = gr.Checkbox(value=False, label="String Literal Mode", interactive = True)
+            self.inputs.show_similarity = gr.Checkbox(value=True, label="Show similarity %", interactive = True)
+            self.inputs.show_distance = gr.Checkbox(value=False, label="Show distance", interactive = True)
+            
+            self.inputs.stack_mode = gr.Checkbox(\
+            value=False, label="Stack Mode", interactive = True , visible = False)
+            self.inputs.send_to_negative = gr.Checkbox(\
+            value=False, label="Send to negatives", interactive = True , visible =False)
+            
+            self.inputs.id_mode = gr.Checkbox(value=False, label="ID input mode", interactive = True)
+            self.inputs.literal_mode = gr.Checkbox(value=False, label="String Literal Mode", interactive = True)
+
+
 
         with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_0 :
-          gr.Markdown("The Minitokenizer is a tool which allows you to get CLIP tokens " + \
-          "from a text prompt. The MiniTokenizer can also split embedddings into individual tokens. \n \n " +  \
-          "You can write the name of an embedding to get its single vector components. " + \
-          "By writing example[3:5] you can extract vector 3 to 5 in an embedding. \n \n " + \
-          "By writing ' _ ' you can generate random vector. \n \n To input token IDs " + \
-          " intead of token names , check the ID input mode checkbox and " + \
-          "write a ID number between 0 and" + str(self.data.tools.no_of_internal_embs) + \
-          ",  like for example '6228 20198' which gives the " + \
-          "tokens 'example' and 'prompt' . \n \n " + \
-          "Observe : When you write example[3:5] and send the vectors to the mixer, " + \
-          "the vectors will not show up at the top. You will need to scroll down to see them. \n \n " + \
-          "The code for this module is built upon the extension provided by tkalayci71: \n " + \
-          "https://github.com/tkalayci71/embedding-inspector")
+          gr.Markdown("This tutorial has not been written yet.")
 
       self.tutorials = [tutorial_0]
       self.show = [show]
