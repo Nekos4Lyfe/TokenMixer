@@ -15,6 +15,7 @@ from torch.nn.modules import ConstantPad1d, container
 from lib.modules.token_mixer import TokenMixer     
 from lib.modules.moduleTab import Modules
 from lib.modules.cross_attention_mixer import CrossAttentionMixer
+from lib.modules.token_comparator import TokenComparator
 
 def add_tab():
 
@@ -35,6 +36,11 @@ def add_tab():
             header = gr.Textbox(label="", lines=2, placeholder="Rearrange embeddings here", interactive = True)
         with gr.Row(): 
             with left_column.render() : #Left Column
+
+              with gr.Tab(label = "new stuff" , visible = True):
+                tocom = TokenComparator("Token Comparator" ,  True)
+
+              ####
               modules = Modules("minit" , [True , False , False , False , False , False]) 
               modules2  = Modules("embin" , [False , True , False , False , False , False])
               modules3 = Modules("tocal" , [False , False , True , False , False , False])
@@ -73,7 +79,12 @@ def add_tab():
     settings_update_button.click(fn = hide_columns , \
     inputs = [show_left_column , show_right_column] , \
     outputs = [left_column , right_column , modules.tab])
-    
+
+
+    #####
+    tocom.setupIO_with(tokm)
+    ######
+
     modules.setupIO_with(tokm , tokm2 , tokm3 , tokm4 , tokm5)
     modules2.setupIO_with(tokm , tokm2 , tokm3 , tokm4 , tokm5)
     modules3.setupIO_with(tokm , tokm2 , tokm3 , tokm4 , tokm5)
