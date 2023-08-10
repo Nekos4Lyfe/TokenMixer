@@ -721,6 +721,32 @@ class Data :
       self.vector.weight.place(self.weight , index)
   ###### End of recall()
 
+  def norm (self, tensor , origin_input , distance_fcn):
+        current = tensor.to(device = "cpu")
+        origin = origin_input.to(device = "cpu")
+
+        return current
+
+  def similarity (self , tensor1 , tensor2):
+        distance = torch.nn.PairwiseDistance(p=2).to(device = "cpu")
+        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6).to(device = "cpu")
+        origin = (self.vector.origin).to(device = "cpu")
+        #######
+
+        current = tensor1.to(device = "cpu" , dtype = torch.float32)
+        dist1 = distance(current, origin).numpy()[0]
+        current = current * (1/dist1)
+
+        ####
+
+        ref = tensor2.to(device = "cpu" , dtype = torch.float32)
+        dist2 = distance(current, origin).numpy()[0]
+        ref = ref * (1/dist2)
+
+        ########
+        sim = (100*cos(current , ref)).to(device = "cpu")
+        if sim < 0 : sim = -sim
+        return  str(round(sim.numpy()[0] , 2))
 
   def get(self , index):
     vector = self.vector.get(index)
