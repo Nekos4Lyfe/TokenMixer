@@ -3,6 +3,7 @@ from modules import script_callbacks, shared, sd_hijack
 from modules.shared import cmd_opts
 from pandas import Index
 from pandas.core.groupby.groupby import OutputFrameOrSeries
+from sqlalchemy.sql.expression import true
 import torch, os
 from modules.textual_inversion.textual_inversion import Embedding
 import collections, math, random , numpy
@@ -37,9 +38,6 @@ def add_tab():
         with gr.Row(): 
             with left_column.render() : #Left Column
 
-              with gr.Tab(label = "new stuff" , visible = True):
-                tocom = TokenComparator("Token Comparator" ,  True)
-
               ####
               modules = Modules("minit" , [True , False , False , False , False , False]) 
               modules2  = Modules("embin" , [False , True , False , False , False , False])
@@ -48,6 +46,9 @@ def add_tab():
               modules5 = Modules("synom" , [False , False , False , False , True , False])
               modules6 = Modules("all" , [True , True , True , True , True , True])
             #####
+
+              with gr.Tab(label = "new stuff" , visible = True):
+                tocom = TokenComparator("Token Comparator" ,  True)
                       
             with right_column.render() : #Right Column
               with gr.Tab(label = "Generators"  , visible = True):
