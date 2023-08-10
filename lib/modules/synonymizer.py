@@ -210,6 +210,11 @@ class Synonymizer:
     everything_mode   = args[39]   
     ######
 
+    tokens = args[40]
+    nontokens = args[41]
+
+    ######
+
     params = [ langs , languages , compact_mode , \
     definition_mode , hypernym_mode , hyponym_mode , \
     meronym_mode , holonym_mode  , entailment_mode , \
@@ -222,6 +227,14 @@ class Synonymizer:
     tokenbox = self.get(mini_input , *params)
     ###### 
 
+    filters = 'Filters : '
+    isFilter = (tokens and not nontokens) or (nontokens and not tokens)
+    if tokens : filters += "single tokens"
+    if nontokens : filters += "non-tokens"
+
+    list_of_filtered = []
+
+
     if everything_mode:
         k=0
         text = ''
@@ -232,11 +245,21 @@ class Synonymizer:
           k+=1
           tokenbox.append(' ')
           tokenbox.append('##########################################################')
+          if (isFilter): tokenbox.append(filters)
           tokenbox.append("Found variants of the word '" + word + "' : ")
           tokenbox.append(' ')
           text = ''
+          filtered = [word]
           for name in everything :
+            if (isFilter):
+              emb_ids = self.data.text_to_emb_ids(name)
+              if tokens and len(emb_ids) > 1 : continue
+              if nontokens and len(emb_ids) <= 1 : continue
+            ########
             text = text  + name + '     '
+            filtered.append(name)
+          #End of inner loop
+          list_of_filtered.append(list(set(filtered)))
           tokenbox.append(text) 
         #######  
 
@@ -248,9 +271,9 @@ class Synonymizer:
 
     for suggestion in range(no_of_suggestions):
       text = " " + str(suggestion) + ".  "
-      for everything in list_of_everything:
-        if everything == [] or everything == None : continue
-        text = text + random.choice(everything) + '   '
+      for filtered in list_of_filtered:
+        if filtered == [] or filtered == None : continue
+        text = text + random.choice(filtered) + '   '
       tokenbox.append(text)
       tokenbox.append('  ')
 
@@ -598,6 +621,9 @@ class Synonymizer:
       input_list.append(self.inputs.suggestions)      #38
       input_list.append(self.inputs.everything_mode)  #39
       #######
+      input_list.append(self.include.tokens)          #40
+      input_list.append(self.include.nontokens)       #41
+      #######
       output_list.append(module.inputs.mix_input) #0
       output_list.append(self.outputs.tokenbox)   #1
       #######
@@ -633,6 +659,12 @@ class Synonymizer:
         Inputs.suggestions = []
         Inputs.everything_mode = []
 
+
+    class Include :
+      def __init__(self): 
+        Include.tokens = []
+        Include.nontokens = []
+
     class Lang :
       def __init__(self):
         Lang.english = []
@@ -667,6 +699,7 @@ class Synonymizer:
     self.outputs= Outputs()
     self.inputs = Inputs()
     self.buttons= Buttons()
+    self.include = Include()
     self.lang = Lang()
     self.ID = "Synonymizer"
     self.languages = None
@@ -705,7 +738,7 @@ class Synonymizer:
               self.inputs.entailment_mode = gr.Checkbox(value=True, label="More specific (Entailments)", interactive = True , visible = True)
               self.inputs.antonym_mode = gr.Checkbox(value=False, label="Opposites (Antonyms)", interactive = True , visible = True)
               self.inputs.everything_mode = gr.Checkbox(value=True, label="Show results", interactive = True , visible = True)
-  
+
             with gr.Row():
               with gr.Accordion("Include language" ,open=False , visible = True):
                 with gr.Row(): 
@@ -732,7 +765,11 @@ class Synonymizer:
                   self.lang.portuguese = gr.Checkbox(value= False, label="Portuguese", interactive = True)
                   self.lang.spanish = gr.Checkbox(value= False, label="Spanish", interactive = True)
                   self.lang.swedish = gr.Checkbox(value= False, label="Swedish", interactive = True)
-          
+            with gr.Row():
+              with gr.Accordion("Filters" ,open=False , visible = True):
+                self.include.tokens = gr.Checkbox(value=True, label="Include token words", interactive = True)
+                self.include.nontokens = gr.Checkbox(value=True, label="Include non-token words", interactive = True)
+
       with gr.Accordion("Random ' _ ' token settings" ,open=False , visible = False) as randset : 
         self.inputs.randlen = gr.Slider(minimum=0, maximum=10, step=0.01, label="Randomized ' _ ' token length", default=0.35 , interactive = True)
       
