@@ -129,8 +129,6 @@ class Vector :
   def __init__(self , size):
     Vector.size = size
     Vector.origin = torch.zeros(size).unsqueeze(0).cpu()
-    Vector.costheta = 0
-    Vector.radius = 0
     Vector.randomization = 0
     Vector.interpolation = 0
     Vector.itermax = 1000

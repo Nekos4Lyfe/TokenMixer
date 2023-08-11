@@ -56,8 +56,6 @@ class Negative :
   def __init__(self , size):
     Negative.size = size
     Negative.origin = torch.zeros(size).unsqueeze(0).cpu()
-    Negative.costheta = 0
-    Negative.radius = 0
     Negative.randomization = 0
     Negative.interpolation = 0
     Negative.itermax = 1000

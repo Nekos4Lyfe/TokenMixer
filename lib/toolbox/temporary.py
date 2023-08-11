@@ -60,8 +60,6 @@ class Temporary :
   def __init__(self , size):
     Temporary.size = size
     Temporary.origin = torch.zeros(size).unsqueeze(0).cpu()
-    Temporary.costheta = 0
-    Temporary.radius = 0
     Temporary.randomization = 0
     Temporary.interpolation = 0
     Temporary.itermax = 1000
