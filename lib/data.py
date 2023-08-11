@@ -632,10 +632,25 @@ class Data :
         if to_temporary : self.temporary.shuffle()
   ######## End of shuffle function
 
-  def sample(self , to_negative = None , to_mixer = None , to_temporary = None):
-
+  def roll (self , to_negative = None , to_mixer = None , to_temporary = None): 
     message = ''
+    if to_negative == None and to_mixer == None and to_temporary == None:
+      message = self.vector.roll()
+    else:
+      if to_negative != None :
+        if to_negative : pass # Not implemented
+      #####
+      if to_mixer != None : 
+        if to_mixer : message = self.vector.roll()
+      #####
+      if to_temporary != None : 
+        if to_temporary : pass # Not implemented
+    return message
+  ######## End of roll function
 
+
+  def sample(self , to_negative = None , to_mixer = None , to_temporary = None):
+    message = ''
     if to_negative == None and to_mixer == None and to_temporary == None:
       message = self.vector.sample()
     else:
