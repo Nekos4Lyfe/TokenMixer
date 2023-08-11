@@ -47,7 +47,7 @@ def add_tab():
               modules6 = Modules("all" , [True , True , True , True , True , True])
             #####
 
-              with gr.Tab(label = "new stuff" , visible = True):
+              with gr.Tab(label = "new!" , visible = True):
                 tocom = TokenComparator("Token Comparator" ,  True)
                       
             with right_column.render() : #Right Column
