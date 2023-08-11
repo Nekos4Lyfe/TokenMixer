@@ -7,6 +7,8 @@ This extension is still an early-access version. Bug reports are welcome. Inform
 
 Disclaimer : This extension is not compatible with SDXL yet
 
+If you have ideas/suggestions/questions about the user interface , please make a post under the "Issues" tab. 
+
 ![TokenMixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0285fba9-78d6-49fb-981b-92084786aa51)
 
 
