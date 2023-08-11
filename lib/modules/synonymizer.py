@@ -709,7 +709,7 @@ class Synonymizer:
     #test = gr.Label('Prompt MiniTokenizer' , color = "red")
     #create UI
     with gr.Accordion(label , open=True , visible = vis) as show :
-      gr.Markdown("Get CLIP tokens and embedding vectors")
+      gr.Markdown("Find synonyms to words")
       with gr.Row() :
         self.inputs.suggestions = gr.Slider(label="No. of suggestions",value=5, \
                                 minimum=0, maximum=100, step=1 , interactive = True)
