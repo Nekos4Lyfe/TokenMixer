@@ -61,7 +61,7 @@ class Vector :
     for i in range(MAX_NUM_MIX):
       randlist.append(i)
       if self.isEmpty.get(i) : break
-    
+  
     random.shuffle(randlist)
 
     index_list = []
@@ -83,6 +83,71 @@ class Vector :
         self.data[index1] = self.data[index2]
         self.data[index2] = self.tmp
   ####### End of shuffle function
+
+  def similarity (self , tensor1 , tensor2):
+        distance = torch.nn.PairwiseDistance(p=2).to(device = "cpu")
+        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6).to(device = "cpu")
+        origin = (self.origin).to(device = "cpu")
+        #######
+
+        current = tensor1.to(device = "cpu" , dtype = torch.float32)
+        dist1 = distance(current, origin).numpy()[0]
+        current = current * (1/dist1)
+
+        ####
+
+        ref = tensor2.to(device = "cpu" , dtype = torch.float32)
+        dist2 = distance(current, origin).numpy()[0]
+        ref = ref * (1/dist2)
+
+        ########
+        sim = (100*cos(current , ref)).to(device = "cpu")
+        if sim < 0 : sim = -sim
+        output = str(round(sim.numpy()[0] , 2))
+        return  output
+
+  def distance (self, tensor1 , tensor2):
+        distance = torch.nn.PairwiseDistance(p=2).to(device = "cpu")
+        #######
+        current = tensor1.to(device = "cpu" , dtype = torch.float32)
+        ref = tensor2.to(device = "cpu" , dtype = torch.float32)
+        dist = distance(current, ref).numpy()[0]
+        output = str(round(dist , 2))
+        return  output
+
+  def roll(self) :
+    log = []
+    log.append("Roll Mode:")
+    distance = torch.nn.PairwiseDistance(p=2)
+    cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
+    r = self.randomization/100
+    rand = None 
+    prev = None
+    current = None
+    origin = self.origin 
+    tokenCount = 0
+    tmp = None
+    for index in range(MAX_NUM_MIX):
+      if self.isEmpty.get(index): continue
+      #######
+      r = self.rollcountrand/100
+      rollCount = math.floor(self.rollcount * ((1 - r) + (r) * random.random()))
+      #########
+      prev = self.data[index]
+      current = torch.roll(prev , rollCount).cpu()
+      self.data[index] = current
+      ########
+      similarity = self.similarity(current, prev)
+      dist = self.distance(current, self.origin)
+      tokenCount +=1
+      log.append("Token '" + self.name.get(index) + "' was rolled " + str(rollCount) + \
+      " times to create a new vector with length " + \
+       str(dist)  + " and similarity " + str(similarity) + " %")
+    log.append('New embedding has ' + str(tokenCount) + " tokens")
+    log.append('-------------------------------------------')
+    #########
+    assert log != None , "log is None!"
+    return '\n'.join(log)
 
   def sample(self) :
 
@@ -119,8 +184,8 @@ class Vector :
       dist = round(dist ,2)
       log.append("Token '" + self.name.get(index) + "' was replaced by new vector with " + \
        "length " + str(dist)  + " and similarity " + str(similarity) + " %")
-      log.append('New embedding has ' + str(tokenCount) + " tokens")
-      log.append('-------------------------------------------')
+    log.append('New embedding has ' + str(tokenCount) + " tokens")
+    log.append('-------------------------------------------')
     #########
     return '\n'.join(log)
 
@@ -136,6 +201,9 @@ class Vector :
     Vector.allow_negative_gain = False
     Vector.data = []
     Vector.tmp = None
+
+    Vector.rollcount = 0
+    Vector.rollcountrand = 0
 
     for i in range (MAX_NUM_MIX):
       tmp = torch.zeros(size).unsqueeze(0).cpu()
