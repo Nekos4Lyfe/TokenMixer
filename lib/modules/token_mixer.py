@@ -139,8 +139,8 @@ class TokenMixer :
     interpolate_mode = args[3]
     similar_mode = args[4]
     five_sets_mode = args[5]
-    angularSlider = args[6]
-    radialSlider = args[7]
+    randlen = args[6]
+    randlenrand = args[7]
     randSlider = args[8]
     interpolateSlider = args[9]
     iterationSlider = args[10]
@@ -155,6 +155,7 @@ class TokenMixer :
     order_randomize_mode = args[19]
     neg_input = args[20]
     sample_mode = args[21]
+    shift_mode = args[22]
 
     assert not self.data == None , "Warning: data class is null"
 
@@ -215,8 +216,6 @@ class TokenMixer :
       log.append('-------------------------------------------')
 
     #Update the data class with given slider values
-    self.data.vector.costheta = angularSlider
-    self.data.vector.radius = radialSlider
     self.data.vector.randomization = randSlider
     self.data.vector.interpolation = interpolateSlider
     self.data.vector.itermax = iterationSlider
@@ -226,12 +225,9 @@ class TokenMixer :
     #Check if user has pasted something into the override box
     if (user_wrote_something_in(override_box)):
       try:
-        costh , rad ,rand , interp , iterm , gain  = \
+        rand , interp , iterm , gain  = \
         [int(s) for s in re.findall(r'\b\d+\b', override_box)]
-        log.append('Setting override params : '+ str(costh)+','+ \
-        str(rad)+','+str(rand)+','+str(interp)+','+str(iterm))
-        if costh != None : self.data.vector.costheta = costh
-        if rad != None : self.data.vector.radius = rad
+        log.append('Setting override params : '+str(rand)+','+str(interp)+','+str(iterm))
         if rand != None : self.data.vector.randomization = rand
         if interp != None : self.data.vector.interpolation = interp
         if iterm != None : self.data.vector.itermax = iterm
@@ -297,8 +293,8 @@ class TokenMixer :
       input_list.append(self.inputs.settings.interpolate_mode)      #3
       input_list.append(self.inputs.settings.similar_mode)          #4
       input_list.append(self.inputs.settings.five_sets_mode)        #5
-      input_list.append(self.inputs.sliders.angle)                  #6
-      input_list.append(self.inputs.sliders.length)                 #7
+      input_list.append(self.inputs.sliders.randlen)                #6
+      input_list.append(self.inputs.sliders.randlenrand)            #7
       input_list.append(self.inputs.sliders.randomize)              #8
       input_list.append(self.inputs.sliders.interpolate)            #9
       input_list.append(self.inputs.sliders.iterations)             #10
@@ -313,6 +309,7 @@ class TokenMixer :
       input_list.append(self.inputs.settings.order_randomize_mode)  #19
       input_list.append(self.inputs.negbox)                         #20
       input_list.append(self.inputs.settings.sample_mode)           #21
+      input_list.append(self.inputs.settings.shift_mode)            #22
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -363,6 +360,7 @@ class TokenMixer :
                 Settings.autoselect = []
                 Settings.order_randomize_mode = []
                 Settings.sample_mode = []
+                Settings.shift_mode = []
 
           class Local :
             #Class to store local variables
@@ -377,25 +375,25 @@ class TokenMixer :
               Local.sub_name = ''
               Local.order_randomize_mode = False
               Local.sample_mode = False
+              Local.shift_mode = False
 
 
           class Sliders :
               def __init__(self):
-                Sliders.angle = []
-                Sliders.length = []
                 Sliders.randomize = []
                 Sliders.interpolate = []
                 Sliders.iterations = []
                 Sliders.gain = []
                 Sliders.negative_weight = []
                 Sliders.positive_weight = []
+                Sliders.randlen = []
+                Sliders.randlenrand = []
 
           class Inputs :
               def __init__(self):
                 Inputs.settings = Settings()
                 Inputs.sliders = Sliders()
                 Inputs.save_name = []
-                #Inputs.eval_box = [0]
                 Inputs.save_vector_name = []
                 Inputs.mix_input =  []
                 Inputs.mix_sliders =[]
@@ -404,10 +402,9 @@ class TokenMixer :
                 Inputs.negbox = []
                 Inputs.posbox = []
 
+
           class Outputs :
               def __init__(self):
-                #Outputs.preset_names = [0]
-                #Outputs.presets_dropdown = [0]
                 Outputs.embedding_box = []
                 Outputs.log = []
                 Outputs.tolist = []
@@ -439,6 +436,7 @@ class TokenMixer :
                                 with gr.Accordion('TokenMixer modes of operation',open=True):
                                   self.inputs.settings.order_randomize_mode = gr.Checkbox(value=False,label="Randomize token order ", interactive = True)
                                   self.inputs.settings.sample_mode = gr.Checkbox(value=False,label="Sample Mode  : Replace input token with sample vector", interactive = True)
+                                  self.inputs.settings.shift_mode = gr.Checkbox(value=False,label="Shift Mode : Add random vector to input token", interactive = True)
                                   self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Similar Mode  : Replace input tokens with similar tokens", interactive = True)
                                   self.inputs.settings.merge_mode = gr.Checkbox(value=False,label="Merge Mode : Find single token with greatest similarity to all input tokens ", interactive = True)
                                   self.inputs.settings.interpolate_mode = gr.Checkbox(value=False,label="Interpolate Mode  : Merge tokens with similarity (Work in progress)", interactive = True)       
@@ -518,15 +516,27 @@ class TokenMixer :
                               self.outputs.embedding_box = gr.Textbox(label="------> Output",lines=1,placeholder='Embedding name output')
                               gr.Markdown("### TokenMixer Operation Settings")
                               with gr.Accordion('General Settings',open=True):
-                                self.inputs.sliders.negative_weight = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
-                                label="Negative token strength % ", default=50 , interactive = True) 
+                                self.inputs.sliders.gain = gr.Slider(minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
+                                self.inputs.sliders.iterations = gr.Slider(value = 200 , minimum=0, maximum=3000, step=1, label="Similarity samples max", default=200 , interactive = True)
+
+                              with gr.Accordion("'Sample Mode' Settings",open=False):
                                 self.inputs.sliders.randomize = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                 label="Sample randomization %", default=50 , interactive = True)
 
-                                self.inputs.sliders.gain = gr.Slider(minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
-                                self.inputs.sliders.iterations = gr.Slider(value = 200 , minimum=0, maximum=3000, step=1, label="Similarity samples max", default=200 , interactive = True)
-                               
-                                
+                              with gr.Accordion("'Similar Mode' Settings",open=False):
+                                self.inputs.sliders.negative_weight = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
+                                label="Negative token strength % ", default=50 , interactive = True) 
+
+                              with gr.Accordion("'Shift Mode' Settings",open=False):
+                                ####
+                                self.inputs.sliders.randlen = \
+                                gr.Slider(minimum=0.5, maximum=10, step=0.01, \
+                                label="Randomized ' _ ' token max length", default=0.5 , interactive = True)
+                                ####
+                                self.inputs.sliders.randlenrand = \
+                                  gr.Slider(value = 70 , minimum=0, maximum=100, step=0.1, \
+                                  label="Randomized ' _ ' token length randomization %", default=70 , interactive = True)
+
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_3 : 
                                   gr.Markdown("These sliders set general values for the 'Similar Mode' , 'Merge Mode' and " + \
                                   "'Interpolate Mode' operations on the TokenMixer. These operations can be enabled " + \
@@ -554,9 +564,7 @@ class TokenMixer :
                                           "The value 'w' in this formula is the 'negative token strength %' \n \n " + \
                                           "(For example 35% negative strength => w = 0.35)")                                      
 
-                              with gr.Accordion('Similar Mode Settings',open=False , visible = False): # Deprecated
-                                self.inputs.sliders.angle = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. vector cos(theta) similarity %", default=60 , interactive = True)
-                                self.inputs.sliders.length = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. vector length similarity %", default=80 , interactive = True)          
+                              with gr.Accordion('Deprecated',open=False , visible = False): # Deprecated
                                 self.inputs.settings.allow_negative_gain = gr.Checkbox(value=False,label="Allow negative gain", interactive = True , visible = False)         
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_4 : 
                                   gr.Markdown("These sliders control the allowed range for the similar vector output. \n \n" + \
@@ -594,15 +602,6 @@ class TokenMixer :
 
           self.show = [show]
           self.logs = [logs]
-                  
-          #set default values
-          self.inputs.sliders.angle.value = 60
-          self.inputs.sliders.gain.value = 1
-          self.inputs.sliders.length.value = 80
-          self.inputs.sliders.randomize.value = 0
-          self.inputs.sliders.interpolate.value = 50
-          self.inputs.sliders.iterations.value = 500
-
 
           self.buttons.save.style(size="lg")
           self.buttons.reset.style(size="lg")
