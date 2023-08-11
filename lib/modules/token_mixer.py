@@ -553,7 +553,7 @@ class TokenMixer :
 
                               with gr.Accordion("'Roll Mode' Settings",open=False):
                                 ####
-                                self.inputs.sliders.rollcount = gr.Slider(value = 1 , minimum=0, maximum=self.data.tools.no_of_internal_embs , step=1, \
+                                self.inputs.sliders.rollcount = gr.Slider(value = 1 , minimum=0, maximum=self.data.vector.size , step=1, \
                                 label="Max roll count 'n'", default=1 , interactive = True)
                                 ####
                                 self.inputs.sliders.rollcountrand = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
