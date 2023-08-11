@@ -171,6 +171,7 @@ class TokenMixer :
     roll_mode = args[22]
     rollcount = args[23]
     rollcountrand = args[24]
+    numbers_mode = args[25]
 
     assert not self.data == None , "Warning: data class is null"
 
@@ -188,6 +189,7 @@ class TokenMixer :
     self.local.order_randomize_mode = copy.copy(order_randomize_mode)
     self.local.sample_mode = copy.copy(sample_mode)
     self.local.roll_mode = copy.copy(roll_mode)
+    self.local.numbers_mode = copy.copy(numbers_mode)
 
     #Set the strength of the token negatives from input
     self.data.negative.strength = copy.copy(negative_strength)
@@ -256,22 +258,30 @@ class TokenMixer :
     if (five_sets_mode): iterations = 5
     else : iterations = 1
 
+    if (numbers_mode) : iterations = self.data.vector.size
+
     embox_output = '{'
 
     for i in range (iterations+1):
-      if i == 0: continue
 
-      #change filename if five_sets_mode is enabled
-      if (five_sets_mode): 
-        if (sub_name == None) or (sub_name == '') or (i==1):
-          if autoselect and i>1:
-            save_name = autosub + str(i)
-          else: save_name = save_name + '.'
-        else: save_name = sub_name + str(i)
-        embox_output = embox_output + save_name
+      if not numbers_mode:
+        if i == 0 : continue
+        #change filename if five_sets_mode is enabled
+        if (five_sets_mode): 
+          if (sub_name == None) or (sub_name == '') or (i==1):
+            if autoselect and i>1:
+              save_name = autosub + str(i)
+            else: save_name = save_name + '.'
+          else: save_name = sub_name + str(i)
+          embox_output = embox_output + save_name
         
-        if (i<iterations): embox_output = embox_output + '|'
-        else: embox_output = embox_output + '}'
+          if (i<iterations): embox_output = embox_output + '|'
+          else: embox_output = embox_output + '}'
+      #######
+      else: 
+        save_name = str(i)
+        self.data.vector.rollcount = i
+        self.data.vector.rollcountrand = 0
 
       #Run the TokenMixer
       message , save_filename = self.Run(save_name) 
@@ -279,7 +289,8 @@ class TokenMixer :
       if save_filename == None : 
         return '\n'.join(log), None , None
 
-    if (five_sets_mode) : save_name = embox_output
+    if (numbers_mode): save_name = 'embs 0 to ' + str(self.data.vector.size) + ' are saved'
+    elif (five_sets_mode) : save_name = embox_output
 
     #Load names from the data class and send them to the mixer inputs
     mix_name_output = ''
@@ -332,6 +343,7 @@ class TokenMixer :
       input_list.append(self.inputs.settings.roll_mode)             #22
       input_list.append(self.inputs.sliders.rollcount)              #23
       input_list.append(self.inputs.sliders.rollcountrand)          #24
+      input_list.append(self.inputs.settings.numbers)               #25
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -383,6 +395,7 @@ class TokenMixer :
                 Settings.order_randomize_mode = []
                 Settings.sample_mode = []
                 Settings.roll_mode = []
+                Settings.numbers_mode = []
 
           class Local :
             #Class to store local variables
@@ -398,6 +411,7 @@ class TokenMixer :
               Local.order_randomize_mode = False
               Local.sample_mode = False
               Local.roll_mode = False
+              Local.numbers_mode = False
 
 
           class Sliders :
@@ -558,6 +572,13 @@ class TokenMixer :
                                 ####
                                 self.inputs.sliders.rollcountrand = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                   label="Roll count randomization %", default=50 , interactive = True)
+
+                                self.inputs.settings.numbers = gr.Checkbox(value=False,label="Full range mode : Save " + \
+                                 str(self.data.vector.size) + " embeddings as numbers '0' - '" + str(self.data.vector.size) + "'", interactive = True)
+
+                                self.inputs.sliders.curb = gr.Slider(value = 10 , minimum=0, maximum=100, step=0.1, \
+                                  label="Curb full range mode %", default=10 , interactive = True)
+
 
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_3 : 
                                   gr.Markdown("These sliders set general values for the 'Similar Mode' , 'Merge Mode' and " + \
