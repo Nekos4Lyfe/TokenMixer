@@ -68,12 +68,13 @@ class TokenMixer :
     
 #BEGIN PROCESSING THE VECTORS
 
-    self.data.memorize() #Store all initial vector values in a temporary list
+    #self.data.memorize() #Store all initial vector values in a temporary list
     message = ''
     if (self.local.order_randomize_mode): self.data.shuffle()
     if (self.local.sample_mode): 
       message = self.data.sample()
       log.append(message)
+    ###########
     tot_vec = None
     if(self.local.interpolate_mode):
       tot_vec , message = self.data.merge_if_similar(self.local.similar_mode)
@@ -91,14 +92,14 @@ class TokenMixer :
         'or write them into the TokenMixer inputs directly. \n \n Note that when writing a text or embedding into the TokenMixer ' +\
         'directly only the first token will be processed. \n \n To process embeddings or prompts greater then one token, ' +\
         'use the modules on the left')
-        self.data.recall() #Restore initial values
+        #self.data.recall() #Restore initial values
         return '\n'.join(log), None
     else:
-            if False: # Remove zeroed vectors
-                old_count = tot_vec.shape[0]
-                tot_vec = tot_vec[torch.count_nonzero(tot_vec,dim=1)>0]
-                new_count = tot_vec.shape[0]
-                if (old_count!=new_count): log.append('Removed '+str(old_count-new_count)+' zeroed vectors, remaining vectors: '+str(new_count))
+            #if False: # Remove zeroed vectors
+             #   old_count = tot_vec.shape[0]
+              #  tot_vec = tot_vec[torch.count_nonzero(tot_vec,dim=1)>0]
+              #  new_count = tot_vec.shape[0]
+              #  if (old_count!=new_count): log.append('Removed '+str(old_count-new_count)+' zeroed vectors, remaining vectors: '+str(new_count))
 
             if tot_vec.shape[0] > 0:
                 log.append('Final embedding size: '+str(tot_vec.shape[0])+' x '+str(tot_vec.shape[1]))
@@ -111,26 +112,20 @@ class TokenMixer :
                 if not(self.local.enable_overwrite):
                   return('File already exists ('+save_filename+') overwrite not enabled, aborting.', None)
                 else:  log.append('File already exists, overwrite is enabled')
-            
-            new_emb = Embedding(tot_vec, save_name) #Create the embedding
 
             try:
-                new_emb.save(save_filename)
+                Embedding(tot_vec, save_name).save(save_filename)
                 log.append('Saved "'+save_filename+'"')
                 anything_saved = True
 
             except: log.append('🛑 Error saving "'+save_filename+'" (filename might be invalid)')
 
     #Update the embedding database and the data class if we have saved an embedding
-    if anything_saved==True:
-        log.append('Reloading all embeddings')
-        try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
-        except: 
-            sd_hijack.model_hijack.embedding_db.dir_mtime=0
-            sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
-        self.data.update_loaded_embs() 
+    if anything_saved:
+      message = self.data.refresh()
+      log.append(message)
         
-    self.data.recall() #Restore initial values
+    #self.data.recall() #Restore initial values
     return '\n'.join(log) , save_filename
 
 
