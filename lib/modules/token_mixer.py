@@ -39,9 +39,16 @@ class TokenMixer :
       tmp+=1
       log.append('-------------------------------------------')
 
+    if (self.local.roll_mode):
+      log.append(str(tmp) + '. ' + "Roll Mode selected : Elements of input token 'X' will be " + \
+      "rolled 'n' steps using the 'torch.roll(X, 'n')' function , where " + \
+      "'n' is the 'roll count' value")
+      tmp+=1
+      log.append('-------------------------------------------')
+
     if (self.local.sample_mode):
       log.append(str(tmp) + '. ' + "Sample Mode selected : Input token 'X' will be " + \
-      "replaced with vector 'X*(1-r) + R*(r)' , where 'R' is a random vector and 'r' " + \
+      "replaced with vector 'norm(X*(1-r) + R*(r))*|X|' , where 'R' is a random vector and 'r' " + \
       "is the randomization % value")
       tmp+=1
       log.append('-------------------------------------------')
@@ -68,12 +75,18 @@ class TokenMixer :
     
 #BEGIN PROCESSING THE VECTORS
 
-    #self.data.memorize() #Store all initial vector values in a temporary list
+    self.data.memorize() #Store all initial vector values in a temporary list
     message = ''
     if (self.local.order_randomize_mode): self.data.shuffle()
+
+    if (self.local.roll_mode): 
+      message = self.data.roll()
+      log.append(message)
+
     if (self.local.sample_mode): 
       message = self.data.sample()
       log.append(message)
+
     ###########
     tot_vec = None
     if(self.local.interpolate_mode):
@@ -92,7 +105,7 @@ class TokenMixer :
         'or write them into the TokenMixer inputs directly. \n \n Note that when writing a text or embedding into the TokenMixer ' +\
         'directly only the first token will be processed. \n \n To process embeddings or prompts greater then one token, ' +\
         'use the modules on the left')
-        #self.data.recall() #Restore initial values
+        self.data.recall() #Restore initial values
         return '\n'.join(log), None
     else:
             #if False: # Remove zeroed vectors
@@ -125,7 +138,7 @@ class TokenMixer :
       message = self.data.refresh()
       log.append(message)
         
-    #self.data.recall() #Restore initial values
+    self.data.recall() #Restore initial values
     return '\n'.join(log) , save_filename
 
 
@@ -139,8 +152,8 @@ class TokenMixer :
     interpolate_mode = args[3]
     similar_mode = args[4]
     five_sets_mode = args[5]
-    randlen = args[6]
-    randlenrand = args[7]
+    randlen = args[6] #Empty
+    randlenrand = args[7] #Empty
     randSlider = args[8]
     interpolateSlider = args[9]
     iterationSlider = args[10]
@@ -155,7 +168,9 @@ class TokenMixer :
     order_randomize_mode = args[19]
     neg_input = args[20]
     sample_mode = args[21]
-    shift_mode = args[22]
+    roll_mode = args[22]
+    rollcount = args[23]
+    rollcountrand = args[24]
 
     assert not self.data == None , "Warning: data class is null"
 
@@ -172,6 +187,7 @@ class TokenMixer :
     self.local.five_sets_mode = copy.copy(five_sets_mode)
     self.local.order_randomize_mode = copy.copy(order_randomize_mode)
     self.local.sample_mode = copy.copy(sample_mode)
+    self.local.roll_mode = copy.copy(roll_mode)
 
     #Set the strength of the token negatives from input
     self.data.negative.strength = copy.copy(negative_strength)
@@ -221,6 +237,8 @@ class TokenMixer :
     self.data.vector.itermax = iterationSlider
     self.data.vector.gain = gainSlider
     self.data.vector.allow_negative_gain = allow_negative_gain
+    self.data.vector.rollcount = rollcount
+    self.data.vector.rollcountrand = rollcountrand
 
     #Check if user has pasted something into the override box
     if (user_wrote_something_in(override_box)):
@@ -293,8 +311,10 @@ class TokenMixer :
       input_list.append(self.inputs.settings.interpolate_mode)      #3
       input_list.append(self.inputs.settings.similar_mode)          #4
       input_list.append(self.inputs.settings.five_sets_mode)        #5
-      input_list.append(self.inputs.sliders.randlen)                #6
-      input_list.append(self.inputs.sliders.randlenrand)            #7
+      
+      input_list.append(self.inputs.sliders.gain)#<--placeholder    #6                
+      input_list.append(self.inputs.sliders.gain)#<---placeholder   #7          
+      
       input_list.append(self.inputs.sliders.randomize)              #8
       input_list.append(self.inputs.sliders.interpolate)            #9
       input_list.append(self.inputs.sliders.iterations)             #10
@@ -309,7 +329,9 @@ class TokenMixer :
       input_list.append(self.inputs.settings.order_randomize_mode)  #19
       input_list.append(self.inputs.negbox)                         #20
       input_list.append(self.inputs.settings.sample_mode)           #21
-      input_list.append(self.inputs.settings.shift_mode)            #22
+      input_list.append(self.inputs.settings.roll_mode)             #22
+      input_list.append(self.inputs.sliders.rollcount)              #23
+      input_list.append(self.inputs.sliders.rollcountrand)          #24
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -360,7 +382,7 @@ class TokenMixer :
                 Settings.autoselect = []
                 Settings.order_randomize_mode = []
                 Settings.sample_mode = []
-                Settings.shift_mode = []
+                Settings.roll_mode = []
 
           class Local :
             #Class to store local variables
@@ -375,7 +397,7 @@ class TokenMixer :
               Local.sub_name = ''
               Local.order_randomize_mode = False
               Local.sample_mode = False
-              Local.shift_mode = False
+              Local.roll_mode = False
 
 
           class Sliders :
@@ -388,6 +410,8 @@ class TokenMixer :
                 Sliders.positive_weight = []
                 Sliders.randlen = []
                 Sliders.randlenrand = []
+                Sliders.rollcount = []
+                Sliders.rollcountrand = []
 
           class Inputs :
               def __init__(self):
@@ -436,7 +460,7 @@ class TokenMixer :
                                 with gr.Accordion('TokenMixer modes of operation',open=True):
                                   self.inputs.settings.order_randomize_mode = gr.Checkbox(value=False,label="Randomize token order ", interactive = True)
                                   self.inputs.settings.sample_mode = gr.Checkbox(value=False,label="Sample Mode  : Replace input token with sample vector", interactive = True)
-                                  self.inputs.settings.shift_mode = gr.Checkbox(value=False,label="Shift Mode : Add random vector to input token", interactive = True)
+                                  self.inputs.settings.roll_mode = gr.Checkbox(value=False,label="Roll Mode : Shift the elements of the input vector", interactive = True)
                                   self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Similar Mode  : Replace input tokens with similar tokens", interactive = True)
                                   self.inputs.settings.merge_mode = gr.Checkbox(value=False,label="Merge Mode : Find single token with greatest similarity to all input tokens ", interactive = True)
                                   self.inputs.settings.interpolate_mode = gr.Checkbox(value=False,label="Interpolate Mode  : Merge tokens with similarity (Work in progress)", interactive = True)       
@@ -527,15 +551,13 @@ class TokenMixer :
                                 self.inputs.sliders.negative_weight = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                 label="Negative token strength % ", default=50 , interactive = True) 
 
-                              with gr.Accordion("'Shift Mode' Settings",open=False):
+                              with gr.Accordion("'Roll Mode' Settings",open=False):
                                 ####
-                                self.inputs.sliders.randlen = \
-                                gr.Slider(minimum=0.5, maximum=10, step=0.01, \
-                                label="Randomized ' _ ' token max length", default=0.5 , interactive = True)
+                                self.inputs.sliders.rollcount = gr.Slider(value = 1 , minimum=0, maximum=self.data.tools.no_of_internal_embs , step=1, \
+                                label="Max roll count 'n'", default=1 , interactive = True)
                                 ####
-                                self.inputs.sliders.randlenrand = \
-                                  gr.Slider(value = 70 , minimum=0, maximum=100, step=0.1, \
-                                  label="Randomized ' _ ' token length randomization %", default=70 , interactive = True)
+                                self.inputs.sliders.rollcountrand = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
+                                  label="Roll count randomization %", default=50 , interactive = True)
 
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_3 : 
                                   gr.Markdown("These sliders set general values for the 'Similar Mode' , 'Merge Mode' and " + \
