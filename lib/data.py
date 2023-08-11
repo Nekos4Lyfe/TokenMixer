@@ -75,7 +75,7 @@ class Data :
     norm_expected = tensor * (1/dist_of_mean) #Normalized expected average of vectors
     dist_expected = dsum/no_of_tokens # average length on inputs
 
-    radialGain = max(0.001 , self.vector.radius/100) 
+    radialGain = 0.001 #deprecated
     randomGain = self.vector.randomization/100  
     size = self.vector.size
     gain = self.vector.gain
@@ -253,9 +253,8 @@ class Data :
       current = None
       cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
       distance = torch.nn.PairwiseDistance(p=2)
-      radialGain = max(0.001 , self.vector.radius/100) 
+      radialGain = 0.001 #deprecated
       randomGain = self.vector.randomization/100  
-      costheta = self.vector.costheta
       origin = self.vector.origin
       size = self.vector.size
       gain = self.vector.gain
@@ -288,12 +287,6 @@ class Data :
       rando = None
       rdist = None
       rand_vec = None
-
-      #Randomization parameters: 
-      #radialRandom = (1 - randomGain) + randomGain*(2*random.random() - 1)
-      #if radialRandom<0: radialRandom = -radialRandom
-      radialRandom = 1
-      lowerBound  = costheta  + (100 - costheta) * (randomGain * random.random())
 
       #Get vectors with similarity > lowerBound
       combined_similarity_score = None
@@ -383,9 +376,7 @@ class Data :
       output_length = round(output_length, 2)
       similarity = round(similarity, 1)
       randomization = round(self.vector.randomization , 2)
-      req_similarity = round (self.vector.costheta , 1)
       dist_expected = round(dist_expected, 2)
-      lowerBound = round(lowerBound , 1)
       #######
       if combined_similarity_score != None : 
         combined_similarity_score = round(combined_similarity_score , 1)
@@ -425,10 +416,9 @@ class Data :
     cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
     distance = torch.nn.PairwiseDistance(p=2)
 
-    radialGain = max(0.001 , self.vector.radius/100) 
+    radialGain = 0.001 #deprecated
     randomGain = self.vector.randomization/100 
     lowerBound = self.vector.interpolation 
-    costheta = self.vector.costheta
     origin = self.vector.origin.cpu()
     size = self.vector.size
     gain = self.vector.gain
