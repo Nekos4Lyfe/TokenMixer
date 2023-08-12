@@ -652,13 +652,13 @@ class Data :
   def sample(self , to_negative = None , to_mixer = None , to_temporary = None):
     message = ''
     if to_negative == None and to_mixer == None and to_temporary == None:
-      message = self.vector.sample()
+      message = self.vector.sample(self.tools.internal_embs)
     else:
       if to_negative != None :
         if to_negative  : pass #Not implemented
       #####
       if to_mixer != None : 
-        if to_mixer : message = self.vector.sample()
+        if to_mixer : message = self.vector.sample(self.tools.internal_embs)
       #####
       if to_temporary != None : 
         if to_temporary : pass #Not implemented
