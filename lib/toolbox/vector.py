@@ -149,7 +149,32 @@ class Vector :
     assert log != None , "log is None!"
     return '\n'.join(log)
 
-  def sample(self) :
+
+  def random(self , internal_embs):
+
+        output = torch.ones(self.size)\
+        .to(device = "cpu" , dtype = torch.float32)
+
+        #This list shares storage with 'output'
+        output_data = output.numpy() 
+
+        for k in range(self.size):
+          randvec = \
+          random.choice(internal_embs)\
+          .to(device = "cpu" , dtype = torch.float32)
+
+          internal_emb_data = randvec.numpy() 
+          randvec_data = internal_emb_data.copy()
+
+          ####
+          randval = random.choice(randvec_data)
+          ####
+          output_data[k] = output_data[k] * randval
+        #####
+      
+        return output
+
+  def sample(self , interal_embs) :
 
     log = []
     log.append("Sample Mode:")
@@ -165,15 +190,19 @@ class Vector :
     tmp = None
     for index in range(MAX_NUM_MIX):
       if self.isEmpty.get(index): continue
-      rand = 2*torch.rand(self.size) - torch.ones(self.size)
+      rand = self.random(interal_embs)\
+      .to(device = "cpu" , dtype = torch.float32)
       rdist = distance(rand , origin).numpy()[0]
       #########
       prev = self.data[index]
       prev_dist = distance(prev , origin).numpy()[0]
-      current = prev*(1 - r)*(1/prev_dist) + rand * r * (1/rdist)
+      current = (prev*(1 - r)*(1/prev_dist) + rand * r * (1/rdist))\
+      .to(device = "cpu" , dtype = torch.float32)
       #########
       curr_dist = distance(current , origin).numpy()[0]
-      self.data[index] = (current * (prev_dist/curr_dist)).cpu()
+      self.data[index] = \
+      (current * (prev_dist/curr_dist))\
+      .to(device = "cpu" , dtype = torch.float32)
       ########
       tmp = self.data[index]
       similarity = 100*cos(tmp, prev).numpy()[0]
