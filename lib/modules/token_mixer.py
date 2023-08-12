@@ -172,6 +172,7 @@ class TokenMixer :
     rollcount = args[23]
     rollcountrand = args[24]
     numbers_mode = args[25]
+    numbers_curb = args[26]
 
     assert not self.data == None , "Warning: data class is null"
 
@@ -190,6 +191,7 @@ class TokenMixer :
     self.local.sample_mode = copy.copy(sample_mode)
     self.local.roll_mode = copy.copy(roll_mode)
     self.local.numbers_mode = copy.copy(numbers_mode)
+    self.local.numbers_curb = copy.copy(numbers_curb)
 
     #Set the strength of the token negatives from input
     self.data.negative.strength = copy.copy(negative_strength)
@@ -258,9 +260,12 @@ class TokenMixer :
     if (five_sets_mode): iterations = 5
     else : iterations = 1
 
-    if (numbers_mode) : iterations = self.data.vector.size
+    if (numbers_mode and roll_mode) : iterations = \
+      math.floor(self.data.vector.size*self.local.numbers_curb/100)
 
     embox_output = '{'
+
+    embox_output_xyz = ''
 
     for i in range (iterations+1):
 
@@ -278,8 +283,11 @@ class TokenMixer :
           if (i<iterations): embox_output = embox_output + '|'
           else: embox_output = embox_output + '}'
       #######
-      else: 
-        save_name = str(i)
+      elif roll_mode : 
+        if i > 0 or (not numbers_mode) : save_name = str(i)
+        if embox_output_xyz !=  '':
+           embox_output_xyz =  embox_output_xyz  + " , "
+        embox_output_xyz = embox_output_xyz + save_name
         self.data.vector.rollcount = i
         self.data.vector.rollcountrand = 0
 
@@ -289,7 +297,7 @@ class TokenMixer :
       if save_filename == None : 
         return '\n'.join(log), None , None
 
-    if (numbers_mode): save_name = 'embs 0 to ' + str(self.data.vector.size) + ' are saved'
+    if (numbers_mode): save_name = embox_output_xyz 
     elif (five_sets_mode) : save_name = embox_output
 
     #Load names from the data class and send them to the mixer inputs
@@ -303,7 +311,6 @@ class TokenMixer :
 
     return '\n'.join(log), save_name , mix_name_output
 #End of the TokenMixer Save() Function
-
 
   def setupIO_with (self, module):
     #Tell the buttons in this class what to do when 
@@ -343,7 +350,8 @@ class TokenMixer :
       input_list.append(self.inputs.settings.roll_mode)             #22
       input_list.append(self.inputs.sliders.rollcount)              #23
       input_list.append(self.inputs.sliders.rollcountrand)          #24
-      input_list.append(self.inputs.settings.numbers)               #25
+      input_list.append(self.inputs.settings.numbers_mode)          #25
+      input_list.append(self.inputs.sliders.numbers_curb)            #26
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -412,6 +420,7 @@ class TokenMixer :
               Local.sample_mode = False
               Local.roll_mode = False
               Local.numbers_mode = False
+              Local.numbers_curb = False
 
 
           class Sliders :
@@ -573,10 +582,10 @@ class TokenMixer :
                                 self.inputs.sliders.rollcountrand = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                   label="Roll count randomization %", default=50 , interactive = True)
 
-                                self.inputs.settings.numbers = gr.Checkbox(value=False,label="Full range mode : Save " + \
-                                 str(self.data.vector.size) + " embeddings as numbers '0' - '" + str(self.data.vector.size) + "'", interactive = True)
+                                self.inputs.settings.numbers_mode = gr.Checkbox(value=False,label="Full range mode : Save " + \
+                                 str(self.data.vector.size) + " embeddings as numbers_mode '0' - '" + str(self.data.vector.size) + "'", interactive = True)
 
-                                self.inputs.sliders.curb = gr.Slider(value = 10 , minimum=0, maximum=100, step=0.1, \
+                                self.inputs.sliders.numbers_curb = gr.Slider(value = 10 , minimum=0, maximum=100, step=0.1, \
                                   label="Curb full range mode %", default=10 , interactive = True)
 
 
