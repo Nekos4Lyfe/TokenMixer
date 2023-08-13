@@ -173,12 +173,13 @@ class TokenMixer :
     rollcountrand = args[24]
     numbers_mode = args[25]
     numbers_curb = args[26]
+    fullsample = args[27]
 
     assert not self.data == None , "Warning: data class is null"
 
     #Store mixer multipliers
     for i in range(MAX_NUM_MIX):
-      self.data.vector.weight.place(1  , i) # will fix later
+      self.data.vector.weight.place(1  , i) # deprecated
     
     #Store relevant variables in our own class 
     #so they can be fetched by the Run() function
@@ -192,6 +193,8 @@ class TokenMixer :
     self.local.roll_mode = copy.copy(roll_mode)
     self.local.numbers_mode = copy.copy(numbers_mode)
     self.local.numbers_curb = copy.copy(numbers_curb)
+    self.local.fullsample = copy.copy(fullsample)
+    #####
 
     #Set the strength of the token negatives from input
     self.data.negative.strength = copy.copy(negative_strength)
@@ -204,6 +207,7 @@ class TokenMixer :
       cond1 = (isinstance(string , str))
       cond2 = (string != None) and (string != '')
       return (cond1 and cond2)
+    #####
 
     #Check if user has written a filename for the embedding 
     if user_wrote_something_in(save_name):
@@ -214,12 +218,15 @@ class TokenMixer :
     else :
       log.append('Please enter a name for the embedding')
       return '\n'.join(log), None , None
+    ####
 
     #Check if five-sets-mode is enabled and if the user has
     #assigned a sub_name for the embedding
     autosub = None
     if autoselect : autosub = self.data.tools.get_subname()
+    ######
 
+    #Print five sets mode contition to log
     if self.local.five_sets_mode : 
       if user_wrote_something_in(sub_name):
         log.append('Five sets mode : will repeat process 5 times ' + \
@@ -234,6 +241,7 @@ class TokenMixer :
         'and create a new embedding for each using default name system : '+ str(save_name) + '_(N)' + \
         ' , where N is an integer from 1 to 5')
       log.append('-------------------------------------------')
+    #### End of print to log
 
     #Update the data class with given slider values
     self.data.vector.randomization = randSlider
@@ -243,6 +251,7 @@ class TokenMixer :
     self.data.vector.allow_negative_gain = allow_negative_gain
     self.data.vector.rollcount = rollcount
     self.data.vector.rollcountrand = rollcountrand
+    ##### End of update data class
 
     #Check if user has pasted something into the override box
     if (user_wrote_something_in(override_box)):
@@ -255,50 +264,97 @@ class TokenMixer :
         if iterm != None : self.data.vector.itermax = iterm
         if gain != None : self.data.vector.gain = gain
       except: log.append('Warning: Could not read override string. Using slider values instead')
+    ####### End of check override box
 
+    ####Set iterations
     iterations = None
     if (five_sets_mode): iterations = 5
     else : iterations = 1
+    ####
+    fullsample_compound_list = []
+    compund = None
+    name = None
+    if (fullsample and sample_mode) : 
+      no_of_versions = 5
+      no_of_randsteps = 5
+      iterations = no_of_versions * no_of_randsteps
+      for rval in range(no_of_versions):
+        for ver in range(5):
+          name = str((rval+1)*10) + "%-" + "ver" + str(ver+1)
+          compound = []
+          compound.append(False)
+          compound.append(name)
+          compound.append(rval*10)
+          fullsample_compound_list.append(list(compound))
+    ########
+    if (numbers_mode and roll_mode) : 
 
-    if (numbers_mode and roll_mode) : iterations = \
+      log.append("Full range mode for 'Roll Mode' enabled")
+      if (fullsample and sample_mode) : 
+        log.append("(as a consequence , " + \
+        "Full range mode for 'Sample Mode' is disabled)")
+
+      iterations = \
       math.floor(self.data.vector.size*self.local.numbers_curb/100)
+    elif (fullsample and sample_mode) :
+      log.append("Full range mode for 'Sample Mode' enabled")  
+    ##### End of set iterations
 
+
+    #Special strings
     embox_output = '{'
-
     embox_output_xyz = ''
+    embox_output_fullsample = save_name
+    ######
 
     for i in range (iterations+1):
 
-      if not numbers_mode:
-        if i == 0 : continue
-        #change filename if five_sets_mode is enabled
-        if (five_sets_mode): 
-          if (sub_name == None) or (sub_name == '') or (i==1):
-            if autoselect and i>1:
-              save_name = autosub + str(i)
-            else: save_name = save_name + '.'
-          else: save_name = sub_name + str(i)
-          embox_output = embox_output + save_name
-        
-          if (i<iterations): embox_output = embox_output + '|'
-          else: embox_output = embox_output + '}'
-      #######
-      elif roll_mode : 
+      #Special Conditions : 
+      if roll_mode and numbers_mode : 
         if i > 0 or (not numbers_mode) : save_name = str(i)
         if embox_output_xyz !=  '':
            embox_output_xyz =  embox_output_xyz  + " , "
         embox_output_xyz = embox_output_xyz + save_name
         self.data.vector.rollcount = i
         self.data.vector.rollcountrand = 0
+      #####
+      elif fullsample and sample_mode and i>0 : 
+        for compound in fullsample_compound_list:
+          placed = compound[0]
+          name = compound[1]
+          rval = compound[2]
+          if placed : continue
+          save_name = name
+          self.data.randomization = copy.copy(rval)
+          embox_output_fullsample += " , "
+          embox_output_fullsample += save_name
+          compound[0] = True 
+      #####
+      elif i == 0 : continue
+      elif five_sets_mode : 
+          if (sub_name == None) or (sub_name == '') or (i==1):
+            if autoselect and i>1:
+              save_name = autosub + str(i)
+            else: save_name = save_name + '.'
+          else: save_name = sub_name + str(i)
+          embox_output = embox_output + save_name      
+          if (i<iterations): embox_output = embox_output + '|'
+          else: embox_output = embox_output + '}'
+      ######## End of special conditions
+        
 
       #Run the TokenMixer
       message , save_filename = self.Run(save_name) 
       log.append(message)
       if save_filename == None : 
         return '\n'.join(log), None , None
+      #######
 
+    #Special save_name for the embedding box
     if (numbers_mode): save_name = embox_output_xyz 
+    elif(sample_mode and fullsample): save_name = embox_output_fullsample
     elif (five_sets_mode) : save_name = embox_output
+    ######
 
     #Load names from the data class and send them to the mixer inputs
     mix_name_output = ''
@@ -308,6 +364,8 @@ class TokenMixer :
         if mix_name_output != '' : mix_name_output = mix_name_output + ' , '
         mix_name_output = mix_name_output + self.data.vector.name.get(index)
     if (mix_name_output == ''): return 'No embeddings stored. Nothing to save' , None , mix_name_output
+    #######
+
 
     return '\n'.join(log), save_name , mix_name_output
 #End of the TokenMixer Save() Function
@@ -351,7 +409,8 @@ class TokenMixer :
       input_list.append(self.inputs.sliders.rollcount)              #23
       input_list.append(self.inputs.sliders.rollcountrand)          #24
       input_list.append(self.inputs.settings.numbers_mode)          #25
-      input_list.append(self.inputs.sliders.numbers_curb)            #26
+      input_list.append(self.inputs.sliders.numbers_curb)           #26
+      input_list.append(self.inputs.settings.fullsample)            #27
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -404,6 +463,7 @@ class TokenMixer :
                 Settings.sample_mode = []
                 Settings.roll_mode = []
                 Settings.numbers_mode = []
+                Settings.fullsample = []
 
           class Local :
             #Class to store local variables
@@ -421,6 +481,7 @@ class TokenMixer :
               Local.roll_mode = False
               Local.numbers_mode = False
               Local.numbers_curb = False
+              Local.fullsample = False
 
 
           class Sliders :
@@ -569,6 +630,10 @@ class TokenMixer :
                               with gr.Accordion("'Sample Mode' Settings",open=False):
                                 self.inputs.sliders.randomize = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                 label="Sample randomization %", default=50 , interactive = True)
+                                
+                                self.inputs.settings.fullsample = gr.Checkbox(value=False,label="Full range mode : Save " + \
+                                  " 5x5 embeddings for ranges 10%-50%" , interactive = True)
+
 
                               with gr.Accordion("'Similar Mode' Settings",open=False):
                                 self.inputs.sliders.negative_weight = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
