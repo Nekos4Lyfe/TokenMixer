@@ -40,7 +40,10 @@ class Tools :
           is_sd2 = not is_sdxl and hasattr(model.cond_stage_model, 'model')
         else : is_sd2 = False
 
-        is_sd1 = not is_sdxl and not is_sd2
+        is_sd1 = \
+        not is_sdxl and \
+        not is_sd2 and \
+        hasattr(model , 'cond_stage_model')
 
         valid_model = is_sdxl or is_sd2 or is_sd1
         if not valid_model:
@@ -53,7 +56,11 @@ class Tools :
             key=lambda x: str(x[0]).lower()))
 
         #Fetch the internal_embedding directory
-        embedder = model.cond_stage_model.wrapped
+        if hasattr(model , "cond_stage_model"):
+          if hasattr(model.cond_stage_model , "wrapped"):
+            embedder = model.cond_stage_model.wrapped
+        else: return None , None , None
+
         internal_emb_dir = None
         if is_sd1: internal_emb_dir = embedder.transformer.text_model.embeddings
         elif is_sdxl : internal_emb_dir = embedder.roberta.embeddings # SDXL :Check if this works
@@ -113,7 +120,7 @@ class Tools :
         Tools.no_of_internal_embs = 0
  
         tokenizer , internal_embs , loaded_embs = self.get()
-        if tokenizer != None or internal_embs != None or loaded_embs != None :
+        if tokenizer == None or internal_embs == None :
           warnings.warn("TokenMixer could not load model params")
           self.loaded = False
 
