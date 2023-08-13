@@ -130,8 +130,6 @@ class Tools :
           Tools.loaded_embs = loaded_embs
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.no_of_internal_embs = len(self.internal_embs)
-
-          Tools.rand = self.random()#Test
         
 
 
