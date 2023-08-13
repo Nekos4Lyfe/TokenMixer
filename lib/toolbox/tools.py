@@ -29,20 +29,20 @@ class Tools :
 
       def get(self):
 
-        #TokenMixer will be disabled if
-        #this flag is false
-        self.loaded = False
-
         #Check if a valid model is loaded
         model = shared.sd_model
         if model == None : 
           return None , None , None
 
-        self.is_sdxl = hasattr(model, 'conditioner')
-        self.is_sd2 = not self.is_sdxl and hasattr(model.cond_stage_model, 'model')
-        self.is_sd1 = not self.is_sdxl and not self.is_sd2
+        is_sdxl = hasattr(model, 'conditioner')
+        
+        if hasattr(model , 'cond_stage_model'):
+          is_sd2 = not is_sdxl and hasattr(model.cond_stage_model, 'model')
+        else : is_sd2 = False
 
-        valid_model = self.is_sdxl or self.is_sd2 or self.is_sd1
+        is_sd1 = not is_sdxl and not is_sd2
+
+        valid_model = is_sdxl or is_sd2 or is_sd1
         if not valid_model:
           return None , None , None
         ########
@@ -55,31 +55,21 @@ class Tools :
         #Fetch the internal_embedding directory
         embedder = model.cond_stage_model.wrapped
         internal_emb_dir = None
-        if self.is_sd1: internal_emb_dir = embedder.transformer.text_model.embeddings
-        elif self.is_sdxl : internal_emb_dir = embedder.roberta.embeddings # SDXL :Check if this works
-        elif self.is_sd2 : internal_emb_dir = embedder.model
+        if is_sd1: internal_emb_dir = embedder.transformer.text_model.embeddings
+        elif is_sdxl : internal_emb_dir = embedder.roberta.embeddings # SDXL :Check if this works
+        elif is_sd2 : internal_emb_dir = embedder.model
         
         internal_embs = internal_emb_dir.token_embedding.wrapped.weight # SDXL : See comment above
 
-        ########
-        if self.is_sd2 : #Fetch the tokenizer
+        #########
+
+        #Fetch the tokenizer
+        if is_sd2 : 
           from modules.sd_hijack_open_clip import tokenizer as open_clip_tokenizer
           tokenizer = open_clip_tokenizer
         else : tokenizer = embedder.tokenizer
-        #########
-
-        #Check if the TokenMixer can run with 
-        #current model parameters
-        if tokenizer != None and \
-           internal_embs != None and \
-           loaded_embs != None :
-            self.loaded = True
 
         return tokenizer, internal_embs, loaded_embs
-
-      def update_loaded_embs(self):
-        tokenizer , internal_embs , loaded_embs = self.get()
-        Tools.loaded_embs = loaded_embs
 
       def get_subname(self):
         self.count +=1 
@@ -117,26 +107,27 @@ class Tools :
       def __init__(self):
 
         Tools.loaded = True
-        Tools.no_of_internal_embs = 0
-        Tools.is_sdxl = False
-        Tools.is_sd2 = False
-        Tools.is_sd1 = False
- 
         Tools.tokenizer = None
         Tools.internal_embs = None
         Tools.loaded_embs = None
-
-        self.tokenizer , self.internal_embs , self.loaded_embs = self.get()
-        
-        Tools.emb_savepath = ""
         Tools.no_of_internal_embs = 0
-  
+ 
+        tokenizer , internal_embs , loaded_embs = self.get()
+        if tokenizer != None or internal_embs != None or loaded_embs != None :
+          warnings.warn("TokenMixer could not load model params")
+          self.loaded = False
+
         if self.loaded:
-          self.emb_savepath = self.make_emb_folder('TokenMixer') 
-          self.no_of_internal_embs = len(self.internal_embs)
-        else: warnings.warn("TokenMixer could not load model params")
+          Tools.tokenizer = tokenizer
+          Tools.internal_embs = internal_embs
+          Tools.loaded_embs = loaded_embs
+          Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
+          Tools.no_of_internal_embs = len(self.internal_embs)
+
+          Tools.rand = self.random()#Test
         
-        #Autocoder
+
+
         Tools.count = 0 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
         'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
