@@ -35,7 +35,11 @@ class Tools :
           return None , None , None
 
         is_sdxl = hasattr(model, 'conditioner')
-        is_sd2 = not is_sdxl and hasattr(model.cond_stage_model, 'model')
+        
+        if hasattr(model , 'cond_stage_model'):
+          is_sd2 = not is_sdxl and hasattr(model.cond_stage_model, 'model')
+        else : is_sd2 = False
+
         is_sd1 = not is_sdxl and not is_sd2
 
         valid_model = is_sdxl or is_sd2 or is_sd1
