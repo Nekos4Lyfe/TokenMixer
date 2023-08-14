@@ -1,26 +1,13 @@
-
 import gradio as gr
-from modules import script_callbacks, shared, sd_hijack
-from modules.shared import cmd_opts
-from pandas import Index
-from pandas.core.groupby.groupby import OutputFrameOrSeries
 import torch, os
-from modules.textual_inversion.textual_inversion import Embedding
 import collections, math, random , numpy
 import re #used to parse string to int
 import copy
-from torch.nn.modules import ConstantPad1d, container
-
+from lib.toolbox.constants import MAX_NUM_MIX
 from lib.toolbox.floatlist import FloatList3
 from lib.toolbox.intlist import IntList3
 from lib.toolbox.boolist import BooList3
 from lib.toolbox.stringlist import StringList3
-
-from lib.toolbox.constants import \
-MAX_NUM_MIX , SHOW_NUM_MIX , MAX_SIMILAR_EMBS , \
-VEC_SHOW_TRESHOLD , VEC_SHOW_PROFILE , SEP_STR , \
-SHOW_SIMILARITY_SCORE , ENABLE_GRAPH , GRAPH_VECTOR_LIMIT , \
-ENABLE_SHOW_CHECKSUM , REMOVE_ZEROED_VECTORS , EMB_SAVE_EXT 
 #-------------------------------------------------------------------------------
 
 class Positive :

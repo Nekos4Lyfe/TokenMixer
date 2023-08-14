@@ -1,15 +1,9 @@
 import gradio as gr
 from modules import scripts ,script_callbacks, shared, sd_hijack , devices
-from modules.shared import cmd_opts
 import modules.shared as shared
-
-from pandas import Index
-from pandas.core.groupby.groupby import OutputFrameOrSeries
 import torch, os
-from modules.textual_inversion.textual_inversion import Embedding
 import collections, math, random
 import numpy as np
-import re #used to parse string to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
 #####

@@ -1,11 +1,7 @@
-
-
 import gradio as gr
 from PIL import Image
 from modules.shared import interrogator
-
 from modules.interrogate import devices
-
 import torch, os
 import collections, math, random , numpy
 import copy
