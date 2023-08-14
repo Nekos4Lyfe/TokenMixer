@@ -100,6 +100,7 @@ https://github.com/hnmr293/sd-webui-cutoff
 https://github.com/Bing-su/adetailer 
 
 Before reloading the UI ,  it is recommended that you verify that values are upcast to float32 
+
 ![Step_3](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/55e499d7-3749-4c80-ab6d-4852b58aafd7)
 
 You do this under the "Settings" tab for the UI
