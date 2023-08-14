@@ -168,7 +168,10 @@ These are the settings you can use for prompt rolling. As the vectors generated 
 
 ![Step_18](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/ef0c160a-0e1a-4f07-9a53-b4288d43b4b1)
 
-For solver I recommend starting with DPM2 Karras. This is a second-order solver that is slower then the other solvers but more accurate, meaning it can better "follow" the curve of the obscure embedding tokens. Using an achestral sampler (DPM2 a , Euler a etc) is useful to remove defects like bad fingers etc. Drawback is that it will limit the effects of prompt switching, or "from : to : steps" as they are currently referred as.
+For solver I recommend starting with DPM2 Karras. This is a second-order solver that is slower then the other solvers but more accurate, meaning it can better "follow" the curve of the obscure embedding tokens. 
+
+Using an achestral sampler (DPM2 a , Euler a etc) is useful to remove defects like bad fingers etc. Drawback is that it will limit the effects of prompt switching, or "from : to : steps" as they are currently referred as.
+
 You can read more about samplers and their benefits here : https://stable-diffusion-art.com/samplers/
 Link to stable diffusion wiki where "from : to : steps" are explained more detail : https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features
 
@@ -180,14 +183,18 @@ What you need to know is that the the closer the roll number is to the original 
 (Though this is latent space, so things do not always make sense in terms of structure)
 
 Due to the "weakness" of the rolled embeddings , they are highly malleable by the SD model.  You might have heard the term "LoRa" . This is a "Low-Rank-Adaptation-Layer" which is a fancy term for a set of matrices which are placed between the matrices in the SD model , a "layer"
+
 A quirk in the SD 1.5 model is that is dislikes light contrast. It has plenty of training data that contains high contrast settings , but it still wants to keep the "light level" evenly distributed throughout the whole image
+
 The same quirk applies for color. You will note colors in these photos are very "plain" so to speak
+
 First , we will add a detailer LoRa with offset noise to see the change in output:
 
 ![grid 2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/e19203d8-9fc4-41b1-a28c-c6fcd9b21a80)
 
 The malleability on the input tokens on the LoRa allows us to create excellent detail without having to resort to the usual "masterpiece" nonsense
 The light constrast is still an issue however. We solve this by using so called "prompt switching"
+
 This is a term for first prompting a setting with high contrast in color or light , and then switching the prompt to the real prompt past roughly 20% of the steps
 My preference is "dark cave with x illumination" where x is a color
 
