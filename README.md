@@ -193,7 +193,7 @@ Here is the link to LoRa used in this example : https://civitai.com/models/82098
 
 ![grid 2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/e19203d8-9fc4-41b1-a28c-c6fcd9b21a80)
 
-The malleability on the input tokens on the LoRa allows us to create excellent detail without having to resort to the usual "masterpiece" nonsense
+The malleability on the input tokens on the LoRa allows us to create excellent detail without having to resort to the usual "masterpiece" nonsense. 
 The light constrast is still an issue however. We solve this by using so called "prompt switching"
 
 This is a term for first prompting a setting with high contrast in color or light , and then switching the prompt to the real prompt past roughly 20% of the steps
