@@ -188,7 +188,8 @@ A quirk in the SD 1.5 model is that is dislikes light contrast. It has plenty of
 
 The same quirk applies for color. You will note colors in these photos are very "plain" so to speak
 
-First , we will add a detailer LoRa with offset noise to see the change in output:
+First , we will add a detailer LoRa with offset noise to see the change in output. 
+Here is the link to LoRa used in this example : https://civitai.com/models/82098/add-more-details-detail-enhancer-tweaker-lora
 
 ![grid 2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/e19203d8-9fc4-41b1-a28c-c6fcd9b21a80)
 
