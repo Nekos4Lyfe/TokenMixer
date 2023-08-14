@@ -196,8 +196,10 @@ Here is the link to LoRa used in this example : https://civitai.com/models/82098
 The malleability on the input tokens on the LoRa allows us to create excellent detail without having to resort to the usual "masterpiece" nonsense. 
 The light constrast is still an issue however. We solve this by using so called "prompt switching"
 
-This is a term for first prompting a setting with high contrast in color or light , and then switching the prompt to the real prompt past roughly 20% of the steps
-My preference is "dark cave with x illumination" where x is a color
+This is a term for first prompting a setting with high contrast in color or light , and then switching the prompt to the real prompt past roughly 20% of the steps. 
+My preference is "dark cave with x illumination" where x is a color. 
+
+The prompt you use to set the tone of the image (the so called "base prompt") does not have to be overly complicated. 
 
 ![grid 3](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/9aa487f2-7a5e-40c0-be8d-77302af3acc0)
 
