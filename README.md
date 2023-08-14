@@ -42,7 +42,7 @@ The TokenMixer consists of 7 integrated modules:
  Tokens can be transferred freely between the modules, allowing the artist to freely experiment with various vectors to find the exact type of token configuration they need for the current project. 
 
 
-###Embedding Generator
+### Embedding Generator
 - Creating exact blends between CLIP tokens , embeddings and other kinds of latent vectors
 
 - Creating completely new tokens using semi-random sampling of a token or embedding vector
@@ -57,40 +57,40 @@ The TokenMixer consists of 7 integrated modules:
   
 - Create batches of different embeddings from a given input
 
-###Minitokenizer
+### Minitokenizer
 - Convert any prompt to tokens
 - Split embeddings into individual vectors
 - Send output to the Embedding generator
 
-###Token Calculator
+### Token Calculator
 - Perform numerical addition or subraction of tokens
 - Remove or add traits to a given token, i.e
   'King' - 'Man' + 'Woman' to get a 'Queen' token
 
-###Embedding inspector
+### Embedding inspector
 - Find all similar tokens to a given token or embedding vector
 - Find all similar IDs to a given token or embedding vector
 - Credit to: https://github.com/tkalayci71/embedding-inspector
 
-###Token Synonymizer
+### Token Synonymizer
 - Find all similar words in 20 languages using the NLTK Toolkit
 - Find Holonyms, Hypernyms , Meronyms , synonyms and Entailments to a given word
 
-###Token Extrapolator
+### Token Extrapolator
 - Expand a single or a pair of tokens into multiple tokens
 - Navigate the ID list in the CLIP tokenizer
 - Randomly sample the ID list in the CLIP tokenizer
 
-###Embedding Visualizer
+### Embedding Visualizer
 - See which areas of a given input image is targeted by a given embeddings
 - Credit : https://github.com/benkyoujouzu/stable-diffusion-webui-visualize-cross-attention-extension
 
-###CLIP image encoder
+### CLIP image encoder
 -Get the cross modal embedding which is used by CLIP to find similar tokens
 
 # How to use
 
-##Installation 
+## Installation 
 ![Step_1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/21647bd9-11f4-4b3c-999b-a5aee6e0249a)
 
 First paste the string for the git repository in the "Extension Hub" . While you are at it , you can install the following extensions as well which work will with TokenMixer  (optional) : 
@@ -111,7 +111,9 @@ Now you can reload the UI. You will now see TokenMixer at the tab.
 
 ![Step_7](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/addde7b4-262c-46bf-bb49-8c2f59df0532)
 
-This is what the UI looks like
+This is what the UI looks like. You are now ready to use the TokenMixer.
+
+## Minitokenizer
 
 ![Step_8](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/30b42860-2d3d-44b5-977d-341fde9fdf1c)
 
@@ -148,7 +150,7 @@ If we wish to extrapolate the tokens "action" and "movie" into 5 tokens , we can
 
 And the output is what you see above.
 
-##Roll Mode
+## Roll Mode
 
 Next , the "Roll Mode" feature and how this can be used with the Token extrapolator previously mentioned
 Open the generator again and select "Roll Mode" , "Full range" and if you wish the % to curb the full range of embeddings (768 in total for SD 1.5)
