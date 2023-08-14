@@ -266,6 +266,12 @@ class TokenMixer :
       except: log.append('Warning: Could not read override string. Using slider values instead')
     ####### End of check override box
 
+    ######Full sample mode settings (will make sliders later)
+    no_of_versions = 5
+    no_of_randsteps = 5
+    compound = None
+    ############
+
     ####Set iterations
     iterations = None
     if (five_sets_mode): iterations = 5
@@ -274,42 +280,45 @@ class TokenMixer :
     fullsample_compound_list = []
     compund = None
     name = None
+    ####
     if (fullsample and sample_mode) : 
-      no_of_versions = 5
-      no_of_randsteps = 5
       iterations = no_of_versions * no_of_randsteps
       for rval in range(no_of_versions):
         for ver in range(5):
           name = str((rval+1)*10) + "%-" + "ver" + str(ver+1)
           compound = []
-          compound.append(False)
           compound.append(name)
           compound.append(rval*10)
           fullsample_compound_list.append(list(compound))
-    ########
-    if (numbers_mode and roll_mode) : 
+      ######
+    elif (numbers_mode and roll_mode):
+      iterations = \
+      math.floor(self.data.vector.size*self.local.numbers_curb/100)
+    ######## End of set iterations
 
+
+    # Write some stuff
+    if (numbers_mode and roll_mode) : 
       log.append("Full range mode for 'Roll Mode' enabled")
       if (fullsample and sample_mode) : 
         log.append("(as a consequence , " + \
         "Full range mode for 'Sample Mode' is disabled)")
-
-      iterations = \
-      math.floor(self.data.vector.size*self.local.numbers_curb/100)
     elif (fullsample and sample_mode) :
       log.append("Full range mode for 'Sample Mode' enabled")  
-    ##### End of set iterations
-
+    ####### End of write some stuff
 
     #Special strings
     embox_output = '{'
     embox_output_xyz = ''
-    embox_output_fullsample = save_name
+    embox_output_fullsample = ''
     ######
 
+    name = None
+    placed = False
+    rval = None
     for i in range (iterations+1):
 
-      #Special Conditions : 
+      #####Special Conditions : 
       if roll_mode and numbers_mode : 
         if i > 0 or (not numbers_mode) : save_name = str(i)
         if embox_output_xyz !=  '':
@@ -320,15 +329,18 @@ class TokenMixer :
       #####
       elif fullsample and sample_mode and i>0 : 
         for compound in fullsample_compound_list:
-          placed = compound[0]
-          name = compound[1]
-          rval = compound[2]
-          if placed : continue
-          save_name = name
-          self.data.randomization = copy.copy(rval)
+          embox_output_fullsample += save_name
+          name = copy.copy(compound[0])
+          rval = copy.copy(compound[1])
+
+          if placed : save_name = copy.copy(name)
+          else : placed = True
+
+          if placed : self.data.randomization = copy.copy(rval)
+          else : self.data.randomization = 0 #rval for first token = 0
+
           embox_output_fullsample += " , "
           embox_output_fullsample += save_name
-          compound[0] = True 
       #####
       elif i == 0 : continue
       elif five_sets_mode : 
