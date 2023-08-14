@@ -2,7 +2,7 @@
 
 ## Summary
 
-As you know, Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
+Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
 
 The purpose of TokenMixer is to bridge the gap between language and vector. You can input very simple words into the TokenMixer to get a complex output. Essentially, it is an embedding creation tool without the need to input any training images or do any training. The TokenMixer can create a set 768 embeddings for a single token in 5 minuted using "Roll Mode"
 
