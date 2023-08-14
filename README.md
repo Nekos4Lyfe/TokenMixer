@@ -13,6 +13,16 @@ Disclaimer : This extension is not compatible with SDXL yet
 
 If you have ideas/suggestions/questions about the user interface , please make a post under the "Issues" tab. 
 
+Here is an example of "Roll Mode". This feature performs torch.roll on the input tensors to generate new embeddings.
+The process is incredibly quick. It takes roughly 5 minutes to generate 768 embeddings:
+
+![RM](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/81bd38cc-6f7b-40dd-9c85-ccbe59fed03e)
+
+Choosing the embedding at index 3 we get:
+
+![RM2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/63b0c875-afce-4972-ab2d-835b693ecbdc)
+
+
 ![TokenMixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0285fba9-78d6-49fb-981b-92084786aa51)
 
 
