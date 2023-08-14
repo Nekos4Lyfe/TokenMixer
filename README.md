@@ -25,7 +25,7 @@ Choosing the embedding at index 3 we get:
 
 Here is an image showing the UI in its current format (12th of August):
 
-![TMUI](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/cf242514-4393-48b8-82e0-2e8bc73b168a)
+![TMUI2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/71da0bb7-79d3-41b5-bda4-0d7cf22fe848)
 
 
 The TokenMixer consists of 7 integrated modules: 
