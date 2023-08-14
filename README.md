@@ -1,6 +1,14 @@
 # TokenMixer
 
-The TokenMixer is an StableDiffusion extension for Automatic1111 webui for modifying embedding vectors and/or tokens. The TokenMixer consists of several modules in an integrated and adjustable interface. 
+The TokenMixer is an StableDiffusion extension for Automatic1111 webui for modifying embedding vectors and/or tokens. The TokenMixer consists of several modules in an integrated and adjustable interface.
+
+Disclaimer: This extension is not compatible with SDXL yet
+
+This extension is still an early-access version. Bug reports are welcome. 
+
+If you have ideas/suggestions/questions about the user interface , please make a post under the "Issues" tab. 
+
+Informal discussions about the TokenMixer can be found here (You will need to navigate to the "resources" Discord tab to find the "TokenMixer" section): https://discord.gg/NFUmXn4W
 
 ## Usage 
 Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
@@ -16,12 +24,6 @@ Other features includes the ability  to create, merge and randomize embeddings o
 Example of "Sample Mode" is shown below
 
 ![new Sample Mode](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/2b0adb78-49fa-4bfe-8c65-c4a3af306f15)
-
-This extension is still an early-access version. Bug reports are welcome. Informal discussions about the TokenMixer can be found here (You will need to navigate to the "resources" Discord tab to find the "TokenMixer" section): https://discord.gg/NFUmXn4W
-
-## Disclaimer : This extension is not compatible with SDXL yet
-
-If you have ideas/suggestions/questions about the user interface , please make a post under the "Issues" tab. 
 
 Here is an example of "Roll Mode". This feature performs torch.roll on the input tensors to generate new embeddings.
 The process is incredibly quick. It takes roughly 5 minutes to generate 768 embeddings:
