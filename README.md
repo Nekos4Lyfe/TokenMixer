@@ -19,7 +19,7 @@ The purpose of TokenMixer is to bridge the gap between language and vector. You 
 
 Essentially, TokenMixer is an embedding creation tool that substitutes the iterative process with vector sampling. 
 
-Benefits include advanced prompting potential and lightning-fast embedding creation. 
+Benefits of this approach include advanced prompting potential , finetuning of existing embeddings and lightning-fast embedding creation. 
 
 The TokenMixer can create a set 768 embeddings for a single token in 5 minutes using the "Roll Mode"
 
