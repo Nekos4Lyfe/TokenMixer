@@ -1,4 +1,7 @@
 # TokenMixer
+
+## What is it?
+
 The TokenMixer is an StableDiffusion extension for Automatic1111 webui for modifying embedding vectors and/or tokens. The TokenMixer consists of several modules in an integrated and adjustable interface. 
 
 The main feature of the TokenMixer is the ability to find similar tokens to given input tokens. This can be done either as similar latent vectors or as semantically similar tokens using the python Natural Language Toolkit (NLTK) toolset. The latter feature includes the ability to translate tokens into other languages, as well as finding tokens that are more specific ("hypernyms") or less specific ("hyponyms") then the given input token. 
@@ -9,7 +12,7 @@ Example of "Sample Mode" is shown below
 
 This extension is still an early-access version. Bug reports are welcome. Informal discussions about the TokenMixer can be found here (You will need to navigate to the "resources" Discord tab to find the "TokenMixer" section): https://discord.gg/NFUmXn4W
 
-Disclaimer : This extension is not compatible with SDXL yet
+## Disclaimer : This extension is not compatible with SDXL yet
 
 If you have ideas/suggestions/questions about the user interface , please make a post under the "Issues" tab. 
 
@@ -21,7 +24,6 @@ The process is incredibly quick. It takes roughly 5 minutes to generate 768 embe
 Choosing the embedding at index 3 we get:
 
 ![RM2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/63b0c875-afce-4972-ab2d-835b693ecbdc)
-
 
 Here is an image showing the UI in its current format (12th of August):
 
@@ -40,7 +42,6 @@ The TokenMixer consists of 7 integrated modules:
  - CLIP image encoder
  
  Tokens can be transferred freely between the modules, allowing the artist to freely experiment with various vectors to find the exact type of token configuration they need for the current project. 
-
 
 ### Embedding Generator
 - Creating exact blends between CLIP tokens , embeddings and other kinds of latent vectors
