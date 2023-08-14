@@ -23,7 +23,9 @@ Choosing the embedding at index 3 we get:
 ![RM2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/63b0c875-afce-4972-ab2d-835b693ecbdc)
 
 
-![TokenMixer2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0285fba9-78d6-49fb-981b-92084786aa51)
+Here is an image showing the UI in its current format (12th of August):
+
+![TMUI](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/cf242514-4393-48b8-82e0-2e8bc73b168a)
 
 
 The TokenMixer consists of 7 integrated modules: 
