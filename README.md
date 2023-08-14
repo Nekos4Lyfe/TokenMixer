@@ -10,6 +10,8 @@ If you have ideas/suggestions/questions about the user interface , please make a
 
 Informal discussions about the TokenMixer can be found here (You will need to navigate to the "resources" Discord tab to find the "TokenMixer" section): https://discord.gg/NFUmXn4W
 
+This extension is published under a MIT License. 
+
 ## Usage 
 Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
 
