@@ -223,9 +223,17 @@ The prompt you use to set the tone of the image (the so called "base prompt") do
 
 "candy color splash swirl"
 
+### Sample Mode
 
+Not writte yet
 
+## Merging Tokens
 
+Not written yet
+
+## Token Synonymizer 
+
+Not written yet
 
 
 
