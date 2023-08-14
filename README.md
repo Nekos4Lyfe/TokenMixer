@@ -21,14 +21,19 @@ The process is incredibly quick. It takes roughly 5 minutes to generate 768 embe
 
 ![RM](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/81bd38cc-6f7b-40dd-9c85-ccbe59fed03e)
 
-This is achieved by perfroming torch.roll on the given input vectors. Documentation for torch.roll() can be found here: 
+"Roll Mode" is achieved by perfroming the elementwise shift operation torch.roll() 
+on the given input vectors, hence the name. Documentation for torch.roll() can be found here: 
 https://pytorch.org/docs/stable/generated/torch.roll.html?highlight=shift
 
 Choosing the embedding at index 3 we get:
 
 ![RM2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/63b0c875-afce-4972-ab2d-835b693ecbdc)
 
-Here is an image showing the UI in its current format (12th of August):
+The "Roll Mode" function is 100% determinisitic , meaning any user can recreate an embedding shown in 
+"Roll Mode" on their own device if they have knowledge of the original prompt and the "Roll index" , i.e
+how many elementwise shifts of the input tensor are performed (a maximum of 748 on SD 1.5).
+
+Here is an image showing the UI of TokenMixer  in its current format (12th of August):
 
 ![TMUI2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/71da0bb7-79d3-41b5-bda4-0d7cf22fe848)
 
