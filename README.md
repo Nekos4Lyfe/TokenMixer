@@ -1,5 +1,13 @@
 # TokenMixer
 
+## Summary
+
+As you know, Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
+
+The purpose of TokenMixer is to bridge the gap between language and vector. You can input very simple words into the TokenMixer to get a complex output. Essentially, it is an embedding creation tool without the need to input any training images or do any training. The TokenMixer can create a set 768 embeddings for a single token in 5 minuted using "Roll Mode"
+
+Other features includes the ability  to create, merge and randomize embeddings or to generate similar vectors from an input vectors. The TokenMixer is also outfitted with the python NLTK toolset do find lexical synonyms, antonyms, meronyms and holonyms to a given input prompt in 20+ languages 
+
 ## What is it?
 
 The TokenMixer is an StableDiffusion extension for Automatic1111 webui for modifying embedding vectors and/or tokens. The TokenMixer consists of several modules in an integrated and adjustable interface. 
