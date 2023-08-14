@@ -182,7 +182,9 @@ Here we see the result of the prompt roll. The prompt roll is the torch.roll() f
 What you need to know is that the the closer the roll number is to the original prompt (N = 0) , the more "similar in nature" the output will be. 
 (Though this is latent space, so things do not always make sense in terms of structure)
 
-Due to the "weakness" of the rolled embeddings , they are highly malleable by the SD model.  You might have heard the term "LoRa" . This is a "Low-Rank-Adaptation-Layer" which is a fancy term for a set of matrices which are placed between the matrices in the SD model , a "layer"
+Due to the "weakness" of the rolled embeddings , they are highly malleable by the SD model. 
+
+You might have heard the term "LoRa" .  This is a "Low-Rank-Adaptation-Layer" , which is a fancy term for a set of matrices which are placed between the matrices in the SD model , a "layer". 
 
 A quirk in the SD 1.5 model is that is dislikes light contrast. It has plenty of training data that contains high contrast settings , but it still wants to keep the "light level" evenly distributed throughout the whole image
 
