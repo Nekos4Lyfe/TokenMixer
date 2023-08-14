@@ -21,6 +21,9 @@ The process is incredibly quick. It takes roughly 5 minutes to generate 768 embe
 
 ![RM](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/81bd38cc-6f7b-40dd-9c85-ccbe59fed03e)
 
+This is achieved by perfroming torch.roll on the given input vectors. Documentation for torch.roll() can be found here: 
+https://pytorch.org/docs/stable/generated/torch.roll.html?highlight=shift
+
 Choosing the embedding at index 3 we get:
 
 ![RM2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/63b0c875-afce-4972-ab2d-835b693ecbdc)
