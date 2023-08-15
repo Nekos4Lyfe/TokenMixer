@@ -282,11 +282,11 @@ class TokenMixer :
     #Sample Mode : Set iterations
     if (fullsample and sample_mode) : 
       iterations = no_of_versions * no_of_randsteps
-      for rval in range(no_of_versions):
-        for ver in range(no_of_randsteps):
-          name = str((rval+1)*10) + "%-" + "ver" + str(ver+1)
-          percentage = rval*10
-          compound = (name , percentage)
+      for ver in range(no_of_versions):
+        for val in range(no_of_randsteps):
+          name = str((val+1)*10) + "%-" + "ver" + str(ver+1)
+          percentage = copy.copy(val*10)
+          compound = copy.copy((name , percentage))
           fullsample_list.append(tuple(compound))
       ######
     #######
@@ -314,8 +314,8 @@ class TokenMixer :
     ######
 
     name = None
-    rval = None
     first = True
+    rval = 0
     #Commence TokenMixer iterations
     for index in range (iterations+1):
       
@@ -343,18 +343,20 @@ class TokenMixer :
         continue
         #####
 
-        # Sample Mode :
+        # Sample Mode : Setup
       elif (fullsample and sample_mode) and not first : 
         k = 0 
         for compound in fullsample_list :
           k+=1
           if k < index + 1 : continue
-          save_name = copy.copy(list(compound)[0])
-          self.data.randomization = copy.copy(list(compound)[1])
+          save_name = copy.copy('' + compound[0])
           embox_output_fullsample += " , "
           embox_output_fullsample += save_name
           break
         ########
+        self.data.randomization =  copy.copy(10*(math.floor(index/no_of_versions)+1))
+        rval = self.data.randomization
+        assert rval >= 0 and rval <= 100 , "bad rval!"
         continue
         #####
 
