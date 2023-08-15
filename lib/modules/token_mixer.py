@@ -102,35 +102,37 @@ class TokenMixer :
         self.data.recall() #Restore initial values
         return '\n'.join(log), None
     else:
-            #if False: # Remove zeroed vectors
-             #   old_count = tot_vec.shape[0]
-              #  tot_vec = tot_vec[torch.count_nonzero(tot_vec,dim=1)>0]
-              #  new_count = tot_vec.shape[0]
-              #  if (old_count!=new_count): log.append('Removed '+str(old_count-new_count)+' zeroed vectors, remaining vectors: '+str(new_count))
 
+            #Check shape of vector
             if tot_vec.shape[0] > 0:
                 log.append('Final embedding size: '+str(tot_vec.shape[0])+' x '+str(tot_vec.shape[1]))
                 if tot_vec.shape[0]>75: 
                   log.append('⚠️WARNING: vector count>75, it may not work 🛑')
+            ############
 
             save_filename = os.path.join(self.data.tools.emb_savepath , f"{save_name}.pt")
 
+            #Check if save path exists. Exit if it does
             if (os.path.exists(save_filename)):
                 if not(self.local.enable_overwrite):
                   return('File already exists ('+save_filename+') overwrite not enabled, aborting.', None)
                 else:  log.append('File already exists, overwrite is enabled')
+            #######
 
-            try:
+
+           #Save the embedding           
+            try:  
                 Embedding(tot_vec, save_name).save(save_filename)
                 log.append('Saved "'+save_filename+'"')
                 anything_saved = True
-
             except: log.append('🛑 Error saving "'+save_filename+'" (filename might be invalid)')
+            ########
 
     #Update the embedding database and the data class if we have saved an embedding
     if anything_saved:
       message = self.data.refresh()
       log.append(message)
+    #####
         
     self.data.recall() #Restore initial values
     return '\n'.join(log) , save_filename
@@ -140,7 +142,7 @@ class TokenMixer :
 
     #Fetch parameters from the args input
     #assert not (None in args[0:16]), "Warning: Null input among settings in Save()"
-    save_name = args[0]
+    save_name_input = args[0]
     enable_overwrite = args[1]
     merge_mode = args[2]
     interpolate_mode = args[3]
@@ -169,11 +171,13 @@ class TokenMixer :
     numbers_curb = args[26]
     fullsample = args[27]
 
+    save_name = copy.copy(save_name_input)
+
     assert not self.data == None , "Warning: data class is null"
 
     #Store mixer multipliers
-    for i in range(MAX_NUM_MIX):
-      self.data.vector.weight.place(1  , i) # deprecated
+    for index in range(MAX_NUM_MIX):
+      self.data.vector.weight.place(1  , index) # deprecated
     
     #Store relevant variables in our own class 
     #so they can be fetched by the Run() function
@@ -220,7 +224,7 @@ class TokenMixer :
     if autoselect : autosub = self.data.tools.get_subname()
     ######
 
-    #Print five sets mode contition to log
+    #Print some stuff
     if self.local.five_sets_mode : 
       if user_wrote_something_in(sub_name):
         log.append('Five sets mode : will repeat process 5 times ' + \
@@ -235,7 +239,7 @@ class TokenMixer :
         'and create a new embedding for each using default name system : '+ str(save_name) + '_(N)' + \
         ' , where N is an integer from 1 to 5')
       log.append('-------------------------------------------')
-    #### End of print to log
+    #### End of print some stuff
 
     #Update the data class with given slider values
     self.data.vector.randomization = randSlider
@@ -261,35 +265,37 @@ class TokenMixer :
     ####### End of check override box
 
     ######Full sample mode settings (will make sliders later)
+
+    fullsample_list = []
     no_of_versions = 5
     no_of_randsteps = 5
+    name = None
     compound = None
     ############
 
-    ####Set iterations
+    ####Five Sets Mode : Set iterations
     iterations = None
     if (five_sets_mode): iterations = 5
     else : iterations = 1
     ####
-    fullsample_compound_list = []
-    compund = None
-    name = None
-    ####
+
+    #Sample Mode : Set iterations
     if (fullsample and sample_mode) : 
       iterations = no_of_versions * no_of_randsteps
       for rval in range(no_of_versions):
-        for ver in range(5):
+        for ver in range(no_of_randsteps):
           name = str((rval+1)*10) + "%-" + "ver" + str(ver+1)
-          compound = []
-          compound.append(name)
-          compound.append(rval*10)
-          fullsample_compound_list.append(list(compound))
+          percentage = rval*10
+          compound = (name , percentage)
+          fullsample_list.append(tuple(compound))
       ######
-    elif (numbers_mode and roll_mode):
+    #######
+
+    #Numbers Mode : Set iterations
+    if (numbers_mode and roll_mode):
       iterations = \
       math.floor(self.data.vector.size*self.local.numbers_curb/100)
-    ######## End of set iterations
-
+    ########
 
     # Write some stuff
     if (numbers_mode and roll_mode) : 
@@ -303,58 +309,72 @@ class TokenMixer :
 
     #Special strings
     embox_output = '{'
-    embox_output_xyz = ''
-    embox_output_fullsample = ''
+    embox_output_xyz = '' + save_name
+    embox_output_fullsample = '' + save_name
     ######
 
     name = None
-    placed = False
     rval = None
-    for i in range (iterations+1):
-
-      #####Special Conditions : 
-      if roll_mode and numbers_mode : 
-        if i > 0 or (not numbers_mode) : save_name = str(i)
-        if embox_output_xyz !=  '':
-           embox_output_xyz =  embox_output_xyz  + " , "
-        embox_output_xyz = embox_output_xyz + save_name
-        self.data.vector.rollcount = i
-        self.data.vector.rollcountrand = 0
-      #####
-      elif fullsample and sample_mode and i>0 : 
-        for compound in fullsample_compound_list:
-          embox_output_fullsample += save_name
-          name = copy.copy(compound[0])
-          rval = copy.copy(compound[1])
-
-          if placed : save_name = copy.copy(name)
-          else : placed = True
-
-          if placed : self.data.randomization = copy.copy(rval)
-          else : self.data.randomization = 0 #rval for first token = 0
-
-          embox_output_fullsample += " , "
-          embox_output_fullsample += save_name
-      #####
-      elif i == 0 : continue
-      elif five_sets_mode : 
-          if (sub_name == None) or (sub_name == '') or (i==1):
-            if autoselect and i>1:
-              save_name = autosub + str(i)
-            else: save_name = save_name + '.'
-          else: save_name = sub_name + str(i)
-          embox_output = embox_output + save_name      
-          if (i<iterations): embox_output = embox_output + '|'
-          else: embox_output = embox_output + '}'
-      ######## End of special conditions
-        
+    first = True
+    #Commence TokenMixer iterations
+    for index in range (iterations+1):
+      
+      #First iteration conditions
+      if first : first = False
+      #######
 
       #Run the TokenMixer
       message , save_filename = self.Run(save_name) 
       log.append(message)
       if save_filename == None : 
+        log.append("Could not save embedding " + save_name + " !")
         return '\n'.join(log), None , None
       #######
+
+      #Roll Mode : Setup
+      if (roll_mode and numbers_mode) and not first : 
+        save_name = copy.copy(str(index + 1))
+        self.data.vector.rollcount = copy.copy(index)
+        self.data.vector.rollcountrand = copy.copy(0)
+        ####
+        if embox_output_xyz !=  '':
+           embox_output_xyz =  embox_output_xyz  + " , "
+        embox_output_xyz += save_name
+        continue
+        #####
+
+        # Sample Mode :
+      elif (fullsample and sample_mode) and not first : 
+        k = 0 
+        for compound in fullsample_list :
+          k+=1
+          if k < index + 1 : continue
+          save_name = copy.copy(list(compound)[0])
+          self.data.randomization = copy.copy(list(compound)[1])
+          embox_output_fullsample += " , "
+          embox_output_fullsample += save_name
+          break
+        ########
+        continue
+        #####
+
+        # Five sets Mode : Setup
+      elif (five_sets_mode) : 
+        if (sub_name == None) or (sub_name == '') or (index==1):
+          if autoselect and index>1:
+            save_name = autosub + str(index)
+          else: save_name = save_name + '1'
+        else: save_name = sub_name + str(index)
+        embox_output = embox_output + save_name      
+        if (index<iterations): embox_output = embox_output + '|'
+        else: embox_output = embox_output + '}'
+        continue
+      ######## 
+      
+     
+
+      
+    ##### End of TokenMixer iterations
 
     #Special save_name for the embedding box
     if (numbers_mode): save_name = embox_output_xyz 
@@ -374,7 +394,8 @@ class TokenMixer :
 
 
     return '\n'.join(log), save_name , mix_name_output
-#End of the TokenMixer Save() Function
+  ######### End of the TokenMixer Save() Function
+
 
   def setupIO_with (self, module):
     #Tell the buttons in this class what to do when 
@@ -671,7 +692,7 @@ class TokenMixer :
                                   "0% will return the input vector on every sample. \n \n For a randomization rate of 'r' for a sample 'X' , the samples  " + \
                                   "will be computed as 'gain * |X| * norm(X*(1 - r) + r*R)' , where R is a random vector with values ranging from 1 to -1 , " + \
                                   "gain is the value of the 'Vector gain multiplier' slider , |X| is the vector length of input token X and " + \
-                                  "norm() is a function which normalizes a given vector , i.e sets its length of the given vector to 1. ") 
+                                  "norm() is a function which normalizes a given vector , index.e sets its length of the given vector to 1. ") 
 
                                   with gr.Accordion("What is 'Negative strength %'?",open=False):
                                       gr.Markdown("Negative strength % is a metric which is only used in 'Similar Mode' at the moment. \n \n " + \
@@ -695,7 +716,7 @@ class TokenMixer :
                                   "and the generated similar token ,  where 100% means the vectors are parallell and 0% means that they " + \
                                   "are perpendicular to each other. \n \n The 'Req. vector length similarity' sets the allowed length " + \
                                   "ratio between the input token length R and similar output token length P, where 100% means that their " + \
-                                  "lengths are the same , i.e R = P , 80% means that P can be in the range R/0.8 and 0.8 * R , " + \
+                                  "lengths are the same , index.e R = P , 80% means that P can be in the range R/0.8 and 0.8 * R , " + \
                                   "and 0% means that P can be in the range between R/0.01 to R * 0.01")  
 
                                   with gr.Accordion("What is a 'Allow negative gain'?",open=False):
