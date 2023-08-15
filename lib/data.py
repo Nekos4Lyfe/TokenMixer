@@ -256,7 +256,7 @@ class Data :
 
 
       similarity = None
-      radialRandom = None
+      radialRandom = 1
       tmp = None
       no_of_tokens = 0
       iters = 0
