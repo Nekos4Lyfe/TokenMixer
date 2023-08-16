@@ -246,6 +246,9 @@ The prompt you use to set the tone of the image (the so called "base prompt") do
 
 "candy color splash swirl"
 
+![protect obscure](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/c1957537-791a-47be-b247-4c4c565520cb)
+
+
 ### Sample Mode
 
 Not writte yet
