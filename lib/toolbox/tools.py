@@ -29,16 +29,20 @@ class Tools :
 
       def get(self):
 
+        if not hasattr(shared, 'sd_model'):
+          return None , None , None
+
         #Check if a valid model is loaded
         model = shared.sd_model
         if model == None : 
           return None , None , None
 
         is_sdxl = hasattr(model, 'conditioner')
-        is_sd2 = not is_sdxl and hasattr(model.cond_stage_model, 'model')
-        is_sd1 = not is_sdxl and not is_sd2
+        is_sd2 = hasattr(model.cond_stage_model, 'model')
+        is_sd1 = not is_sd2 and not is_sdxl
 
-        valid_model = is_sdxl or is_sd2 or is_sd1
+
+        valid_model = is_sd2 or is_sd1
         if not valid_model:
           return None , None , None
         ########
