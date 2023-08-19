@@ -769,7 +769,8 @@ class Data :
       sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
     ##########
     assert self.tools.loaded , "Data : Checkpoint model was not loaded!"
-    self.tools = Tools()
+    count = self.tools.count
+    self.tools = Tools(count)
     return '\n'.join(log)
   ######### End of refresh()
 
