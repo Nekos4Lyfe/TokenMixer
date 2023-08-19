@@ -117,7 +117,7 @@ class Tools :
         Tools.no_of_internal_embs = 0
  
         tokenizer , internal_embs , loaded_embs = self.get()
-        if tokenizer != None or internal_embs != None or loaded_embs != None :
+        if tokenizer == None or internal_embs == None:
           warnings.warn("TokenMixer could not load model params")
           self.loaded = False
 
