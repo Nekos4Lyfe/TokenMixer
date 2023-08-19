@@ -334,6 +334,7 @@ class TokenMixer :
       #Roll Mode : Setup
       if (roll_mode and numbers_mode) and not first : 
         save_name = copy.copy(str(index + 1))
+        if autoselect : save_name = save_name  + autosub
         self.data.vector.rollcount = copy.copy(index)
         self.data.vector.rollcountrand = copy.copy(0)
         ####
@@ -493,6 +494,7 @@ class TokenMixer :
                 Settings.roll_mode = []
                 Settings.numbers_mode = []
                 Settings.fullsample = []
+                Settings.rolletter = []
 
           class Local :
             #Class to store local variables
@@ -511,6 +513,7 @@ class TokenMixer :
               Local.numbers_mode = False
               Local.numbers_curb = False
               Local.fullsample = False
+              Local.rolletter = False
 
 
           class Sliders :
@@ -681,6 +684,8 @@ class TokenMixer :
 
                                 self.inputs.sliders.numbers_curb = gr.Slider(value = 10 , minimum=0, maximum=100, step=0.1, \
                                   label="Curb full range mode %", default=10 , interactive = True)
+
+                                
 
 
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_3 : 
