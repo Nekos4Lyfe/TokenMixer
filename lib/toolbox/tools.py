@@ -104,7 +104,7 @@ class Tools :
 
         return  best_ids , sorted_scores
 
-      def __init__(self):
+      def __init__(self , count=1):
 
         Tools.loaded = True
         Tools.tokenizer = None
@@ -126,7 +126,7 @@ class Tools :
         
 
 
-        Tools.count = 0 
+        Tools.count = count 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
         'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
         'v' , 'w' , 'x' , 'y' , 'z']
