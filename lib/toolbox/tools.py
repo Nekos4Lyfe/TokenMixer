@@ -1,12 +1,18 @@
 import gradio as gr
-from modules import  shared, sd_hijack
+from modules import script_callbacks, shared, sd_hijack , sd_models , sd_hijack_open_clip , textual_inversion
 from modules.shared import cmd_opts
+from pandas import Index
+from pandas.core.groupby.groupby import OutputFrameOrSeries
 import torch, os
+from modules.textual_inversion.textual_inversion import Embedding
+
 import collections, math, random , numpy
 import re #used to parse string to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
+
 import warnings
+
 from lib.toolbox.constants import MAX_NUM_MIX 
 #-------------------------------------------------------------------------------
 
@@ -27,22 +33,15 @@ class Tools :
         model = shared.sd_model
         if model == None : 
           return None , None , None
-        #####
-        # SDXL is non compatible (for now)
+
         is_sdxl = hasattr(model, 'conditioner')
-        if is_sdxl : return None , None , None
-        #####
-        if hasattr(model , "cond_stage_model"):
-          is_sd2 = hasattr(model.cond_stage_model, \
-          'model') and not is_sdxl
-        else : is_sd2 = False
-        #####
-        is_sd1 =  not is_sdxl and not is_sd2
-        #####
-        valid_model = is_sd2 or is_sd1
+        is_sd2 = not is_sdxl and hasattr(model.cond_stage_model, 'model')
+        is_sd1 = not is_sdxl and not is_sd2
+
+        valid_model = is_sdxl or is_sd2 or is_sd1
         if not valid_model:
           return None , None , None
-        #####
+        ########
 
         #Fetch the loaded embeddings
         loaded_embs = collections.OrderedDict(
@@ -73,7 +72,7 @@ class Tools :
         Tools.loaded_embs = loaded_embs
 
       def get_subname(self):
-        self.count +=1 
+        self.count = copy.copy(self.count + 1)
         if self.count >= len(self.letter):
           self.count = 1
         return self.letter[self.count]
@@ -114,10 +113,7 @@ class Tools :
         Tools.no_of_internal_embs = 0
  
         tokenizer , internal_embs , loaded_embs = self.get()
-
-        if (tokenizer == None) or \
-           (internal_embs == None) or \
-           (loaded_embs == None) :
+        if tokenizer != None or internal_embs != None or loaded_embs != None :
           warnings.warn("TokenMixer could not load model params")
           self.loaded = False
 
@@ -128,6 +124,8 @@ class Tools :
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.no_of_internal_embs = len(self.internal_embs)
         
+
+
         Tools.count = 0 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
         'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
