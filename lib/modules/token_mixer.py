@@ -681,10 +681,10 @@ class TokenMixer :
                                 
                                 with gr.Accordion("Random sample vector settings",open=False):
                                   self.inputs.sliders.samplegain = gr.Slider(value = 1.5 , minimum=0, maximum=50, step=0.1, \
-                                  label="Max gain", default=1.5 , interactive = True)
+                                  label="Elementwise vector max gain", default=1.5 , interactive = True)
 
                                   self.inputs.sliders.samplerand = gr.Slider(value = 70 , minimum=0, maximum=100, step=0.1, \
-                                  label="Gain randomization %", default=70 , interactive = True)
+                                  label="Elementwise vector gain randomization %", default=70 , interactive = True)
                               ######
 
 
