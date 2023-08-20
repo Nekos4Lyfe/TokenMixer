@@ -12,6 +12,7 @@ from lib.modules.moduleTab import Modules
 from lib.modules.cross_attention_mixer import CrossAttentionMixer
 from lib.modules.token_comparator import TokenComparator
 
+#A111 + SDNext stuff
 def add_tab():
 
   left_column = gr.Column(scale=2)
