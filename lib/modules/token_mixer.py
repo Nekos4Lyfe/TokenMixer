@@ -255,6 +255,8 @@ class TokenMixer :
     self.data.vector.rollcountrand = rollcountrand
     self.data.vector.samplegain = samplegain
     self.data.vector.samplerand = samplerand
+    self.data.vector.vecsamplegain = samplegain
+    self.data.vector.vecsamplerand = samplerand
     ##### End of update data class
 
     #Check if user has pasted something into the override box
@@ -449,6 +451,8 @@ class TokenMixer :
       input_list.append(self.inputs.settings.randchoice)            #28
       input_list.append(self.inputs.sliders.samplegain)             #29
       input_list.append(self.inputs.sliders.samplerand)             #30
+      input_list.append(self.inputs.sliders.vecsamplegain)          #29
+      input_list.append(self.inputs.sliders.vecsamplerand)          #30
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -538,6 +542,8 @@ class TokenMixer :
                 Sliders.randlenrand = []
                 Sliders.rollcount = []
                 Sliders.rollcountrand = []
+                Sliders.samplegain = []
+                Sliders.samplerand = []
                 Sliders.samplegain = []
                 Sliders.samplerand = []
 
@@ -676,15 +682,23 @@ class TokenMixer :
                                 self.inputs.sliders.randomize = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                 label="Sample randomization %", default=50 , interactive = True)
                                 
-                                self.inputs.settings.fullsample = gr.Checkbox(value=False,label="Full range mode : Save " + \
-                                  " 5x5 embeddings for ranges 10%-50%" , interactive = True , visable = False) #Broken , needs fix
+                                self.inputs.settings.fullsample = gr.Checkbox(value=False,label="Not implemented " + \
+                                  "" , interactive = True , visable = False) #Broken , needs fix
                                 
                                 with gr.Accordion("Random sample vector settings",open=False):
                                   self.inputs.sliders.samplegain = gr.Slider(value = 1.5 , minimum=0, maximum=50, step=0.1, \
-                                  label="Elementwise vector max gain", default=1.5 , interactive = True)
+                                  label="Elementwise vector max gain", default=1.2 , interactive = True)
 
-                                  self.inputs.sliders.samplerand = gr.Slider(value = 70 , minimum=0, maximum=100, step=0.1, \
+                                  self.inputs.sliders.samplerand = gr.Slider(value = 30 , minimum=0, maximum=100, step=0.1, \
                                   label="Elementwise vector gain randomization %", default=70 , interactive = True)
+
+                                  self.inputs.sliders.vecsamplegain = gr.Slider(value = 1.5 , minimum=0, maximum=50, step=0.1, \
+                                  label="Vectorwise max gain", default=1.5 , interactive = True)
+
+                                  self.inputs.sliders.vecsamplerand = gr.Slider(value = 70 , minimum=0, maximum=100, step=0.1, \
+                                  label="Vectorwise gain randomization %", default=70 , interactive = True)
+
+
                               ######
 
 
