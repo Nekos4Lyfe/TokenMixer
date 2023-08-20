@@ -171,6 +171,8 @@ class TokenMixer :
     numbers_curb = args[26]
     fullsample = args[27]
     randchoice = args[28]
+    samplegain = args[29]
+    samplerand = args[30]
 
     save_name = copy.copy(save_name_input)
 
@@ -251,6 +253,8 @@ class TokenMixer :
     self.data.vector.allow_negative_gain = allow_negative_gain
     self.data.vector.rollcount = rollcount
     self.data.vector.rollcountrand = rollcountrand
+    self.data.vector.samplegain = samplegain
+    self.data.vector.samplerand = samplerand
     ##### End of update data class
 
     #Check if user has pasted something into the override box
@@ -383,7 +387,7 @@ class TokenMixer :
     if (numbers_mode): save_name = embox_output_xyz 
     elif(sample_mode and fullsample): save_name = embox_output_fullsample
     elif (five_sets_mode) : save_name = embox_output
-    if (randchoice) : save_name += '}'
+    if (randchoice) and iterations>1 : save_name += '}'
     ######
 
     #Load names from the data class and send them to the mixer inputs
@@ -443,6 +447,8 @@ class TokenMixer :
       input_list.append(self.inputs.sliders.numbers_curb)           #26
       input_list.append(self.inputs.settings.fullsample)            #27
       input_list.append(self.inputs.settings.randchoice)            #28
+      input_list.append(self.inputs.sliders.samplegain)             #29
+      input_list.append(self.inputs.sliders.samplerand)             #30
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -532,6 +538,8 @@ class TokenMixer :
                 Sliders.randlenrand = []
                 Sliders.rollcount = []
                 Sliders.rollcountrand = []
+                Sliders.samplegain = []
+                Sliders.samplerand = []
 
           class Inputs :
               def __init__(self):
@@ -663,12 +671,21 @@ class TokenMixer :
                                 self.inputs.sliders.gain = gr.Slider(minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
                                 self.inputs.sliders.iterations = gr.Slider(value = 200 , minimum=0, maximum=3000, step=1, label="Similarity samples max", default=200 , interactive = True)
 
+                              #Sample Mode
                               with gr.Accordion("'Sample Mode' Settings",open=False):
                                 self.inputs.sliders.randomize = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                 label="Sample randomization %", default=50 , interactive = True)
                                 
                                 self.inputs.settings.fullsample = gr.Checkbox(value=False,label="Full range mode : Save " + \
                                   " 5x5 embeddings for ranges 10%-50%" , interactive = True , visable = False) #Broken , needs fix
+                                
+                                with gr.Accordion("Random sample vector settings",open=False):
+                                  self.inputs.sliders.samplegain = gr.Slider(value = 1.5 , minimum=0, maximum=50, step=0.1, \
+                                  label="Max gain", default=1.5 , interactive = True)
+
+                                  self.inputs.sliders.samplerand = gr.Slider(value = 70 , minimum=0, maximum=100, step=0.1, \
+                                  label="Gain randomization %", default=70 , interactive = True)
+                              ######
 
 
                               with gr.Accordion("'Similar Mode' Settings",open=False):
