@@ -158,18 +158,20 @@ class Vector :
         #This list shares storage with 'output'
         output_data = output.numpy() 
 
+        gain = None
+
         for k in range(self.size):
           randvec = \
           random.choice(internal_embs)\
           .to(device = "cpu" , dtype = torch.float32)
-
+          gain = self.samplegain * (1 - (self.samplerand/100)*random.random())
           internal_emb_data = randvec.numpy() 
           randvec_data = internal_emb_data.copy()
 
           ####
           randval = random.choice(randvec_data)
           ####
-          output_data[k] = output_data[k] * randval
+          output_data[k] = output_data[k] * randval * gain
         #####
       
         return output
@@ -233,6 +235,9 @@ class Vector :
 
     Vector.rollcount = 0
     Vector.rollcountrand = 0
+
+    Vector.samplegain = 1
+    Vector.samplerand = 0
 
     for i in range (MAX_NUM_MIX):
       tmp = torch.zeros(size).unsqueeze(0).cpu()
