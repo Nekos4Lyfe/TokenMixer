@@ -190,11 +190,13 @@ class Vector :
     origin = self.origin 
     tokenCount = 0
     tmp = None
+    gain = None
     for index in range(MAX_NUM_MIX):
       if self.isEmpty.get(index): continue
       rand = self.random(interal_embs)\
       .to(device = "cpu" , dtype = torch.float32)
       rdist = distance(rand , origin).numpy()[0]
+      gain = self.vecsamplegain * (1 - (self.vecsamplerand/100)*random.random())
       #########
       prev = self.data[index]
       prev_dist = distance(prev , origin).numpy()[0]
@@ -203,7 +205,7 @@ class Vector :
       #########
       curr_dist = distance(current , origin).numpy()[0]
       self.data[index] = \
-      (current * (prev_dist/curr_dist))\
+      (current * (gain*prev_dist/curr_dist))\
       .to(device = "cpu" , dtype = torch.float32)
       ########
       tmp = self.data[index]
@@ -238,6 +240,9 @@ class Vector :
 
     Vector.samplegain = 1
     Vector.samplerand = 0
+
+    Vector.vecsamplegain = 1
+    Vector.vecsamplerand = 0
 
     for i in range (MAX_NUM_MIX):
       tmp = torch.zeros(size).unsqueeze(0).cpu()
