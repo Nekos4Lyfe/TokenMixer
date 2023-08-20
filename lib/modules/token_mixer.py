@@ -170,6 +170,7 @@ class TokenMixer :
     numbers_mode = args[25]
     numbers_curb = args[26]
     fullsample = args[27]
+    randchoice = args[28]
 
     save_name = copy.copy(save_name_input)
 
@@ -192,6 +193,7 @@ class TokenMixer :
     self.local.numbers_mode = copy.copy(numbers_mode)
     self.local.numbers_curb = copy.copy(numbers_curb)
     self.local.fullsample = copy.copy(fullsample)
+    self.local.randchoice = copy.copy(randchoice)
     #####
 
     #Set the strength of the token negatives from input
@@ -265,7 +267,6 @@ class TokenMixer :
     ####### End of check override box
 
     ######Full sample mode settings (will make sliders later)
-
     fullsample_list = []
     no_of_versions = 5
     no_of_randsteps = 5
@@ -308,9 +309,11 @@ class TokenMixer :
     ####### End of write some stuff
 
     #Special strings
-    embox_output = '{'
-    embox_output_xyz = '' + save_name
-    embox_output_fullsample = '' + save_name
+    embox_output = ''
+    if randchoice : embox_output += '{'
+    embox_output_xyz = embox_output + save_name
+    embox_output_fullsample = embox_output + save_name
+    input_save_name = copy.copy(save_name)
     ######
 
     name = None
@@ -331,15 +334,16 @@ class TokenMixer :
         return '\n'.join(log), None , None
       #######
 
-      #Roll Mode : Setup
+      ##Roll Mode : Setup
       if (roll_mode and numbers_mode) and not first : 
         save_name = copy.copy(str(index + 1))
-        if autoselect : save_name = save_name  + autosub
+        if autoselect : save_name += autosub
         self.data.vector.rollcount = copy.copy(index)
         self.data.vector.rollcountrand = copy.copy(0)
         ####
         if embox_output_xyz !=  '':
-           embox_output_xyz =  embox_output_xyz  + " , "
+          if randchoice : embox_output_xyz += '|'
+          else : embox_output_xyz += " , "
         embox_output_xyz += save_name
         continue
         #####
@@ -350,32 +354,28 @@ class TokenMixer :
         for compound in fullsample_list :
           k+=1
           if k < index + 1 : continue
-          save_name = copy.copy('' + compound[0])
-          embox_output_fullsample += " , "
+          save_name = copy.copy(compound[0])
+          if randchoice : embox_output_fullsample += '|'
+          else: embox_output_fullsample += " , "
           embox_output_fullsample += save_name
           break
         ########
         self.data.randomization =  copy.copy(10*(math.floor(index/no_of_versions)+1))
         rval = self.data.randomization
-        assert rval >= 0 and rval <= 100 , "bad rval!"
         continue
         #####
 
         # Five sets Mode : Setup
       elif (five_sets_mode) : 
         if (sub_name == None) or (sub_name == '') or (index==1):
-          if autoselect and index>1:
-            save_name = autosub + str(index)
-          else: save_name = save_name + '1'
+          if autoselect and index>1: save_name = autosub + str(index)
+          else: save_name = input_save_name + str(index)
         else: save_name = sub_name + str(index)
         embox_output = embox_output + save_name      
-        if (index<iterations): embox_output = embox_output + '|'
-        else: embox_output = embox_output + '}'
+        if (index<iterations) and randchoice : embox_output = embox_output + '|'
+        if (index<iterations) and not randchoice : embox_output = embox_output + ' , '
         continue
       ######## 
-      
-     
-
       
     ##### End of TokenMixer iterations
 
@@ -383,6 +383,7 @@ class TokenMixer :
     if (numbers_mode): save_name = embox_output_xyz 
     elif(sample_mode and fullsample): save_name = embox_output_fullsample
     elif (five_sets_mode) : save_name = embox_output
+    if (randchoice) : save_name += '}'
     ######
 
     #Load names from the data class and send them to the mixer inputs
@@ -441,6 +442,7 @@ class TokenMixer :
       input_list.append(self.inputs.settings.numbers_mode)          #25
       input_list.append(self.inputs.sliders.numbers_curb)           #26
       input_list.append(self.inputs.settings.fullsample)            #27
+      input_list.append(self.inputs.settings.randchoice)            #28
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -495,6 +497,7 @@ class TokenMixer :
                 Settings.numbers_mode = []
                 Settings.fullsample = []
                 Settings.rolletter = []
+                Settings.randchoice = []
 
           class Local :
             #Class to store local variables
@@ -514,6 +517,7 @@ class TokenMixer :
               Local.numbers_curb = False
               Local.fullsample = False
               Local.rolletter = False
+              Local.randchoice = False
 
 
           class Sliders :
@@ -564,9 +568,7 @@ class TokenMixer :
           with gr.Accordion(label ,open=op , visible = vis) as show:
                         gr.Markdown("Create embeddings from module output tokens")
                         with gr.Row():  
-                          self.inputs.mix_input = gr.Textbox(label='', lines=3, interactive = False)                                 
-                        with gr.Row(): 
-                          self.inputs.negbox = gr.Textbox(label= 'Negatives' , lines=3 , interactive = False)                                   
+                          self.inputs.mix_input = gr.Textbox(label='', lines=3, interactive = False)                                                            
                         with gr.Row():                        
                           with gr.Column():
                                 self.buttons.save = gr.Button(value="Create embedding", variant="primary")
@@ -609,6 +611,8 @@ class TokenMixer :
                                 with gr.Accordion('Save Settings',open=False):
                                     self.inputs.settings.five_sets_mode = gr.Checkbox(value=False,label="Make 5 embeddings at once", interactive = True)   
                                     self.inputs.settings.autoselect = gr.Checkbox(value=False,label="Autoselect sub_name", interactive = True)                            
+                                    self.inputs.settings.randchoice = gr.Checkbox(value=True,label="Use random choice {a|b|c} format " , interactive = True)
+
                                     self.inputs.sub_name = gr.Textbox(label="Embedding sub-name",lines=1,placeholder='enter something short like "x" ')                                                      
                                     with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_0 :
                                       gr.Markdown("The output when 'Make 5 embeddings at once' is selected will, for embedding name 'example' , be in the format " + \
@@ -664,12 +668,15 @@ class TokenMixer :
                                 label="Sample randomization %", default=50 , interactive = True)
                                 
                                 self.inputs.settings.fullsample = gr.Checkbox(value=False,label="Full range mode : Save " + \
-                                  " 5x5 embeddings for ranges 10%-50%" , interactive = True)
+                                  " 5x5 embeddings for ranges 10%-50%" , interactive = True , visable = False) #Broken , needs fix
 
 
                               with gr.Accordion("'Similar Mode' Settings",open=False):
-                                self.inputs.sliders.negative_weight = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
-                                label="Negative token strength % ", default=50 , interactive = True) 
+                                with gr.Row(): 
+                                  self.inputs.negbox = gr.Textbox(label= 'Negatives' , lines=3 , interactive = False)
+                                with gr.Row():         
+                                  self.inputs.sliders.negative_weight = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
+                                  label="Negative token strength % ", default=50 , interactive = True) 
 
                               with gr.Accordion("'Roll Mode' Settings",open=False):
                                 ####
@@ -686,8 +693,6 @@ class TokenMixer :
                                   label="Curb full range mode %", default=10 , interactive = True)
 
                                 
-
-
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_3 : 
                                   gr.Markdown("These sliders set general values for the 'Similar Mode' , 'Merge Mode' and " + \
                                   "'Interpolate Mode' operations on the TokenMixer. These operations can be enabled " + \
