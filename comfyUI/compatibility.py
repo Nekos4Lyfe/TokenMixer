@@ -10,7 +10,7 @@ import gradio as gr
 
 
 #ComyUI stuff
-class Example:
+class TokenMixer:
     """
     A example node
 
@@ -92,7 +92,7 @@ class Example:
 
     #OUTPUT_NODE = False
 
-    CATEGORY = "Example"
+    CATEGORY = "Extensions"
 
     def test(self, image, string_field, int_field, float_field, print_to_screen):
         if print_to_screen == "enable":
@@ -109,12 +109,12 @@ class Example:
 # A dictionary that contains all nodes you want to export with their names
 # NOTE: names should be globally unique
 NODE_CLASS_MAPPINGS = {
-    "Example": Example
+    "TokenMixer": TokenMixer
 }
 
 # A dictionary that contains the friendly/humanly readable titles for the nodes
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "Example": "Example Node"
+    "TokenMixer": "TokenMixer"
 }
 #######
 
