@@ -678,8 +678,6 @@ class TokenMixer :
                                 self.inputs.sliders.randomize = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                 label="Sample randomization %", default=50 , interactive = True)
                                 
-                                self.inputs.settings.fullsample = gr.Checkbox(value=False,label="Not implemented " + \
-                                  "" , interactive = True , visable = False) #Broken , needs fix
                                 #######
                                 with gr.Accordion("Advanced randomization",open=False):
                                   self.inputs.sliders.samplegain = gr.Slider(value = 1 , minimum=0, maximum=50, step=0.1, \
@@ -749,7 +747,10 @@ class TokenMixer :
                                           "The value 'w' in this formula is the 'negative token strength %' \n \n " + \
                                           "(For example 35% negative strength => w = 0.35)")                                      
 
-                              with gr.Accordion('Deprecated',open=False , visible = False): # Deprecated
+                              with gr.Accordion('Deprecated',open=False , visible = False): # Hidden
+                                self.inputs.settings.fullsample = gr.Checkbox(value=False,label="Not implemented " + \
+                                "" , interactive = True , visable = False) #Broken , needs fix
+
                                 self.inputs.settings.allow_negative_gain = gr.Checkbox(value=False,label="Allow negative gain", interactive = True , visible = False)         
                                 with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_4 : 
                                   gr.Markdown("These sliders control the allowed range for the similar vector output. \n \n" + \
