@@ -23,14 +23,16 @@ class MiniTokenizer:
     id_mode = args[2]
     send_to_negatives = args[3]
     random_token_length = args[4]
-    send_to_temporary = args[5]
+    send_to_positives = args[5]
     mix_input = args[6]
     stack_mode = args[7]
     literal_mode = args[8]
     random_token_length_randomization = (1/100) * args[9]
 
+    send_to_temporary = False
+
     if mini_input == None : 
-      return tokenmixer_vectors , '' , '' , ''
+      return tokenmixer_vectors , '' , '' , '' , ''
 
     assert not (
           sendtomix == None or
@@ -59,6 +61,7 @@ class MiniTokenizer:
       self.data.clear(index , 
           to_negative = send_to_negatives , 
           to_mixer = sendtomix and not stack_mode , 
+          to_positive = send_to_positives ,
           to_temporary = send_to_temporary)
     ######
 
@@ -74,6 +77,7 @@ class MiniTokenizer:
     tokenbox = ''
     splitbox = ''
     negbox = ''
+    posbox = ''
     emb_name = None
     found_IDs = None
     ID_index = None
@@ -97,6 +101,11 @@ class MiniTokenizer:
         if neg_name != None :
           if (negbox != '') : negbox = negbox + ' , ' 
           negbox = negbox + neg_name
+        #####
+        pos_name = self.data.positive.name.get(index - 1)
+        if pos_name != None :
+          if (posbox != '') : posbox = posbox + ' , ' 
+          posbox = posbox + pos_name
         ######
         name = self.data.vector.name.get(index - 1)
         if name != None and sendtomix:
@@ -128,8 +137,8 @@ class MiniTokenizer:
             name = emb_name , 
             to_negative = send_to_negatives ,
             to_mixer = sendtomix , 
-            to_temporary = send_to_temporary
-            )
+            to_positive = send_to_positives , 
+            to_temporary = send_to_temporary)
 
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
         tokenbox =  tokenbox + emb_name + '_#' + str(emb_id)
@@ -151,6 +160,7 @@ class MiniTokenizer:
             name = emb_name , 
             to_negative = send_to_negatives , 
             to_mixer = sendtomix , 
+            to_positive = send_to_positives , 
             to_temporary = send_to_temporary)
 
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
@@ -209,6 +219,7 @@ class MiniTokenizer:
               name = emb_name + '_' + str(token_num) , 
               to_negative = send_to_negatives , 
               to_mixer = sendtomix , 
+              to_positive = send_to_positives ,
               to_temporary = send_to_temporary)
           
 
@@ -237,6 +248,7 @@ class MiniTokenizer:
             name = emb_name ,
             to_negative = send_to_negatives ,
             to_mixer = sendtomix , 
+            to_positive = send_to_positives , 
             to_temporary = send_to_temporary)
 
         ID_index+=1 
@@ -248,7 +260,7 @@ class MiniTokenizer:
         tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
     ####### End loop
         
-    return tokenmixer_vectors , tokenbox , splitbox , negbox
+    return tokenmixer_vectors , tokenbox , splitbox , negbox , posbox
        
     
   def setupIO_with (self, module):
@@ -281,6 +293,7 @@ class MiniTokenizer:
       output_list.append(self.outputs.tokenbox)   #1
       output_list.append(self.outputs.splitbox)   #2
       output_list.append(module.inputs.negbox)    #3
+      output_list.append(module.inputs.posbox)    #4
       #######
       self.buttons.tokenize.click(fn=self.Tokenize , inputs = input_list , outputs = output_list)
 
@@ -334,7 +347,7 @@ class MiniTokenizer:
           self.inputs.sendtomix = gr.Checkbox(value=False, label="Send to input", interactive = True)
           self.inputs.id_mode = gr.Checkbox(value=False, label="ID input mode", interactive = True)
           self.inputs.negatives = gr.Checkbox(value=False, label="Send to negatives", interactive = True , visible = True) 
-          self.inputs.positives = gr.Checkbox(value=False, label="Send to positives", interactive = True , visible = False) #Experimental
+          self.inputs.positives = gr.Checkbox(value=False, label="Send to positives", interactive = True , visible = True)
           self.inputs.stack_mode = gr.Checkbox(value=False, label="Stack Mode", interactive = True)
           self.inputs.literal_mode = gr.Checkbox(value=False, label="String Literal Mode", interactive = True)
       with gr.Accordion("Random ' _ ' token settings" ,open=False , visible = True) as randset : 

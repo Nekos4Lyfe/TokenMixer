@@ -61,7 +61,7 @@ class TokenMixer :
 
     elif(self.local.merge_mode):
       log.append(str(tmp) + '. ' + 'Merge mode: ' + \
-      'Will interpolate input tokens into single token embedding with greatest possible similarity to each negative_weight input token')
+      'Will interpolate input tokens into single token embedding with greatest possible similarity to each negative_strength input token')
       log.append('-------------------------------------------')
     else: 
       log.append(str(tmp) + '. ' + 'Concat mode (default): Concatinate input tokens into multi-token embedding... ')
@@ -77,7 +77,7 @@ class TokenMixer :
       message = self.data.roll()
       log.append(message)
 
-    if (self.local.sample_mode): 
+    if (self.local.sample_mode) and not (self.local.similar_mode): 
       message = self.data.sample()
       log.append(message)
 
@@ -162,7 +162,7 @@ class TokenMixer :
     positive_strength = args[17]
     mix_input = args[18]
     order_randomize_mode = args[19]
-    neg_input = args[20]
+    negbox = args[20]
     sample_mode = args[21]
     roll_mode = args[22]
     rollcount = args[23]
@@ -173,6 +173,7 @@ class TokenMixer :
     randchoice = args[28]
     samplegain = args[29]
     samplerand = args[30]
+    posbox = args[31]
 
     save_name = copy.copy(save_name_input)
 
@@ -200,6 +201,7 @@ class TokenMixer :
 
     #Set the strength of the token negatives from input
     self.data.negative.strength = copy.copy(negative_strength)
+    self.data.positive.strength = copy.copy(positive_strength)
 
     log = [] 
     emptyList = [None]*MAX_NUM_MIX 
@@ -435,9 +437,9 @@ class TokenMixer :
       input_list.append(self.inputs.override_box)                   #12
       input_list.append(self.inputs.sub_name)                       #13
       input_list.append(self.inputs.settings.allow_negative_gain)   #14
-      input_list.append(self.inputs.sliders.negative_weight)        #15
+      input_list.append(self.inputs.sliders.negative_strength)        #15
       input_list.append(self.inputs.settings.autoselect)            #16
-      input_list.append(self.inputs.sliders.positive_weight)        #17
+      input_list.append(self.inputs.sliders.positive_strength)        #17
       input_list.append(self.inputs.mix_input)                      #18
       input_list.append(self.inputs.settings.order_randomize_mode)  #19
       input_list.append(self.inputs.negbox)                         #20
@@ -453,6 +455,7 @@ class TokenMixer :
       input_list.append(self.inputs.sliders.samplerand)             #30
       input_list.append(self.inputs.sliders.vecsamplegain)          #29
       input_list.append(self.inputs.sliders.vecsamplerand)          #30
+      input_list.append(self.inputs.posbox)                         #31
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -536,8 +539,8 @@ class TokenMixer :
                 Sliders.interpolate = []
                 Sliders.iterations = []
                 Sliders.gain = []
-                Sliders.negative_weight = []
-                Sliders.positive_weight = []
+                Sliders.negative_strength = []
+                Sliders.positive_strength = []
                 Sliders.randlen = []
                 Sliders.randlenrand = []
                 Sliders.rollcount = []
@@ -593,7 +596,6 @@ class TokenMixer :
                                   self.inputs.settings.order_randomize_mode = gr.Checkbox(value=False,label="Randomize token order ", interactive = True)
                                   self.inputs.settings.sample_mode = gr.Checkbox(value=False,label="Sample Mode  : Replace input token with sample vector", interactive = True)
                                   self.inputs.settings.roll_mode = gr.Checkbox(value=False,label="Roll Mode : Shift the elements of the input vector", interactive = True)
-                                  self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Similar Mode  : Replace input tokens with similar tokens", interactive = True)
                                   self.inputs.settings.merge_mode = gr.Checkbox(value=False,label="Merge Mode : Find single token with greatest similarity to all input tokens ", interactive = True)
                                   self.inputs.settings.interpolate_mode = gr.Checkbox(value=False,label="Interpolate Mode  : Merge tokens with similarity (Work in progress)", interactive = True)       
                                   with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_1 :
@@ -659,10 +661,6 @@ class TokenMixer :
                                         " in the Embeddings/TokenMixer/* folder under an autoselector name. ")
 
                                 with gr.Accordion('Experimental',open=False , visible = False): #Experimental                                             
-                                  with gr.Accordion('Negatives',open=False): 
-                                    self.inputs.sliders.positive_weight = gr.Slider(minimum=0, maximum=100, step=0.1, label="Positive weight %", default=0 , interactive = True)
-                                    self.inputs.posbox = gr.Textbox(label="Encourage similarity with the following tokens", lines=3 , interactive = False)
-                                with gr.Accordion('Override',open=False , visible = False): #Experimental 
                                   self.inputs.override_box = gr.Textbox(label="Similarity settings override",lines=1,placeholder='(costheta|length|rand|interp|iters|gain)')
                                   with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_2 : 
                                     gr.Markdown("Memorizing the position of all the sliders can be difficult. \n \n " + \
@@ -674,9 +672,7 @@ class TokenMixer :
                               self.outputs.embedding_box = gr.Textbox(label="------> Output",lines=1,placeholder='Embedding name output')
                               gr.Markdown("### TokenMixer Operation Settings")
                               with gr.Accordion('General Settings',open=True):
-                                self.inputs.sliders.gain = gr.Slider(minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
-                                self.inputs.sliders.iterations = gr.Slider(value = 200 , minimum=0, maximum=3000, step=1, label="Similarity samples max", default=200 , interactive = True)
-
+                                self.inputs.sliders.gain = gr.Slider(value = 1 , minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
                               #Sample Mode
                               with gr.Accordion("'Sample Mode' Settings",open=False):
                                 self.inputs.sliders.randomize = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
@@ -684,30 +680,32 @@ class TokenMixer :
                                 
                                 self.inputs.settings.fullsample = gr.Checkbox(value=False,label="Not implemented " + \
                                   "" , interactive = True , visable = False) #Broken , needs fix
-                                
-                                with gr.Accordion("Random sample vector settings",open=False):
-                                  self.inputs.sliders.samplegain = gr.Slider(value = 1.5 , minimum=0, maximum=50, step=0.1, \
-                                  label="Elementwise vector max gain", default=1.2 , interactive = True)
+                                #######
+                                with gr.Accordion("Advanced randomization",open=False):
+                                  self.inputs.sliders.samplegain = gr.Slider(value = 1 , minimum=0, maximum=50, step=0.1, \
+                                  label="Elementwise vector max gain", default=1 , interactive = True)
 
-                                  self.inputs.sliders.samplerand = gr.Slider(value = 30 , minimum=0, maximum=100, step=0.1, \
-                                  label="Elementwise vector gain randomization %", default=70 , interactive = True)
+                                  self.inputs.sliders.samplerand = gr.Slider(value = 0 , minimum=0, maximum=100, step=0.1, \
+                                  label="Elementwise vector gain randomization %", default=0 , interactive = True)
 
-                                  self.inputs.sliders.vecsamplegain = gr.Slider(value = 1.5 , minimum=0, maximum=50, step=0.1, \
-                                  label="Vectorwise max gain", default=1.5 , interactive = True)
+                                  self.inputs.sliders.vecsamplegain = gr.Slider(value = 1 , minimum=0, maximum=50, step=0.1, \
+                                  label="Vectorwise max gain", default=1 , interactive = True)
 
-                                  self.inputs.sliders.vecsamplerand = gr.Slider(value = 70 , minimum=0, maximum=100, step=0.1, \
-                                  label="Vectorwise gain randomization %", default=70 , interactive = True)
-
-
-                              ######
-
-
-                              with gr.Accordion("'Similar Mode' Settings",open=False):
-                                with gr.Row(): 
-                                  self.inputs.negbox = gr.Textbox(label= 'Negatives' , lines=3 , interactive = False)
-                                with gr.Row():         
-                                  self.inputs.sliders.negative_weight = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
-                                  label="Negative token strength % ", default=50 , interactive = True) 
+                                  self.inputs.sliders.vecsamplerand = gr.Slider(value =0 , minimum=0, maximum=100, step=0.1, \
+                                  label="Vectorwise gain randomization %", default=0 , interactive = True)
+                                ######
+                                with gr.Accordion("Advanced sampling settings",open=False):
+                                  self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Enable advanced Sampling Mode", interactive = True)
+                                  self.inputs.sliders.iterations = gr.Slider(value = 200 , minimum=0, maximum=3000, step=1, label="Max no. of samples to find best vector", default=200 , interactive = True)
+                                  with gr.Row(): 
+                                    self.inputs.posbox = gr.Textbox(label= 'Positives: Reward similarity with these tokens' , lines=3 , interactive = False)
+                                  with gr.Row(): 
+                                    self.inputs.sliders.positive_strength = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, label="Positive strength %", default=0 , interactive = True)
+                                  with gr.Row(): 
+                                    self.inputs.negbox = gr.Textbox(label= 'Negatives: Penalize similarity with these tokens' , lines=3 , interactive = False)
+                                  with gr.Row():         
+                                    self.inputs.sliders.negative_strength = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
+                                    label="Negative strength % ", default=50 , interactive = True) 
 
                               with gr.Accordion("'Roll Mode' Settings",open=False):
                                 ####

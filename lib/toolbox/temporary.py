@@ -5,13 +5,12 @@ import re #used to parse string to int
 import copy
 from lib.toolbox.constants import MAX_NUM_MIX
 
-from lib.toolbox.floatlist import FloatList3
-from lib.toolbox.intlist import IntList3
-from lib.toolbox.boolist import BooList3
-from lib.toolbox.stringlist import StringList3
+from lib.toolbox.floatlist import FloatList4 #done
+from lib.toolbox.intlist import IntList4 # done
+from lib.toolbox.boolist import BooList4 # done
+from lib.toolbox.stringlist import StringList4 # done
 from lib.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
-
 class Temporary :
 #Temporary is a class which stores torch tensors as a list
 
@@ -66,9 +65,9 @@ class Temporary :
       Temporary.data.append(tmp)
       tmp=None
 
-    Temporary.ID = IntList3(0)
-    Temporary.name = StringList3()
-    Temporary.isEmpty = BooList3(True)
-    Temporary.weight = FloatList3(1)
+    Temporary.ID = IntList4(0)
+    Temporary.name = StringList4()
+    Temporary.isEmpty = BooList4(True)
+    Temporary.weight = FloatList4(1)
     Temporary.strength = 0
 #End of Temporary class

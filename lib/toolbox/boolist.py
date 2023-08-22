@@ -120,3 +120,42 @@ class BooList3 :
         self.check(index)
         self.data[index] = self.default
 #End of BooList3 class
+#-------------------------------------------------------------------------------
+class BooList4 :
+  #The class BooList3 stores booleans as a list
+  #It also stores functions which modify this list  
+
+  #This is a copy of the class Boolist, because I simply cannot 
+  #be bothered to learn out how to make multiple class instances
+  #in python without the list addresses overlapping.
+  #Let me know if you know a good solution :)! /Nekos4Lyfe
+      def validate(self, cond) :
+        assert cond != None , "Null boolean!"
+        assert isinstance(cond , bool) , "Not a boolean!"
+
+      def check(self, index) :
+        assert not index == None , "Index is NoneType!"
+        assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
+
+      def __init__(self , default) :
+        self.validate(default)
+        BooList4.default = default
+        BooList4.data = []
+        for i in range (MAX_NUM_MIX):
+          BooList4.data.append(default)
+
+      def get(self,index) :
+        self.check(index)
+        self.validate(self.data[index])
+        return self.data[index]
+
+      def place(self , cond , index) :
+          self.validate(cond)
+          self.check(index)
+          self.data[index] = copy.copy(cond)
+
+      def clear(self , index):
+        self.validate(self.default)
+        self.check(index)
+        self.data[index] = self.default
+#End of BooList4 class

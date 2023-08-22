@@ -119,3 +119,43 @@ class IntList3 :
         self.check(index)
         self.data[index] = self.default
 #End of IntList3 class
+#-------------------------------------------------------------------------------
+class IntList4 :
+  #The class IntList3 stores ID values as a list
+  #It also stores functions which modify this list  
+
+  #This is a copy of the class IntList, because I simply cannot 
+  #be bothered to learn out how to make multiple class instances
+  #in python without the list addresses overlapping.
+  #Let me know if you know a good solution :)! /Nekos4Lyfe
+
+      def validate(self, integer) :
+        assert integer != None , "integer is NoneType!"
+        assert isinstance(integer , int) , "Not a int!"
+
+      def check(self, index) :
+        assert not index == None , "Index is NoneType!"
+        assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
+
+      def __init__(self , default) :
+        self.validate(default)
+        IntList4.default = default
+        IntList4.data = []
+        for i in range (MAX_NUM_MIX):
+          IntList4.data.append(default)
+
+      def get(self,index) :
+        self.check(index)
+        return self.data[index]
+
+      def place(self , integer , index) :
+          tmp = math.floor(integer)
+          self.validate(tmp)
+          self.check(index)
+          self.data[index] = copy.copy(tmp)
+
+      def clear(self , index):
+        self.validate(self.default)
+        self.check(index)
+        self.data[index] = self.default
+#End of IntList4 class

@@ -7,6 +7,7 @@ from modules import  shared, sd_hijack
 
 from lib.toolbox.vector import Vector
 from lib.toolbox.negative import Negative
+from lib.toolbox.positive import Positive
 from lib.toolbox.temporary import Temporary
 from lib.toolbox.tools import Tools
 from lib.toolbox.constants import MAX_NUM_MIX
@@ -273,6 +274,13 @@ class Data :
         no_of_negatives += 1
       #####
 
+      #Count the positives
+      no_of_positives = 0
+      for pos_index in range(MAX_NUM_MIX):
+        if self.positive.isEmpty.get(pos_index): continue
+        no_of_positives += 1
+      #####
+
       good_vecs = []
       good_sims = []
 
@@ -284,15 +292,21 @@ class Data :
       #Get vectors with similarity > lowerBound
       combined_similarity_score = None
       worst_neg_index = None 
+      worst_pos_index = None 
       negative_similarity = None
+      positive_similarity = None
       worst_nsim = None
+      worst_psim = None
       tmp = None
-      strength = self.negative.strength/100
+      neg_strength = self.negative.strength/100
+      pos_strength = self.positive.strength/100
       #######
       best_similarity_score = None
       best_negative_similarity = None
+      best_positive_similarity = None
       best_similarity = None
       best_worst_neg_index = None
+      best_worst_pos_index = None
       best = None
       #######
       for step in range (N):
@@ -312,7 +326,7 @@ class Data :
             neg_vec = self.negative.get(neg_index)
             tmp = math.floor((100*100*cos(neg_vec, candidate_vec)).numpy()[0])
             if tmp<0 : tmp = -tmp
-            nsim = tmp/100
+            nsim = copy.copy(tmp/100)
             #######
             if worst_nsim == None : 
               worst_nsim = nsim
@@ -324,22 +338,53 @@ class Data :
             #######
             negative_similarity = 100 - worst_nsim
         ###########
-        if negative_similarity == None: combined_similarity_score = similarity
-        else: combined_similarity_score = similarity *(1 - strength) + negative_similarity*strength
+        #Check positives
+        if no_of_positives > 0: 
+          for pos_index in range(MAX_NUM_MIX) :
+            if self.positive.isEmpty.get(pos_index): continue
+            pos_vec = self.positive.get(pos_index)
+            tmp = math.floor((100*100*cos(pos_vec, candidate_vec)).numpy()[0])
+            if tmp<0 : tmp = -tmp
+            psim = copy.copy(tmp/100)
+            #######
+            if worst_psim == None : 
+              worst_psim = psim
+              best_worst_pos_index = pos_index
+            #######
+            if psim < worst_psim : 
+              worst_psim = psim
+              best_worst_pos_index = pos_index
+            #######
+            positive_similarity = worst_psim
+        ###########
+        #Calculate the similarity score 
+        if positive_similarity == None : 
+          if negative_similarity == None: combined_similarity_score = similarity
+          else: combined_similarity_score = \
+          similarity *(1 - neg_strength) + negative_similarity*neg_strength
+        else:
+          if negative_similarity == None: combined_similarity_score = similarity
+          else: combined_similarity_score = \
+          (similarity * (1 - pos_strength) + positive_similarity*pos_strength) \
+          *(1 - neg_strength) + negative_similarity*neg_strength
         ###########
         assert candidate_vec != None , "candidate_vec is NoneType!"
         if best == None: 
             best_similarity_score = combined_similarity_score
             best_negative_similarity = negative_similarity
+            best_positive_similarity = positive_similarity
             best_similarity = similarity
             best_worst_neg_index = worst_neg_index
+            best_worst_pos_index = worst_pos_index
             best = candidate_vec
         ##########
         if combined_similarity_score > best_similarity_score:
             best_similarity_score = combined_similarity_score
             best_negative_similarity = negative_similarity
+            best_positive_similarity = negative_similarity
             best_similarity = similarity
             best_worst_neg_index = worst_neg_index
+            best_worst_pos_index = worst_pos_index
             best = candidate_vec
       #############
       
@@ -348,8 +393,10 @@ class Data :
       if best != None : 
           combined_similarity_score = best_similarity_score 
           negative_similarity = best_negative_similarity
+          positive_similarity = best_positive_similarity
           similarity = best_similarity
           worst_neg_index = best_worst_neg_index 
+          worst_pos_index = best_worst_pos_index 
           candidate_vec = best
                 
       #length of candidate vector
@@ -373,9 +420,14 @@ class Data :
       #######
       if combined_similarity_score != None : 
         combined_similarity_score = round(combined_similarity_score , 1)
+
       negsim = None
       if negative_similarity != None :
         negsim = round(100-negative_similarity , 3) #Invert the value
+      
+      possim = None
+      if positive_similarity != None :
+        possim = round(positive_similarity , 3)
 
       #print the result
       log.append('Similar Mode : Token #' + str(i) + ' with length ' + \
@@ -383,10 +435,12 @@ class Data :
       'with ' + str(similarity) + '% similarity and ' + str(output_length) + \
       ' length')
       ######
-      if negsim != None :
-        name = self.negative.name.get(worst_neg_index)
-        log.append('Max similarity to negative tokens : ' + str(negsim) + ' %' + \
-        "to token '" + name + "'")
+      if negsim != None and worst_neg_index != None:
+        log.append('Highest similarity to negative tokens : ' + str(negsim) + ' %' + \
+        "to token '" + self.negative.name.get(worst_neg_index) + "'")
+      if possim != None and worst_pos_index != None:
+        log.append('Lowest similarity to positive tokens : ' + str(possim) + ' %' + \
+        "to token '" + self.positive.name.get(worst_pos_index) + "'")
       ######
       log.append('Search took ' + str(iters) + ' iterations')
 
@@ -569,7 +623,6 @@ class Data :
     return emb_name # return embedding name for embedding ID
 
   def get_embedding_info(self, string):
-      #self.tools.update_loaded_embs()
 
       emb_id = None
       text = copy.copy(string.lower())
@@ -586,7 +639,6 @@ class Data :
         emb_id = '['+ loaded_emb.checksum()+']' # emb_id is string for loaded embeddings
         emb_vec = loaded_emb.vec.cpu()
         return emb_name, emb_id, emb_vec, loaded_emb #also return loaded_emb reference
-
 
 
       emb_ids = self.text_to_emb_ids(text)
@@ -611,23 +663,32 @@ class Data :
       
       return emb_names, emb_ids, emb_vecs, None # return embedding name, ID, vector
 
-  def shuffle(self , to_negative = None , to_mixer = None , to_temporary = None):
-    if to_negative == None and to_mixer == None and to_temporary == None:
+  def shuffle(self , to_negative = None , to_mixer = None , \
+  to_positive = None , to_temporary = None):
+
+    if to_negative == None and to_mixer == None \
+    and to_positive == None and to_temporary == None : 
       self.vector.shuffle()
     else:
       if to_negative != None :
-        if to_negative : self.negative.shuffle()
+        if to_negative : pass # Not implemented
       #####
       if to_mixer != None : 
         if to_mixer : self.vector.shuffle()
       #####
       if to_temporary != None : 
-        if to_temporary : self.temporary.shuffle()
+        if to_temporary : pass # Not implemented
+
+      if to_positive != None : 
+        if to_positive : pass # Not implemented
+
   ######## End of shuffle function
 
-  def roll (self , to_negative = None , to_mixer = None , to_temporary = None): 
+  def roll (self , to_negative = None , to_mixer = None , \
+  to_positive = None , to_temporary = None):
     message = ''
-    if to_negative == None and to_mixer == None and to_temporary == None:
+    if to_negative == None and to_mixer == None \
+    and to_positive == None and to_temporary == None : 
       message = self.vector.roll()
     else:
       if to_negative != None :
@@ -638,13 +699,22 @@ class Data :
       #####
       if to_temporary != None : 
         if to_temporary : pass # Not implemented
+
+      if to_positive != None : 
+        if to_positive : pass # Not implemented
+
     return message
   ######## End of roll function
 
 
-  def sample(self , to_negative = None , to_mixer = None , to_temporary = None):
+  def sample(self , to_negative = None , to_mixer = None , \
+    to_positive = None , to_temporary = None):
+
     message = ''
-    if to_negative == None and to_mixer == None and to_temporary == None:
+
+    if to_negative == None and to_mixer == None \
+    and to_positive == None and to_temporary == None:
+
       message = self.vector.sample(self.tools.internal_embs)
     else:
       if to_negative != None :
@@ -656,11 +726,14 @@ class Data :
       if to_temporary != None : 
         if to_temporary : pass #Not implemented
     #####
+      if to_positive != None : 
+        if to_positive : pass #Not implemented
 
     return message
 
   def place(self, index , vector = None , ID = None ,  name = None , \
-    weight = None , to_negative = None , to_mixer = None , to_temporary = None):
+    weight = None , to_negative = None , to_mixer = None ,  \
+    to_positive = None ,  to_temporary = None):
 
     def _place_values_in(target) :
       if vector != None: target.place(vector.cpu(),index)
@@ -669,7 +742,8 @@ class Data :
       if weight != None : target.weight.place(float(weight) , index)
     #### End of helper function
 
-    if to_negative == None and to_mixer == None and to_temporary == None:
+    if to_negative == None and to_mixer == None \
+    and to_temporary == None and to_positive == None:
       _place_values_in(self.vector)
     else:
     
@@ -681,6 +755,10 @@ class Data :
 
       if to_temporary != None : 
         if to_temporary : _place_values_in(self.temporary)
+
+      if to_positive != None : 
+        if to_positive : _place_values_in(self.positive)
+
   #### End of place function
 
   def memorize(self) : 
@@ -774,12 +852,17 @@ class Data :
     return '\n'.join(log)
   ######### End of refresh()
 
-  def clear (self, index , to_negative = None , to_mixer = None , to_temporary = None):
+  def clear (self, index , to_negative = None , to_mixer = None , \
+  to_positive = None , to_temporary = None):
 
-    if to_negative == None and to_mixer == None and to_temporary == None:
+    if to_negative == None and to_mixer == None \
+    and to_positive == None and to_temporary == None:
+
       self.vector.clear(index)
       self.negative.clear(index)
+      self.positive.clear(index)
       self.temporary.clear(index)
+
     else:
 
       if to_negative != None:
@@ -790,6 +873,9 @@ class Data :
 
       if to_temporary!= None:
         if to_temporary: self.temporary.clear(index)
+
+      if to_positive!= None:
+        if to_positive: self.positive.clear(index)
 
   def __init__(self):
     #Check if new embeddings have been added 
@@ -804,18 +890,27 @@ class Data :
     Data.ID = None
     Data.name = None
     Data.weight = None 
+    Data.emb_name = None
+    Data.emb_id = None
+    Data.emb_vec = None
+    Data.loaded_emb = None
+    Data.vector = None
+    Data.negative = None
+    Data.temporary = None
 
     if self.tools.loaded:
-      Data.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')
-      Data.vector = Vector(self.emb_vec.shape[1])
-      Data.negative = Negative(self.emb_vec.shape[1])
-      Data.temporary = Temporary(self.emb_vec.shape[1])
-      #self.memorize()
-      #self.recall()
+      self.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')
+      self.vector = Vector(self.emb_vec.shape[1])
+      self.negative = Negative(self.emb_vec.shape[1])
+      self.positive = Positive(self.emb_vec.shape[1])
+      self.temporary = Temporary(self.emb_vec.shape[1])
     else: 
-      Data.vector = Vector(3)
-      Data.negative = Negative(3)
-      Data.temporary = Temporary(3)
+      #Just set size to 3 if no model can be loaded
+      self.vector = Vector(3)
+      self.negative = Negative(3)
+      self.positive = Positive(3)
+      self.temporary = Temporary(3)
+
 
 #End of Data class
 dataStorage = Data() #Create data

@@ -104,3 +104,36 @@ class FloatList3 :
         self.check(index)
         self.data[index] = self.default
 #End of FloatList3 class
+#-------------------------------------------------------------------------------
+class FloatList4 :
+  #The class FloatList stores float values as a list
+  #It also stores functions which modify this list  
+      def validate(self, dec) :
+        assert dec != None , "Float is NoneType!"
+        #assert isinstance(dec , float) , "Not a Float!"
+
+      def check(self, index) :
+        assert not index == None , "Index is NoneType!"
+        assert not (index >= MAX_NUM_MIX or index < 0) , "Index out of bounds!"
+
+      def __init__(self , default) :
+        self.validate(default)
+        FloatList4.default = default
+        FloatList4.data = []
+        for i in range (MAX_NUM_MIX):
+          FloatList4.data.append(default)
+
+      def get(self,index) :
+        self.check(index)
+        return self.data[index]
+
+      def place(self , dec , index) :
+          self.validate(dec)
+          self.check(index)
+          self.data[index] = copy.copy(dec)
+
+      def clear(self , index):
+        self.validate(self.default)
+        self.check(index)
+        self.data[index] = self.default
+#End of FloatList4 class
