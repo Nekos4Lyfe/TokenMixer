@@ -12,6 +12,11 @@ Informal discussions about the TokenMixer can be found here (You will need to na
 
 This extension is published under a MIT License. 
 
+## Latest update
+Advanced Sample Mode added (guide for this will be written later)
+
+![Advanced sampling](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0b8b49f4-621a-4b62-a046-84bae76a9cb7)
+
 ## Usage 
 Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
 
