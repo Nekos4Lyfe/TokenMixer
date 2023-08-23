@@ -255,13 +255,11 @@ class Data :
       N = self.vector.itermax
       T = 1/N  
 
-
       similarity = None
       radialRandom = 1
       tmp = None
       no_of_tokens = 0
       iters = 0
-
 
       tensor = self.vector.get(i).cpu()
       dist_expected = distance(tensor, origin).numpy()[0] # Tensor length
@@ -312,7 +310,7 @@ class Data :
       for step in range (N):
         iters+=1
         #Check similarity to original token
-        rand_vec  = (torch.rand(size) - 0.5* torch.ones(size)).unsqueeze(0)
+        rand_vec  = self.random_quick()
         rdist = distance(rand_vec , origin)
         rando = (1/rdist) * rand_vec 
         candidate_vec = rando * randomGain +  current * (1 - randomGain)
@@ -681,7 +679,6 @@ class Data :
 
       if to_positive != None : 
         if to_positive : pass # Not implemented
-
   ######## End of shuffle function
 
   def roll (self , to_negative = None , to_mixer = None , \
@@ -702,19 +699,22 @@ class Data :
 
       if to_positive != None : 
         if to_positive : pass # Not implemented
-
     return message
   ######## End of roll function
 
+  def random(self):
+    return self.vector.random(self.tools.internal_embs)
+  ### End of random()
+
+  def random_quick(self):
+    return self.vector.random_quick()
+  ## End of random_quick()
 
   def sample(self , to_negative = None , to_mixer = None , \
     to_positive = None , to_temporary = None):
-
     message = ''
-
     if to_negative == None and to_mixer == None \
     and to_positive == None and to_temporary == None:
-
       message = self.vector.sample(self.tools.internal_embs)
     else:
       if to_negative != None :
@@ -728,13 +728,14 @@ class Data :
     #####
       if to_positive != None : 
         if to_positive : pass #Not implemented
-
     return message
+  ### End of sample()
 
   def place(self, index , vector = None , ID = None ,  name = None , \
     weight = None , to_negative = None , to_mixer = None ,  \
     to_positive = None ,  to_temporary = None):
 
+    #Helper function
     def _place_values_in(target) :
       if vector != None: target.place(vector.cpu(),index)
       if ID != None: target.ID.place(ID, index)
@@ -758,8 +759,7 @@ class Data :
 
       if to_positive != None : 
         if to_positive : _place_values_in(self.positive)
-
-  #### End of place function
+  #### End of place()
 
   def memorize(self) : 
     #######
@@ -791,6 +791,7 @@ class Data :
       self.vector.name.place(self.name, index)
       self.vector.weight.place(self.weight , index)
   ###### End of recall()
+
 
   def norm (self, tensor , origin_input , distance_fcn):
         current = tensor.to(device = "cpu")
