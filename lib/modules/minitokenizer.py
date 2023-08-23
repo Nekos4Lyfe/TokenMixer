@@ -123,7 +123,7 @@ class MiniTokenizer:
         continue  #Ignore comma inputs
 
       if word == "_":
-        emb_vec = torch.rand(self.data.vector.size)
+        emb_vec = torch.rand(self.data.vector.size).to(device = "cpu" , dtype = torch.float32)
         dist = distance(emb_vec , origin).numpy()[0]
         tmp = random_token_length * \
         (1 - random_token_length_randomization*random.random())
@@ -150,7 +150,8 @@ class MiniTokenizer:
       if (id_mode and word.isdigit()):
         emb_id = int(word)
         if emb_id >= no_of_internal_embs: continue
-        emb_vec = self.data.tools.internal_embs[emb_id]
+        emb_vec = self.data.tools.internal_embs[emb_id]\
+        .to(device = "cpu" , dtype = torch.float32)
         emb_name = self.data.emb_id_to_name(emb_id)
        
         assert emb_vec != None , "emb_vec is NoneType"
@@ -195,7 +196,8 @@ class MiniTokenizer:
         no_of_tokens = 0 
         emb_vecs = []
         for emb_id in emb_ids:
-          emb_vec = self.data.emb_id_to_vec(emb_id)
+          emb_vec = self.data.emb_id_to_vec(emb_id)\
+          .to(device = "cpu" , dtype = torch.float32)
           no_of_tokens +=1
           break
       #########
@@ -210,7 +212,7 @@ class MiniTokenizer:
             token_num += 1 #Skip until token_num==start
             continue
 
-          emb_vec = emb_vecs[token_num]
+          emb_vec = emb_vecs[token_num].to(device = "cpu" , dtype = torch.float32)
 
           assert emb_vec != None , "emb_vec is NoneType"
           self.data.place(index , 
@@ -237,7 +239,7 @@ class MiniTokenizer:
         _ID = found_IDs[ID_index] 
         
         emb_name = self.data.emb_id_to_name(_ID)
-        emb_vec = self.data.emb_id_to_vec(_ID)
+        emb_vec = self.data.emb_id_to_vec(_ID).to(device = "cpu" , dtype = torch.float32)
 
         assert emb_vec != None , "emb_vec is NoneType"
 
