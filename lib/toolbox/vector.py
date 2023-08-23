@@ -37,7 +37,7 @@ class Vector :
     if (tensor != None) :
       self.validate(tensor)
       assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
-      self.data[index] = tensor.cpu()
+      self.data[index] = tensor.to(device = "cpu" , dtype = torch.float32)
       self.isEmpty.place(False , index)
       assert not self.isEmpty.data[index] , "Faulty place!"
 
@@ -79,15 +79,17 @@ class Vector :
         self.swap(self.isEmpty , index1 , index2)
         self.swap(self.weight  , index1 , index2)
         #####
-        self.tmp = self.data[index1].cpu()
-        self.data[index1] = self.data[index2]
-        self.data[index2] = self.tmp
+        self.tmp = self.data[index1].to(device = "cpu" , dtype = torch.float32)
+        self.data[index1] = self.data[index2].to(device = "cpu" , dtype = torch.float32)
+        self.data[index2] = self.tmp.to(device = "cpu" , dtype = torch.float32)
   ####### End of shuffle function
 
   def similarity (self , tensor1 , tensor2):
-        distance = torch.nn.PairwiseDistance(p=2).to(device = "cpu")
-        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6).to(device = "cpu")
-        origin = (self.origin).to(device = "cpu")
+        distance = torch.nn.PairwiseDistance(p=2)\
+        .to(device = "cpu" , dtype = torch.float32)
+        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)\
+        .to(device = "cpu" , dtype = torch.float32)
+        origin = (self.origin).to(device = "cpu" , dtype = torch.float32)
         #######
 
         current = tensor1.to(device = "cpu" , dtype = torch.float32)
@@ -101,13 +103,15 @@ class Vector :
         ref = ref * (1/dist2)
 
         ########
-        sim = (100*cos(current , ref)).to(device = "cpu")
+        sim = (100*cos(current , ref))\
+        .to(device = "cpu" , dtype = torch.float32)
         if sim < 0 : sim = -sim
         output = str(round(sim.numpy()[0] , 2))
         return  output
 
   def distance (self, tensor1 , tensor2):
-        distance = torch.nn.PairwiseDistance(p=2).to(device = "cpu")
+        distance = torch.nn.PairwiseDistance(p=2)\
+        .to(device = "cpu" , dtype = torch.float32)
         #######
         current = tensor1.to(device = "cpu" , dtype = torch.float32)
         ref = tensor2.to(device = "cpu" , dtype = torch.float32)
@@ -124,7 +128,7 @@ class Vector :
     rand = None 
     prev = None
     current = None
-    origin = self.origin 
+    origin = self.origin.to(device = "cpu" , dtype = torch.float32)
     tokenCount = 0
     tmp = None
     for index in range(MAX_NUM_MIX):
@@ -133,9 +137,9 @@ class Vector :
       r = self.rollcountrand/100
       rollCount = math.floor(self.rollcount * ((1 - r) + (r) * random.random()))
       #########
-      prev = self.data[index]
-      current = torch.roll(prev , rollCount).cpu()
-      self.data[index] = current
+      prev = self.data[index].to(device = "cpu" , dtype = torch.float32)
+      current = torch.roll(prev , rollCount).to(device = "cpu" , dtype = torch.float32)
+      self.data[index] = current.to(device = "cpu" , dtype = torch.float32)
       ########
       similarity = self.similarity(current, prev)
       dist = self.distance(current, self.origin)
@@ -155,11 +159,9 @@ class Vector :
     gain = None
     for k in range(self.size):
       gain = self.samplegain * (1 - (self.samplerand/100)*random.random())
-      randvec[k] = randvec[k] * gain
+      randvec[k] = (randvec[k] * gain).to(device = "cpu" , dtype = torch.float32)
     #####
     return randvec
-
-
 
 
   def random(self , internal_embs):
@@ -183,7 +185,7 @@ class Vector :
           ####
           randval = random.choice(randvec_data)
           ####
-          output_data[k] = output_data[k] * randval * gain
+          output_data[k] = (output_data[k] * randval * gain)
         #####
       
         return output
@@ -199,7 +201,7 @@ class Vector :
     rand = None 
     prev = None
     current = None
-    origin = self.origin 
+    origin = self.origin.to(device = "cpu" , dtype = torch.float32)
     tokenCount = 0
     tmp = None
     gain = None
@@ -210,7 +212,7 @@ class Vector :
       rdist = distance(rand , origin).numpy()[0]
       gain = self.vecsamplegain * (1 - (self.vecsamplerand/100)*random.random())
       #########
-      prev = self.data[index]
+      prev = self.data[index].to(device = "cpu" , dtype = torch.float32)
       prev_dist = distance(prev , origin).numpy()[0]
       current = (prev*(1 - r)*(1/prev_dist) + rand * r * (1/rdist))\
       .to(device = "cpu" , dtype = torch.float32)
@@ -220,7 +222,7 @@ class Vector :
       (current * (gain*prev_dist/curr_dist))\
       .to(device = "cpu" , dtype = torch.float32)
       ########
-      tmp = self.data[index]
+      tmp = self.data[index].to(device = "cpu" , dtype = torch.float32)
       similarity = 100*cos(tmp, prev).numpy()[0]
       if similarity < 0 : similarity = -similarity
       dist = distance(tmp , origin).numpy()[0]
@@ -238,7 +240,8 @@ class Vector :
 
   def __init__(self , size):
     Vector.size = size
-    Vector.origin = torch.zeros(size).unsqueeze(0).cpu()
+    Vector.origin = (torch.zeros(size)\
+    .to(device = "cpu" , dtype = torch.float32)).unsqueeze(0)
     Vector.randomization = 0
     Vector.interpolation = 0
     Vector.itermax = 1000
@@ -257,7 +260,7 @@ class Vector :
     Vector.vecsamplerand = 0
 
     for i in range (MAX_NUM_MIX):
-      tmp = torch.zeros(size).unsqueeze(0).cpu()
+      tmp = torch.zeros(size).unsqueeze(0).to(device = "cpu" , dtype = torch.float32)
       Vector.data.append(tmp)
       tmp=None
 
