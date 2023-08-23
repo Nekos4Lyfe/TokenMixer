@@ -149,7 +149,7 @@ class TokenMixer :
     similar_mode = args[4]
     five_sets_mode = args[5]
     randlen = args[6] #Empty
-    randlenrand = args[7] #Empty
+    no_of_sets = args[7] 
     randSlider = args[8]
     interpolateSlider = args[9]
     iterationSlider = args[10]
@@ -174,9 +174,6 @@ class TokenMixer :
     samplegain = args[29]
     samplerand = args[30]
     posbox = args[31]
-    no_of_sets = args[32]
-
-    print(str(no_of_sets))
 
     save_name = copy.copy(save_name_input)
 
@@ -287,7 +284,7 @@ class TokenMixer :
 
     ####Five Sets Mode : Set iterations
     iterations = None
-    if (five_sets_mode): iterations = 7
+    if (five_sets_mode): iterations = no_of_sets
     else : iterations = 1
     ####
 
@@ -431,7 +428,7 @@ class TokenMixer :
       input_list.append(self.inputs.settings.five_sets_mode)        #5
       
       input_list.append(self.inputs.sliders.gain)#<--placeholder    #6                
-      input_list.append(self.inputs.sliders.gain)#<---placeholder   #7          
+      input_list.append(self.inputs.sliders.no_of_sets)             #7
       
       input_list.append(self.inputs.sliders.randomize)              #8
       input_list.append(self.inputs.sliders.interpolate)            #9
@@ -459,7 +456,6 @@ class TokenMixer :
       input_list.append(self.inputs.sliders.vecsamplegain)          #29
       input_list.append(self.inputs.sliders.vecsamplerand)          #30
       input_list.append(self.inputs.posbox)                         #31
-      input_list.append(self.inputs.sliders.no_of_sets)             #32
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -632,8 +628,7 @@ class TokenMixer :
                                 with gr.Accordion('Save Settings',open=False):
                                     self.inputs.settings.five_sets_mode = gr.Checkbox(value=False,label="Make multiple embeddings at once", interactive = True)   
                                                                  
-                                    self.inputs.sliders.no_of_sets = \
-                                    gr.Slider(value = 5, minimum=1, maximum=100, step=1, label="", default=5 , interactive = True)
+                                    self.inputs.sliders.no_of_sets = gr.Slider(value = 5, minimum=1, maximum=100, step=1, label="No. of embeddings", default=5 , interactive = True)
    
                                     self.inputs.settings.autoselect = gr.Checkbox(value=False,label="Autoselect sub_name", interactive = True)                            
                                     self.inputs.settings.randchoice = gr.Checkbox(value=True,label="Use random choice {a|b|c} format " , interactive = True)
