@@ -23,7 +23,7 @@ class Temporary :
 #and Boolist lists 
 
   def get(self,index) :
-    output = self.data[index]
+    output = self.data[index].to(device = "cpu" , dtype = torch.float32)
     assert not output == None , "Faulty get!"
     return output
 
@@ -36,14 +36,15 @@ class Temporary :
     if (tensor != None) :
       self.validate(tensor)
       assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
-      self.data[index] = tensor.cpu()
+      self.data[index] = tensor.to(device = "cpu" , dtype = torch.float32)
       self.isEmpty.place(False , index)
       assert not self.isEmpty.data[index] , "Faulty place!"
 
   def clear (self , index) :
     assert not index == None , "Index is NoneType!"
     assert not (index > MAX_NUM_MIX or index < 0) ,  "Index out of bounds!"
-    self.data[index] = torch.zeros(self.size).unsqueeze(0).cpu()
+    self.data[index] = torch.zeros(self.size).unsqueeze(0)\
+    .to(device = "cpu" , dtype = torch.float32)
     assert not self.data[index] == None , "Bad operation"
     self.isEmpty.clear(index)
     self.ID.clear(index)
@@ -52,7 +53,7 @@ class Temporary :
 
   def __init__(self , size):
     Temporary.size = size
-    Temporary.origin = torch.zeros(size).unsqueeze(0).cpu()
+    Temporary.origin = (torch.zeros(size).to(device = "cpu" , dtype = torch.float32)).unsqueeze(0)
     Temporary.randomization = 0
     Temporary.interpolation = 0
     Temporary.itermax = 1000
@@ -61,9 +62,8 @@ class Temporary :
     Temporary.data = []
 
     for i in range (MAX_NUM_MIX):
-      tmp = torch.zeros(size).unsqueeze(0).cpu()
-      Temporary.data.append(tmp)
-      tmp=None
+      Temporary.data.append((torch.zeros(size)\
+      .to(device = "cpu" , dtype = torch.float32)).unsqueeze(0))
 
     Temporary.ID = IntList4(0)
     Temporary.name = StringList4()
