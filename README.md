@@ -21,6 +21,12 @@ Advanced Sample Mode added (guide for this will be written later)
 
 ![Advanced sampling](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0b8b49f4-621a-4b62-a046-84bae76a9cb7)
 
+**Summary of how Sampler Mode works:**
+
+* Generate N semi-random vectors from the input tokens (set by the randomization % slider) as "Samples". 
+
+* Return the sample with the highest similarity to original input token
+
 **Summary of how Advanced Sampler mode works:**
 
 * Generate N semi-random vectors from the input tokens (set by the randomization % slider) as "Samples". 
@@ -29,11 +35,6 @@ Advanced Sample Mode added (guide for this will be written later)
 
 * Return the sample with the highest score
 
-**Summary of how Sampler Modd works:**
-
-* Generate N semi-random vectors from the input tokens (set by the randomization % slider) as "Samples". 
-
-* Return the sample with the highest similarity to original input token
 
 ## Usage 
 Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
