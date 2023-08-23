@@ -149,6 +149,18 @@ class Vector :
     assert log != None , "log is None!"
     return '\n'.join(log)
 
+  
+  def random_quick(self):
+    randvec = torch.rand(self.size).to(device = "cpu" , dtype = torch.float32)
+    gain = None
+    for k in range(self.size):
+      gain = self.samplegain * (1 - (self.samplerand/100)*random.random())
+      randvec[k] = randvec[k] * gain
+    #####
+    return randvec
+
+
+
 
   def random(self , internal_embs):
 
