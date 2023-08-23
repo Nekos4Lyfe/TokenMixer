@@ -85,7 +85,8 @@ class Data :
     maxtoken = None #Token with most similarity
 
     for step in range (N):
-      rand_vec  = (2*torch.rand(size) - torch.ones(size)).unsqueeze(0)
+      rand_vec  = ((2*torch.rand(size) - torch.ones(size))\
+      .to(device = "cpu" , dtype = torch.float32)).unsqueeze(0)
       rdist = distance(rand_vec, origin).numpy()[0]
       rando = (1/rdist) * rand_vec #Create random unit vector
 
@@ -233,7 +234,8 @@ class Data :
           output = current
           log.append('Placed token with length '+ str(dist)  +' in new embedding ')
           continue
-      output = torch.cat([output,current], dim=0)
+      output = torch.cat([output,current], dim=0)\
+      .to(device = "cpu" , dtype = torch.float32)
       log.append('Placed token with length '+ str(dist)  +' in new embedding ')
     
     log.append('New embedding has '+ str(no_of_tokens) + ' tokens')
@@ -531,7 +533,8 @@ class Data :
       for step in range (N):
         iters+=1
 
-        tmp  = (torch.rand(size) - 0.5* torch.ones(size)).unsqueeze(0)
+        tmp  = ((torch.rand(size) - 0.5* torch.ones(size))\
+        .to(device = "cpu" , dtype = torch.float32)).unsqueeze(0)
         rdist = distance(tmp, origin).numpy()[0]
         rand_norm = (1/rdist) * tmp  #Create random unit vector
 
@@ -576,7 +579,8 @@ class Data :
         no_of_tokens = no_of_tokens - 1
 
         if output == None : output = similar_token
-        else :  output = torch.cat([output,similar_token], dim=0)
+        else :  output = torch.cat([output,similar_token], dim=0)\
+        .to(device = "cpu" , dtype = torch.float32)
         log.append('Placed token with length '+ str(output_length)  +' in new embedding ')
 
       else:
@@ -737,7 +741,8 @@ class Data :
 
     #Helper function
     def _place_values_in(target) :
-      if vector != None: target.place(vector.cpu(),index)
+      if vector != None: target.place(vector\
+      .to(device = "cpu" , dtype = torch.float32),index)
       if ID != None: target.ID.place(ID, index)
       if name != None: target.name.place(name, index)
       if weight != None : target.weight.place(float(weight) , index)
@@ -765,7 +770,8 @@ class Data :
     #######
     for index in range(MAX_NUM_MIX):
       if self.vector.isEmpty.get(index) : continue
-      self.vec = self.vector.get(index).cpu()
+      self.vec = self.vector.get(index)\
+      .to(device = "cpu" , dtype = torch.float32)
       self.ID = copy.copy(self.vector.ID.get(index))
       self.name = copy.copy(self.vector.name.get(index))
       self.weight = copy.copy(self.vector.weight.get(index))
@@ -780,7 +786,8 @@ class Data :
   def recall(self) :
     for index in range(MAX_NUM_MIX):
       if self.temporary.isEmpty.get(index) : continue
-      self.vec = self.temporary.get(index).cpu()
+      self.vec = self.temporary.get(index)\
+      .to(device = "cpu" , dtype = torch.float32)
       self.ID = copy.copy(self.temporary.ID.get(index))
       self.name = copy.copy(self.temporary.name.get(index))
       self.weight = copy.copy(self.temporary.weight.get(index))
@@ -794,12 +801,13 @@ class Data :
 
 
   def norm (self, tensor , origin_input , distance_fcn):
-        current = tensor.to(device = "cpu")
-        origin = origin_input.to(device = "cpu")
+        current = tensor.to(device = "cpu" , dtype = torch.float32)
+        origin = origin_input.to(device = "cpu" , dtype = torch.float32)
         return current
 
   def distance (self, tensor1 , tensor2):
-        distance = torch.nn.PairwiseDistance(p=2).to(device = "cpu")
+        distance = torch.nn.PairwiseDistance(p=2)\
+        .to(device = "cpu" , dtype = torch.float32)
         #######
         current = tensor1.to(device = "cpu" , dtype = torch.float32)
         ref = tensor2.to(device = "cpu" , dtype = torch.float32)
@@ -807,9 +815,12 @@ class Data :
         return  str(round(dist , 2))
 
   def similarity (self , tensor1 , tensor2):
-        distance = torch.nn.PairwiseDistance(p=2).to(device = "cpu")
-        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6).to(device = "cpu")
-        origin = (self.vector.origin).to(device = "cpu")
+        distance = torch.nn.PairwiseDistance(p=2)\
+        .to(device = "cpu" , dtype = torch.float32)
+        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)\
+        .to(device = "cpu" , dtype = torch.float32)
+        origin = (self.vector.origin)\
+        .to(device = "cpu" , dtype = torch.float32)
         #######
 
         current = tensor1.to(device = "cpu" , dtype = torch.float32)
@@ -823,12 +834,12 @@ class Data :
         ref = ref * (1/dist2)
 
         ########
-        sim = (100*cos(current , ref)).to(device = "cpu")
+        sim = (100*cos(current , ref)).to(device = "cpu" , dtype = torch.float32)
         if sim < 0 : sim = -sim
         return  str(round(sim.numpy()[0] , 2))
 
   def get(self , index):
-    vector = self.vector.get(index)
+    vector = self.vector.get(index).to(device = "cpu" , dtype = torch.float32)
     ID = self.vector.ID.get(index)
     name = self.vector.name.get(index)
     return vector , ID ,  name
