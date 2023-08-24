@@ -253,7 +253,7 @@ class Data :
       randomGain = self.vector.randomization/100  
       pursuit_strength = self.pursuit_strength/100
       doping_strength = self.doping_strength/100
-      origin = self.vector.origin
+      origin = self.vector.origin.to(device="cpu" , dtype = torch.float32)
       size = self.vector.size
       gain = self.vector.gain
       N = self.vector.itermax
@@ -327,7 +327,6 @@ class Data :
 
       randomReduce = pursuit_strength*randomGain/N
 
-
       for step in range (N):
         iters+=1
         ##### Calculate doping vector
@@ -368,12 +367,14 @@ class Data :
           bdist = distance(best, origin).to(device = "cpu" , dtype = torch.float32)
           if randomGain<0 : randomGain = 0
           #####
-          candidate_vec = (rando * randomGain +  best * (1/bdist)*(1 - randomGain))\
+          candidate_vec = (rand_vec*(1/rdist)*randomGain +  best*(1/bdist)*(1 - randomGain))\
           .to(device = "cpu" , dtype = torch.float32)
         #####
         cdist = distance(candidate_vec, origin).to(device = "cpu" , dtype = torch.float32)
-        
-        similarity = (100*cos(current, candidate_vec*(1/cdist))\
+        candidate_vec = (candidate_vec*(1/cdist)).to(device = "cpu" , dtype = torch.float32)
+
+
+        similarity = (100*cos(current, candidate_vec)\
         .to(device = "cpu" , dtype = torch.float32)).numpy()[0]
         if similarity<0 : similarity = -similarity
         #######
@@ -383,7 +384,8 @@ class Data :
             if self.negative.isEmpty.get(neg_index): continue
             neg_vec = self.negative.get(neg_index).to(device="cpu" , dtype = torch.float32)
             ndist = distance(neg_vec, origin).to(device = "cpu" , dtype = torch.float32)
-            tmp = math.floor((100*100*cos(neg_vec *(1/ndist), candidate_vec * (1/cdist))).numpy()[0])
+            neg_vec = (neg_vec *(1/ndist)).to(device = "cpu" , dtype = torch.float32)
+            tmp = math.floor((100*100*cos(neg_vec, candidate_vec)).numpy()[0])
             if tmp<0 : tmp = -tmp
             nsim = copy.copy(tmp/100)
             #######
@@ -404,10 +406,16 @@ class Data :
             if self.positive.isEmpty.get(pos_index): continue
             pos_vec = self.positive.get(pos_index)\
             .to(device="cpu" , dtype = torch.float32)
+
             pdist = distance(pos_vec, origin)\
             .to(device = "cpu" , dtype = torch.float32)
-            tmp = math.floor((100*100*cos(pos_vec*(1/pdist), \
-            candidate_vec * (1/cdist))).numpy()[0])
+
+            pos_vec = (pos_vec*(1/pdist))\
+            .to(device = "cpu" , dtype = torch.float32)
+
+            tmp = math.floor((100*100*cos(pos_vec,candidate_vec))\
+            .to(device = "cpu" , dtype = torch.float32).numpy()[0])
+            
             if tmp<0 : tmp = -tmp
             psim = copy.copy(tmp/100)
             #######
@@ -441,10 +449,10 @@ class Data :
 
         #Update the best vector
         if best == None or combined_similarity_score > best_similarity_score: 
-            best_similarity_score = combined_similarity_score
-            best_negative_similarity = negative_similarity
-            best_positive_similarity = positive_similarity
-            best_similarity = similarity
+            best_similarity_score = copy.copy(combined_similarity_score)
+            best_negative_similarity = copy.copy(negative_similarity)
+            best_positive_similarity = copy.copy(positive_similarity)
+            best_similarity = copy.copy(similarity)
             best_worst_neg_index = copy.copy(worst_neg_index)
             best_worst_pos_index = copy.copy(worst_pos_index)
             best = candidate_vec.to(device= "cpu" , dtype = torch.float32)
@@ -453,12 +461,12 @@ class Data :
 
       #Copy the best vector to output if found
       if best != None : 
-          combined_similarity_score = best_similarity_score 
-          negative_similarity = best_negative_similarity
-          positive_similarity = best_positive_similarity
-          worst_neg_index = best_worst_neg_index
-          worst_pos_index = best_worst_pos_index
-          similarity = best_similarity
+          combined_similarity_score = copy.copy(best_similarity_score)
+          negative_similarity = copy.copy(best_negative_similarity)
+          positive_similarity = copy.copy(best_positive_similarity)
+          worst_neg_index = copy.copy(best_worst_neg_index)
+          worst_pos_index = copy.copy(best_worst_pos_index)
+          similarity = copy.copy(best_similarity)
           candidate_vec = best.to(device = "cpu" , dtype = torch.float32)
                 
       #length of candidate vector
@@ -466,10 +474,10 @@ class Data :
       .to(device = "cpu" , dtype = torch.float32)
 
       #length of output vector
-      output_length = gain * dist_expected
+      output_length = copy.copy(gain * dist_expected)
 
       #Set the length of found similar vector
-      similar_token = (gain* (output_length/cdist) * candidate_vec * radialRandom)\
+      similar_token = ((output_length/cdist) * candidate_vec)\
       .to(device = "cpu" , dtype = torch.float32)
 
       #round the values before printing them
@@ -536,7 +544,7 @@ class Data :
     radialGain = 0.001 #deprecated
     randomGain = self.vector.randomization/100 
     lowerBound = self.vector.interpolation 
-    origin = self.vector.origin.cpu()
+    origin = self.vector.origin.to(device="cpu" , dtype = torch.float32)
     size = self.vector.size
     gain = self.vector.gain
     N = self.vector.itermax
@@ -679,7 +687,7 @@ class Data :
       return None
     if emb_id < 0 :
       return None
-    return self.tools.internal_embs[emb_id]
+    return self.tools.internal_embs[emb_id].to(device="cpu" , dtype = torch.float32)
 
   def emb_id_to_name(self, text):
     emb_id = copy.copy(text)
