@@ -251,6 +251,7 @@ class Data :
       distance = torch.nn.PairwiseDistance(p=2)
       radialGain = 0.001 #deprecated
       randomGain = self.vector.randomization/100  
+      pursuit_strength = self.pursuit_strength/100
       origin = self.vector.origin
       size = self.vector.size
       gain = self.vector.gain
@@ -287,6 +288,7 @@ class Data :
       candidate_vec = None
       rando = None
       rdist = None
+      bdist = None
       rand_vec = None
 
       #Get vectors with similarity > lowerBound
@@ -309,13 +311,34 @@ class Data :
       best_worst_pos_index = None
       best = None
       #######
+
+      randomReduce = pursuit_strength*randomGain/N
+
       for step in range (N):
         iters+=1
         #Check similarity to original token
-        rand_vec  = self.random_quick()
-        rdist = distance(rand_vec , origin)
-        rando = (1/rdist) * rand_vec 
-        candidate_vec = rando * randomGain +  current * (1 - randomGain)
+        rand_vec = torch.rand(self.vector.size)\
+        .to(device = "cpu" , dtype = torch.float32)
+        rand_vec  = (2*rand_vec - torch.ones(self.vector.size))\
+        .to(device = "cpu" , dtype = torch.float32)
+
+        rdist = distance(rand_vec , origin).to(device = "cpu" , dtype = torch.float32)
+        rando = ((1/rdist) * rand_vec).to(device = "cpu" , dtype = torch.float32)
+
+        #Calculate candidate vector
+        if best == None : 
+          candidate_vec = (rando * randomGain +  current * (1 - randomGain))\
+          .to(device = "cpu" , dtype = torch.float32)
+        else:
+          #Reduce randomness a bit for every step
+          randomGain = copy.copy(randomGain - randomReduce)
+          bdist = distance(best, origin).to(device = "cpu" , dtype = torch.float32)
+          if randomGain<0 : randomGain = 0
+          #####
+          candidate_vec = (rando * randomGain +  best * (1/bdist)*(1 - randomGain))\
+          .to(device = "cpu" , dtype = torch.float32)
+        #####
+
         similarity = (100*cos(current, candidate_vec)).numpy()[0]
         if similarity<0 : similarity = -similarity
         #######
@@ -328,15 +351,13 @@ class Data :
             if tmp<0 : tmp = -tmp
             nsim = copy.copy(tmp/100)
             #######
-            if worst_nsim == None : 
+            if worst_nsim == None or nsim > worst_nsim: 
               worst_nsim = nsim
+              negative_similarity = copy.copy(100 - nsim)
               worst_neg_index = neg_index
+              continue
             #######
-            if nsim > worst_nsim : 
-              worst_nsim = nsim
-              worst_neg_index = neg_index
-            #######
-            negative_similarity = 100 - worst_nsim
+
         ###########
         #Check positives
         if no_of_positives > 0: 
@@ -347,57 +368,49 @@ class Data :
             if tmp<0 : tmp = -tmp
             psim = copy.copy(tmp/100)
             #######
-            if worst_psim == None : 
+            if worst_psim == None or psim < worst_psim: 
               worst_psim = psim
-              best_worst_pos_index = pos_index
+              positive_similarity = copy.copy(psim)
+              worst_pos_index = pos_index
+              continue
             #######
-            if psim < worst_psim : 
-              worst_psim = psim
-              best_worst_pos_index = pos_index
-            #######
-            positive_similarity = worst_psim
         ###########
         #Calculate the similarity score 
         if positive_similarity == None : 
-          if negative_similarity == None: combined_similarity_score = similarity
-          else: combined_similarity_score = \
-          similarity *(1 - neg_strength) + negative_similarity*neg_strength
+          if negative_similarity == None: combined_similarity_score = copy.copy(similarity)
+          else: combined_similarity_score = copy.copy(\
+          similarity *(1 - neg_strength) + negative_similarity*neg_strength)
         else:
-          if negative_similarity == None: combined_similarity_score = similarity
-          else: combined_similarity_score = \
+          if negative_similarity == None: 
+            combined_similarity_score = copy.copy(\
+            (similarity * (1 - pos_strength) + positive_similarity*pos_strength))
+          else: combined_similarity_score = copy.copy(\
           (similarity * (1 - pos_strength) + positive_similarity*pos_strength) \
-          *(1 - neg_strength) + negative_similarity*neg_strength
+          *(1 - neg_strength) + negative_similarity*neg_strength)
         ###########
         assert candidate_vec != None , "candidate_vec is NoneType!"
-        if best == None: 
+
+        #Update the best vector
+        if best == None or combined_similarity_score > best_similarity_score: 
             best_similarity_score = combined_similarity_score
             best_negative_similarity = negative_similarity
             best_positive_similarity = positive_similarity
             best_similarity = similarity
-            best_worst_neg_index = worst_neg_index
-            best_worst_pos_index = worst_pos_index
-            best = candidate_vec
-        ##########
-        if combined_similarity_score > best_similarity_score:
-            best_similarity_score = combined_similarity_score
-            best_negative_similarity = negative_similarity
-            best_positive_similarity = negative_similarity
-            best_similarity = similarity
-            best_worst_neg_index = worst_neg_index
-            best_worst_pos_index = worst_pos_index
-            best = candidate_vec
+            best_worst_neg_index = copy.copy(worst_neg_index)
+            best_worst_pos_index = copy.copy(worst_pos_index)
+            best = candidate_vec.to(device= "cpu" , dtype = torch.float32)
+            continue
       #############
-      
-      #If negative similarity condition was not fulfilled
-      #get the best candidate vector
+
+      #Copy the best vector to output if found
       if best != None : 
           combined_similarity_score = best_similarity_score 
           negative_similarity = best_negative_similarity
           positive_similarity = best_positive_similarity
+          worst_neg_index = best_worst_neg_index
+          worst_pos_index = best_worst_pos_index
           similarity = best_similarity
-          worst_neg_index = best_worst_neg_index 
-          worst_pos_index = best_worst_pos_index 
-          candidate_vec = best
+          candidate_vec = best.to(device= "cpu" , dtype = torch.float32)
                 
       #length of candidate vector
       cdist = distance(candidate_vec , origin).numpy()[0]
@@ -410,7 +423,8 @@ class Data :
       else: output_length = max(output_length  , dist_expected*radialGain)
 
       #Set the length of found similar vector
-      similar_token = gain* (output_length/cdist) * candidate_vec * radialRandom
+      similar_token = (gain* (output_length/cdist) * candidate_vec * radialRandom)\
+      .to(device = "cpu" , dtype = torch.float32)
 
       #round the values before printing them
       output_length = round(output_length, 2)
