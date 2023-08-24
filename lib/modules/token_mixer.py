@@ -174,6 +174,7 @@ class TokenMixer :
     samplegain = args[29]
     samplerand = args[30]
     posbox = args[31]
+    doping_strength = args[32]
 
     save_name = copy.copy(save_name_input)
 
@@ -203,6 +204,7 @@ class TokenMixer :
     self.data.negative.strength = copy.copy(negative_strength)
     self.data.positive.strength = copy.copy(positive_strength)
     self.data.pursuit_strength = copy.copy(pursuit_strength)
+    self.data.doping_strength = copy.copy(doping_strength)
 
     log = [] 
     emptyList = [None]*MAX_NUM_MIX 
@@ -457,6 +459,7 @@ class TokenMixer :
       input_list.append(self.inputs.sliders.vecsamplegain)          #29
       input_list.append(self.inputs.sliders.vecsamplerand)          #30
       input_list.append(self.inputs.posbox)                         #31
+      input_list.append(self.inputs.sliders.doping_strength)                 #32
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -552,6 +555,7 @@ class TokenMixer :
                 Sliders.samplerand = []
                 Sliders.no_of_sets = []
                 Sliders.pursuit_strength = []
+                Sliders.doping_strength = []
 
           class Inputs :
               def __init__(self):
@@ -698,8 +702,25 @@ class TokenMixer :
                                   self.inputs.sliders.vecsamplerand = gr.Slider(value =0 , minimum=0, maximum=100, step=0.1, \
                                   label="Vectorwise gain randomization %", default=0 , interactive = True)
 
-                                  self.inputs.sliders.pursuit_strength = gr.Slider(value = 10 , minimum=0, maximum=100, step=0.1, \
-                                  label="Pursuit Strength %", default=10 , interactive = True)
+                                  with gr.Accordion("Sample Pursuit",open=False):
+                                    with gr.Row(): 
+                                      gr.Markdown("Reduce randomization % of sample vector for " + \
+                                      "every iteration. Higher % means the algorithm will become " + \
+                                      "more 'greedy' , i.e stick with the best sample vector it currently has " + \
+                                      "intead of trying out new (potentially better) vectors.")
+                                    with gr.Row():
+                                      self.inputs.sliders.pursuit_strength = gr.Slider(value = 0 , minimum=0, maximum=100, step=0.1, \
+                                      label="Sample pursuit strength %", default=0 , interactive = True)
+
+                                  with gr.Accordion("Sample Doping",open=False):
+                                    with gr.Row(): 
+                                      gr.Markdown("Randomly pick a token from the positives " + \
+                                      "and add a fraction of it to the sample vector " + \
+                                      "('Advanced Sampling mode' must be enabled)")
+                                    with gr.Row(): 
+                                      self.inputs.sliders.doping_strength = gr.Slider(value = 0 , minimum=0, maximum=100, \
+                                      step=0.1, label="Positive token sample doping_strength %", default=0 , interactive = True)
+                                      
                                 ######
                                 with gr.Accordion("Advanced sampling settings",open=False):
                                   self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Enable advanced Sampling Mode", interactive = True)
