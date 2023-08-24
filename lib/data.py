@@ -284,7 +284,7 @@ class Data :
       for pos_index in range(MAX_NUM_MIX):
         if self.positive.isEmpty.get(pos_index): continue
         no_of_positives += 1
-        positives.append(self.positive.get(pos_index))
+        positives.append(list(self.positive.get(pos_index)))
       #####
 
       good_vecs = []
@@ -330,7 +330,7 @@ class Data :
       for step in range (N):
         iters+=1
         ##### Calculate doping vector
-        doping = random.choice(positives)\
+        doping = torch.tensor(random.choice(positives))\
         .to(device = "cpu" , dtype = torch.float32)
         ddist = distance(doping , origin)\
         .to(device = "cpu" , dtype = torch.float32)
