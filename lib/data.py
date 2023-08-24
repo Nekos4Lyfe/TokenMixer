@@ -473,6 +473,8 @@ class Data :
       .to(device = "cpu" , dtype = torch.float32)
 
       #round the values before printing them
+      output_length = output_length.numpy()[0]
+      dist_expected = dist_expected.numpy()[0]
       output_length = round(output_length, 2)
       similarity = round(similarity, 1)
       randomization = round(self.vector.randomization , 2)
