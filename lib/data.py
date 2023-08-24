@@ -252,6 +252,7 @@ class Data :
       radialGain = 0.001 #deprecated
       randomGain = self.vector.randomization/100  
       pursuit_strength = self.pursuit_strength/100
+      doping_strength = self.doping_strength/100
       origin = self.vector.origin
       size = self.vector.size
       gain = self.vector.gain
@@ -264,9 +265,10 @@ class Data :
       no_of_tokens = 0
       iters = 0
 
-      tensor = self.vector.get(i).cpu()
-      dist_expected = distance(tensor, origin).numpy()[0] # Tensor length
-      current = (1/dist_expected) * tensor  #Tensor as unit vector
+      tensor = self.vector.get(i).to(device="cpu" , dtype = torch.float32)
+      dist_expected = distance(tensor, origin).to(device="cpu" , dtype = torch.float32)
+      current = ((1/dist_expected) * tensor)\
+      .to(device="cpu" , dtype = torch.float32)  #Tensor as unit vector
 
       #Count the negatives
       no_of_negatives = 0
@@ -276,10 +278,13 @@ class Data :
       #####
 
       #Count the positives
+      #and get a local list of positives to use for doping
+      positives = []
       no_of_positives = 0
       for pos_index in range(MAX_NUM_MIX):
         if self.positive.isEmpty.get(pos_index): continue
         no_of_positives += 1
+        positives.append(self.positive.get(pos_index))
       #####
 
       good_vecs = []
@@ -289,16 +294,23 @@ class Data :
       rando = None
       rdist = None
       bdist = None
+      ddist = None
+      pdist = None
+      cdist = None
+      ndist = None
       rand_vec = None
 
       #Get vectors with similarity > lowerBound
       combined_similarity_score = None
       worst_neg_index = None 
       worst_pos_index = None 
+      best_pos_index = None
       negative_similarity = None
       positive_similarity = None
+      special_similarity = None
       worst_nsim = None
       worst_psim = None
+      best_psim = None
       tmp = None
       neg_strength = self.negative.strength/100
       pos_strength = self.positive.strength/100
@@ -310,20 +322,41 @@ class Data :
       best_worst_neg_index = None
       best_worst_pos_index = None
       best = None
+      doping = torch.zeros(self.vector.size).to(device="cpu" , dtype = torch.float32)
       #######
 
       randomReduce = pursuit_strength*randomGain/N
 
+
       for step in range (N):
         iters+=1
-        #Check similarity to original token
+        ##### Calculate doping vector
+        doping = random.choice(positives)\
+        .to(device = "cpu" , dtype = torch.float32)
+        ddist = distance(doping , origin)\
+        .to(device = "cpu" , dtype = torch.float32)
+        doping = (doping * (1/ddist))\
+        .to(device = "cpu" , dtype = torch.float32)
+        ##### Calculate random vector
         rand_vec = torch.rand(self.vector.size)\
         .to(device = "cpu" , dtype = torch.float32)
-        rand_vec  = (2*rand_vec - torch.ones(self.vector.size))\
+        ones = torch.ones(self.vector.size)\
+        .to(device = "cpu" , dtype = torch.float32)
+        rand_vec  = (2*rand_vec - ones)\
+        .to(device = "cpu" , dtype = torch.float32)
+        rdist = distance(rand_vec , origin)\
+        .to(device = "cpu" , dtype = torch.float32)
+        rand_vec = ((1/rdist) * rand_vec)\
+        .to(device = "cpu" , dtype = torch.float32)
+        ##### Perform doping on the random vector
+        rand_vec = (doping*doping_strength  + rand_vec*(1 - doping_strength))\
+        .to(device = "cpu" , dtype = torch.float32)
+        #### Calculate the doped random vector
+        rdist = distance(rand_vec , origin)\
+        .to(device = "cpu" , dtype = torch.float32)
+        rando = (rand_vec * (1/rdist))\
         .to(device = "cpu" , dtype = torch.float32)
 
-        rdist = distance(rand_vec , origin).to(device = "cpu" , dtype = torch.float32)
-        rando = ((1/rdist) * rand_vec).to(device = "cpu" , dtype = torch.float32)
 
         #Calculate candidate vector
         if best == None : 
@@ -338,43 +371,58 @@ class Data :
           candidate_vec = (rando * randomGain +  best * (1/bdist)*(1 - randomGain))\
           .to(device = "cpu" , dtype = torch.float32)
         #####
-
-        similarity = (100*cos(current, candidate_vec)).numpy()[0]
+        cdist = distance(candidate_vec, origin).to(device = "cpu" , dtype = torch.float32)
+        
+        similarity = (100*cos(current, candidate_vec*(1/cdist))\
+        .to(device = "cpu" , dtype = torch.float32)).numpy()[0]
         if similarity<0 : similarity = -similarity
         #######
         #Check negatives
         if no_of_negatives > 0: 
           for neg_index in range(MAX_NUM_MIX) :
             if self.negative.isEmpty.get(neg_index): continue
-            neg_vec = self.negative.get(neg_index)
-            tmp = math.floor((100*100*cos(neg_vec, candidate_vec)).numpy()[0])
+            neg_vec = self.negative.get(neg_index).to(device="cpu" , dtype = torch.float32)
+            ndist = distance(neg_vec, origin).to(device = "cpu" , dtype = torch.float32)
+            tmp = math.floor((100*100*cos(neg_vec *(1/ndist), candidate_vec * (1/cdist))).numpy()[0])
             if tmp<0 : tmp = -tmp
             nsim = copy.copy(tmp/100)
             #######
             if worst_nsim == None or nsim > worst_nsim: 
-              worst_nsim = nsim
+              worst_nsim = copy.copy(nsim)
               negative_similarity = copy.copy(100 - nsim)
-              worst_neg_index = neg_index
-              continue
+              worst_neg_index = copy.copy(neg_index)
+            continue
             #######
 
         ###########
+
         #Check positives
+        doped = False
+        pos_vec = None
         if no_of_positives > 0: 
           for pos_index in range(MAX_NUM_MIX) :
             if self.positive.isEmpty.get(pos_index): continue
-            pos_vec = self.positive.get(pos_index)
-            tmp = math.floor((100*100*cos(pos_vec, candidate_vec)).numpy()[0])
+            pos_vec = self.positive.get(pos_index)\
+            .to(device="cpu" , dtype = torch.float32)
+            pdist = distance(pos_vec, origin)\
+            .to(device = "cpu" , dtype = torch.float32)
+            tmp = math.floor((100*100*cos(pos_vec*(1/pdist), \
+            candidate_vec * (1/cdist))).numpy()[0])
             if tmp<0 : tmp = -tmp
             psim = copy.copy(tmp/100)
             #######
             if worst_psim == None or psim < worst_psim: 
-              worst_psim = psim
+              worst_psim = copy.copy(psim)
               positive_similarity = copy.copy(psim)
-              worst_pos_index = pos_index
-              continue
+              worst_pos_index = copy.copy(pos_index)
+            if best_psim == None or psim > best_psim:
+              best_psim = copy.copy(psim)
+              best_pos_index = copy.copy(pos_index)
+              special_similarity = copy.copy(psim)
+            continue
             #######
         ###########
+
         #Calculate the similarity score 
         if positive_similarity == None : 
           if negative_similarity == None: combined_similarity_score = copy.copy(similarity)
@@ -388,6 +436,7 @@ class Data :
           (similarity * (1 - pos_strength) + positive_similarity*pos_strength) \
           *(1 - neg_strength) + negative_similarity*neg_strength)
         ###########
+
         assert candidate_vec != None , "candidate_vec is NoneType!"
 
         #Update the best vector
@@ -410,17 +459,14 @@ class Data :
           worst_neg_index = best_worst_neg_index
           worst_pos_index = best_worst_pos_index
           similarity = best_similarity
-          candidate_vec = best.to(device= "cpu" , dtype = torch.float32)
+          candidate_vec = best.to(device = "cpu" , dtype = torch.float32)
                 
       #length of candidate vector
-      cdist = distance(candidate_vec , origin).numpy()[0]
+      cdist = distance(candidate_vec , origin)\
+      .to(device = "cpu" , dtype = torch.float32)
 
       #length of output vector
       output_length = gain * dist_expected
-
-      #Cap the length of the output vector according to radialGain slider setting 
-      if output_length>dist_expected: output_length = min(output_length , dist_expected/radialGain)
-      else: output_length = max(output_length  , dist_expected*radialGain)
 
       #Set the length of found similar vector
       similar_token = (gain* (output_length/cdist) * candidate_vec * radialRandom)\
@@ -437,11 +483,16 @@ class Data :
 
       negsim = None
       if negative_similarity != None :
-        negsim = round(100-negative_similarity , 3) #Invert the value
+        negsim = round(100-negative_similarity , 3) #Invert the value to get
+                                                    #Highest neg. similarity
       
       possim = None
       if positive_similarity != None :
-        possim = round(positive_similarity , 3)
+        possim = round(positive_similarity , 3) #<--Lowest pos. similiarity
+
+      specsim = None
+      if special_similarity != None:
+        specsim = round(special_similarity , 3)#<--Highest pos. similiarity
 
       #print the result
       log.append('Similar Mode : Token #' + str(i) + ' with length ' + \
@@ -455,6 +506,9 @@ class Data :
       if possim != None and worst_pos_index != None:
         log.append('Lowest similarity to positive tokens : ' + str(possim) + ' %' + \
         "to token '" + self.positive.name.get(worst_pos_index) + "'")
+      if specsim != None and best_pos_index != None:
+        log.append('Highes similarity to positive tokens : ' + str(specsim) + ' %' + \
+        "to token '" + self.positive.name.get(best_pos_index) + "'")
       ######
       log.append('Search took ' + str(iters) + ' iterations')
 
@@ -923,6 +977,9 @@ class Data :
     Data.vector = None
     Data.negative = None
     Data.temporary = None
+
+    self.pursuit_strength = 0
+    self.doping_strength = 0
 
     if self.tools.loaded:
       self.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')
