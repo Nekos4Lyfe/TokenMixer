@@ -148,7 +148,7 @@ class TokenMixer :
     interpolate_mode = args[3]
     similar_mode = args[4]
     five_sets_mode = args[5]
-    randlen = args[6] #Empty
+    pursuit_strength = args[6]
     no_of_sets = args[7] 
     randSlider = args[8]
     interpolateSlider = args[9]
@@ -202,6 +202,7 @@ class TokenMixer :
     #Set the strength of the token negatives from input
     self.data.negative.strength = copy.copy(negative_strength)
     self.data.positive.strength = copy.copy(positive_strength)
+    self.data.pursuit_strength = copy.copy(pursuit_strength)
 
     log = [] 
     emptyList = [None]*MAX_NUM_MIX 
@@ -427,7 +428,7 @@ class TokenMixer :
       input_list.append(self.inputs.settings.similar_mode)          #4
       input_list.append(self.inputs.settings.five_sets_mode)        #5
       
-      input_list.append(self.inputs.sliders.gain)#<--placeholder    #6                
+      input_list.append(self.inputs.sliders.pursuit_strength)       #6              
       input_list.append(self.inputs.sliders.no_of_sets)             #7
       
       input_list.append(self.inputs.sliders.randomize)              #8
@@ -550,6 +551,7 @@ class TokenMixer :
                 Sliders.samplegain = []
                 Sliders.samplerand = []
                 Sliders.no_of_sets = []
+                Sliders.pursuit_strength = []
 
           class Inputs :
               def __init__(self):
@@ -695,6 +697,9 @@ class TokenMixer :
 
                                   self.inputs.sliders.vecsamplerand = gr.Slider(value =0 , minimum=0, maximum=100, step=0.1, \
                                   label="Vectorwise gain randomization %", default=0 , interactive = True)
+
+                                  self.inputs.sliders.pursuit_strength = gr.Slider(value = 10 , minimum=0, maximum=100, step=0.1, \
+                                  label="Pursuit Strength %", default=10 , interactive = True)
                                 ######
                                 with gr.Accordion("Advanced sampling settings",open=False):
                                   self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Enable advanced Sampling Mode", interactive = True)
@@ -708,6 +713,7 @@ class TokenMixer :
                                   with gr.Row():         
                                     self.inputs.sliders.negative_strength = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                     label="Negative strength % ", default=50 , interactive = True) 
+
 
                               with gr.Accordion("'Roll Mode' Settings",open=False):
                                 ####
