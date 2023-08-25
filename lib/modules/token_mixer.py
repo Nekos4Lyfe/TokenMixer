@@ -142,7 +142,7 @@ class TokenMixer :
 
     #Fetch parameters from the args input
     #assert not (None in args[0:16]), "Warning: Null input among settings in Save()"
-    save_name_input = args[0]
+    save_name = args[0]
     enable_overwrite = args[1]
     merge_mode = args[2]
     interpolate_mode = args[3]
@@ -175,8 +175,16 @@ class TokenMixer :
     samplerand = args[30]
     posbox = args[31]
     doping_strength = args[32]
+    indexbox = args[33]
+    index_filter = args[34]
 
-    save_name = copy.copy(save_name_input)
+    print(indexbox)
+
+    #sentence = indexbox.strip().split()
+    #for splits in sentence :
+    #  word = splits.strip().lower()
+    #  if not word.isdigit() : continue
+    #  print(word)
 
     assert not self.data == None , "Error: data class for TokenMixer is NoneType!"
 
@@ -429,10 +437,8 @@ class TokenMixer :
       input_list.append(self.inputs.settings.interpolate_mode)      #3
       input_list.append(self.inputs.settings.similar_mode)          #4
       input_list.append(self.inputs.settings.five_sets_mode)        #5
-      
       input_list.append(self.inputs.sliders.pursuit_strength)       #6              
       input_list.append(self.inputs.sliders.no_of_sets)             #7
-      
       input_list.append(self.inputs.sliders.randomize)              #8
       input_list.append(self.inputs.sliders.interpolate)            #9
       input_list.append(self.inputs.sliders.iterations)             #10
@@ -440,9 +446,9 @@ class TokenMixer :
       input_list.append(self.inputs.override_box)                   #12
       input_list.append(self.inputs.sub_name)                       #13
       input_list.append(self.inputs.settings.allow_negative_gain)   #14
-      input_list.append(self.inputs.sliders.negative_strength)        #15
+      input_list.append(self.inputs.sliders.negative_strength)      #15
       input_list.append(self.inputs.settings.autoselect)            #16
-      input_list.append(self.inputs.sliders.positive_strength)        #17
+      input_list.append(self.inputs.sliders.positive_strength)      #17
       input_list.append(self.inputs.mix_input)                      #18
       input_list.append(self.inputs.settings.order_randomize_mode)  #19
       input_list.append(self.inputs.negbox)                         #20
@@ -459,7 +465,9 @@ class TokenMixer :
       input_list.append(self.inputs.sliders.vecsamplegain)          #29
       input_list.append(self.inputs.sliders.vecsamplerand)          #30
       input_list.append(self.inputs.posbox)                         #31
-      input_list.append(self.inputs.sliders.doping_strength)                 #32
+      input_list.append(self.inputs.sliders.doping_strength)        #32
+      input_list.append(self.inputs.indexbox)                       #33
+      input_list.append(self.inputs.settings.index_filter)          #34
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -515,6 +523,7 @@ class TokenMixer :
                 Settings.fullsample = []
                 Settings.rolletter = []
                 Settings.randchoice = []
+                Settings.index_filter = []
 
           class Local :
             #Class to store local variables
@@ -569,6 +578,7 @@ class TokenMixer :
                 Inputs.sub_name = []
                 Inputs.negbox = []
                 Inputs.posbox = []
+                Inputs.indexbox = []
 
 
           class Outputs :
@@ -670,12 +680,16 @@ class TokenMixer :
                                         "if an embedding is already saved under the output name. \n \n Take care not to save anything important " + \
                                         " in the Embeddings/TokenMixer/* folder under an autoselector name. ")
 
-                                with gr.Accordion('Experimental',open=False , visible = False): #Experimental                                             
+                                with gr.Accordion('Filters',open=False , visible = True):
+                                  self.inputs.settings.index_filter = gr.Checkbox(value=False,label="Only process vectors at given indices", interactive = True)   
+                                  self.inputs.indexbox = gr.Textbox(label="Embedding indices",lines=1,placeholder="e.g '2,3,5'" , interactive = True) # or '[1:3]'
+
+                                with gr.Accordion('Experimental',open=False , visible = False): #Experimental         
                                   self.inputs.override_box = gr.Textbox(label="Similarity settings override",lines=1,placeholder='(costheta|length|rand|interp|iters|gain)')
                                   with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_2 : 
-                                    gr.Markdown("Memorizing the position of all the sliders can be difficult. \n \n " + \
-                                    "In this field you can paste a string to re-create the " +  \
-                                    "settings from a previous session. ")  
+                                      gr.Markdown("Memorizing the position of all the sliders can be difficult. \n \n " + \
+                                      "In this field you can paste a string to re-create the " +  \
+                                      "settings from a previous session. ")  
                                       
                           with gr.Column(): 
                               self.buttons.reset = gr.Button(value="Clear")
