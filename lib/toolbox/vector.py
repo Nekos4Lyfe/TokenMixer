@@ -133,6 +133,7 @@ class Vector :
     tmp = None
     for index in range(MAX_NUM_MIX):
       if self.isEmpty.get(index): continue
+      if self.isFiltered(index) : continue
       #######
       r = self.rollcountrand/100
       rollCount = math.floor(self.rollcount * ((1 - r) + (r) * random.random()))
@@ -190,11 +191,20 @@ class Vector :
       
         return output
 
-  def sample(self , interal_embs) :
+  def isFiltered(self , index):
+    log = []
+    if not self.filter_by_name : 
+      #log.append("isFiltered : Not enabled")
+      return False , '\n'.join(log)
+    for unfiltered_index in self.unfiltered_indices:
+      if str(unfiltered_index) == str(index): return False , '\n'.join(log)
+      #log.append("isFiltered : " + str(unfiltered_index) + " and " + str(index))
+    #########
+    return True , '\n'.join(log)
 
+  def sample(self , interal_embs) :
     log = []
     log.append("Sample Mode:")
-
     distance = torch.nn.PairwiseDistance(p=2)
     cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
     r = self.randomization/100
@@ -207,6 +217,10 @@ class Vector :
     gain = None
     for index in range(MAX_NUM_MIX):
       if self.isEmpty.get(index): continue
+      isFiltered , message = self.isFiltered(index)
+      log.append(message)
+      if isFiltered: continue
+
       rand = self.random(interal_embs)\
       .to(device = "cpu" , dtype = torch.float32)
       rdist = distance(rand , origin).numpy()[0]
@@ -249,6 +263,9 @@ class Vector :
     Vector.allow_negative_gain = False
     Vector.data = []
     Vector.tmp = None
+
+    Vector.unfiltered_indices = []
+    Vector.filter_by_name = False
 
     Vector.rollcount = 0
     Vector.rollcountrand = 0
