@@ -41,17 +41,18 @@ class Data :
     tmp = None
     origin = self.vector.origin
 
-    for i in range (MAX_NUM_MIX):
-      if (self.vector.isEmpty.get(i)): continue 
+    for index in range (MAX_NUM_MIX):
+      if (self.vector.isEmpty.get(index)): continue
+      if (self.vector.isFiltered(index)): continue 
       no_of_tokens += 1
 
       if similar_mode : 
-        current , message = self.replace_with_similar(i)
+        current , message = self.replace_with_similar(index)
         log.append(message)
-      else : current = self.vector.get(i).cpu()
+      else : current = self.vector.get(index).cpu()
 
       current_weight = 1
-      #self.vector.weight.get(i)
+      #self.vector.weight.get(index)
       current = current*current_weight
 
       dist = distance(current, origin).numpy()[0]
@@ -95,11 +96,12 @@ class Data :
       minimum = 20000 #set initial minimum at impossible 200% similarity 
       maximum = -10000 #Set initial maximum at impossible -100% similarity
       similarity_sum = 0
-      for i in range (MAX_NUM_MIX):
-        if (self.vector.isEmpty.get(i)): continue
+      for index in range (MAX_NUM_MIX):
+        if (self.vector.isEmpty.get(index)): continue
+        if (self.vector.isFiltered(index)): continue
 
         #Get current token
-        tmp = self.vector.get(i).cpu()
+        tmp = self.vector.get(index).cpu()
         dist = distance(tmp, origin).numpy()[0]
         current = (1/dist) * tmp 
 
@@ -142,11 +144,11 @@ class Data :
         
         if similarity == min(minimum , similarity) :
           minimum = similarity
-          mintoken = i
+          mintoken = index
 
         if similarity == max(maximum , similarity) :
           maximum = similarity
-          maxtoken = i
+          maxtoken = index
    
       #Check if this candidate vector is better then
       #the ones before it
@@ -215,14 +217,14 @@ class Data :
     no_of_tokens = 0
     distance = torch.nn.PairwiseDistance(p=2)
 
-    for i in range (MAX_NUM_MIX):
-      if (self.vector.isEmpty.get(i)): continue 
+    for index in range (MAX_NUM_MIX):
+      if (self.vector.isEmpty.get(index)): continue 
       no_of_tokens+=1
       
       if similar_mode : 
-        current , message = self.replace_with_similar(i)
+        current , message = self.replace_with_similar(index)
         log.append(message)
-      else : current = self.vector.get(i).cpu()
+      else : current = self.vector.get(index).cpu()
 
       current_weight = 1 #Will fix later
 
@@ -242,8 +244,9 @@ class Data :
     log.append('-------------------------------------------')
     return output , '\n'.join(log)
   
-  def replace_with_similar(self , i):
-      assert not (self.vector.isEmpty.get(i)) , "Empty token!"
+  def replace_with_similar(self , index):
+      assert not (self.vector.isEmpty.get(index)) , "Empty token!"
+      assert not (self.vector.isFiltered(index)) ,  "Filtered token!"
       log = []
       dist = None
       current = None
@@ -265,7 +268,7 @@ class Data :
       no_of_tokens = 0
       iters = 0
 
-      tensor = self.vector.get(i).to(device="cpu" , dtype = torch.float32)
+      tensor = self.vector.get(index).to(device="cpu" , dtype = torch.float32)
       dist_expected = distance(tensor, origin).to(device="cpu" , dtype = torch.float32)
       current = ((1/dist_expected) * tensor)\
       .to(device="cpu" , dtype = torch.float32)  #Tensor as unit vector
@@ -327,15 +330,23 @@ class Data :
 
       randomReduce = pursuit_strength*randomGain/N
 
+
+      lenpos = len(positives)
       for step in range (N):
         iters+=1
         ##### Calculate doping vector
-        doping = torch.tensor(random.choice(positives))\
-        .to(device = "cpu" , dtype = torch.float32)
-        ddist = distance(doping , origin)\
-        .to(device = "cpu" , dtype = torch.float32)
-        doping = (doping * (1/ddist))\
-        .to(device = "cpu" , dtype = torch.float32)
+        doping = None
+        if lenpos>0 :
+          doping = torch.tensor(random.choice(positives))\
+          .to(device = "cpu" , dtype = torch.float32)
+          ddist = distance(doping , origin)\
+          .to(device = "cpu" , dtype = torch.float32)
+          doping = (doping * (1/ddist))\
+          .to(device = "cpu" , dtype = torch.float32)
+        else:
+          doping = origin\
+          .to(device = "cpu" , dtype = torch.float32) 
+
         ##### Calculate random vector
         rand_vec = torch.rand(self.vector.size)\
         .to(device = "cpu" , dtype = torch.float32)
@@ -505,7 +516,7 @@ class Data :
         specsim = round(special_similarity , 3)#<--Highest pos. similiarity
 
       #print the result
-      log.append('Similar Mode : Token #' + str(i) + ' with length ' + \
+      log.append('Similar Mode : Token #' + str(index) + ' with length ' + \
        str(dist_expected) + ' was replaced by new token ' + \
       'with ' + str(similarity) + '% similarity and ' + str(output_length) + \
       ' length')
@@ -529,8 +540,9 @@ class Data :
     log.append('Interpolate Mode :')
     no_of_tokens = 0
 
-    for i in range (MAX_NUM_MIX):
-      if (self.vector.isEmpty.get(i)): continue
+    for index in range (MAX_NUM_MIX):
+      if (self.vector.isEmpty.get(index)): continue
+      if (self.vector.isFiltered(index)): continue
       no_of_tokens +=1
       continue
 
@@ -567,16 +579,17 @@ class Data :
     output_length = None
     current_weight = None
 
-    for i in range (MAX_NUM_MIX):
-      if (self.vector.isEmpty.get(i)): continue
+    for index in range (MAX_NUM_MIX):
+      if (self.vector.isEmpty.get(index)): continue
+      if (self.vector.isFiltered(index)): continue
 
       if similar_mode : 
-        current , message = self.replace_with_similar(i)
+        current , message = self.replace_with_similar(index)
         log.append(message)
-      else : current = self.vector.get(i).cpu()
+      else : current = self.vector.get(index).cpu()
 
       current_weight = 1
-      #self.vector.weight.get(i)
+      #self.vector.weight.get(index)
       current = current*current_weight
 
       if prev == None : 
@@ -650,7 +663,7 @@ class Data :
         output_length = round(output_length, 2)
         dist_expected = round(dist_expected , 2)
 
-        log.append('Token ' + str(i-1) + ' and '+str(i)+ \
+        log.append('Token ' + str(index-1) + ' and '+str(index)+ \
         ' with expected length '+ str(dist_expected) + ' merged into 1 token with ' + \
          str(similarity)+ '% similarity and ' + str(output_length) + ' length after ' + \
         str(iters) + ' steps)')
@@ -662,8 +675,8 @@ class Data :
         log.append('Placed token with length '+ str(output_length)  +' in new embedding ')
 
       else:
-        log.append('Skipping merge between token ' + str(i-1)+ \
-        ' and '+str(i))
+        log.append('Skipping merge between token ' + str(index-1)+ \
+        ' and '+str(index))
         log.append('Token similarity ' + str(similarity) + \
         '% is less then req. similarity' + str(lowerBound) + '%')
 
@@ -966,6 +979,15 @@ class Data :
 
       if to_positive!= None:
         if to_positive: self.positive.clear(index)
+  ########## End of clear()
+
+  def set_unfiltered_indices(self, unfiltered_indices):
+    self.vector.unfiltered_indices = copy.deepcopy(unfiltered_indices)
+  ##### End of set_filtered_names()
+
+  def set_filter_by_name(self, filter_by_name):
+    self.vector.filter_by_name = copy.copy(filter_by_name)
+  ###### End of set_filter_by_name()
 
   def __init__(self):
     #Check if new embeddings have been added 
@@ -988,8 +1010,13 @@ class Data :
     Data.negative = None
     Data.temporary = None
 
-    self.pursuit_strength = 0
-    self.doping_strength = 0
+
+
+    Data.pursuit_strength = 0
+    Data.doping_strength = 0
+
+
+
 
     if self.tools.loaded:
       self.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')
