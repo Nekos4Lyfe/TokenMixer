@@ -34,11 +34,11 @@ def add_tab():
             with left_column.render() : #Left Column
 
               ####
-              modules = Modules("minit" , [True , False , False , False , False , False]) 
-              modules2  = Modules("embin" , [False , True , False , False , False , False])
-              modules3 = Modules("tocal" , [False , False , True , False , False , False])
-              modules4 = Modules("tokex" , [False , False , False , True , False , False])
-              modules5 = Modules("synom" , [False , False , False , False , True , False])
+              modules = Modules("one" , [True , False , False , False , False , False]) 
+              modules2  = Modules("two" , [False , True , False , False , False , False])
+              modules3 = Modules("three" , [False , False , True , False , False , False])
+              modules4 = Modules("four" , [False , False , False , True , False , False])
+              modules5 = Modules("five" , [False , False , False , False , True , False])
               modules6 = Modules("all" , [True , True , True , True , True , True])
             #####
 
