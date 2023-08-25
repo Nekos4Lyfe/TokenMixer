@@ -178,8 +178,6 @@ class TokenMixer :
     indexbox = args[33]
     index_filter = args[34]
 
-    print(indexbox)
-
     #sentence = indexbox.strip().split()
     #for splits in sentence :
     #  word = splits.strip().lower()
@@ -216,6 +214,8 @@ class TokenMixer :
 
     log = [] 
     emptyList = [None]*MAX_NUM_MIX 
+
+    log.append("INDEXBOX: " + indexbox)
 
     #Helper function
     def user_wrote_something_in(string):
@@ -681,8 +681,9 @@ class TokenMixer :
                                         " in the Embeddings/TokenMixer/* folder under an autoselector name. ")
 
                                 with gr.Accordion('Filters',open=False , visible = True):
+                                  gr.Markdown("Not yet implemented")
                                   self.inputs.settings.index_filter = gr.Checkbox(value=False,label="Only process vectors at given indices", interactive = True)   
-                                  self.inputs.indexbox = gr.Textbox(label="Embedding indices",lines=1,placeholder="e.g '2,3,5'" , interactive = True) # or '[1:3]'
+                                  self.inputs.indexbox = gr.Textbox(label="Embedding indices",lines=1, placeholder="e.g '2,3,5'" , interactive = True) # or '[1:3]'
 
                                 with gr.Accordion('Experimental',open=False , visible = False): #Experimental         
                                   self.inputs.override_box = gr.Textbox(label="Similarity settings override",lines=1,placeholder='(costheta|length|rand|interp|iters|gain)')
