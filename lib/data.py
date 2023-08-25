@@ -246,7 +246,6 @@ class Data :
   
   def replace_with_similar(self , index):
       assert not (self.vector.isEmpty.get(index)) , "Empty token!"
-      assert not (self.vector.isFiltered(index)) ,  "Filtered token!"
       log = []
       dist = None
       current = None
