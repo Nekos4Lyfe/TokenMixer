@@ -139,11 +139,8 @@ class TokenMixer :
 
 
   def Save (self, *args):
-
-    #Fetch parameters from the args input
-    #assert not (None in args[0:16]), "Warning: Null input among settings in Save()"
     save_name = args[0]
-    enable_overwrite = args[1]
+    enable_overwrite =  args[1]
     merge_mode = args[2]
     interpolate_mode = args[3]
     similar_mode = args[4]
@@ -174,15 +171,10 @@ class TokenMixer :
     samplegain = args[29]
     samplerand = args[30]
     posbox = args[31]
-    doping_strength = args[32]
-    indexbox = args[33]
-    index_filter = args[34]
-
-    #sentence = indexbox.strip().split()
-    #for splits in sentence :
-    #  word = splits.strip().lower()
-    #  if not word.isdigit() : continue
-    #  print(word)
+    doping_strength = args[34:][0]
+    filter_by_name = args[34:][1]
+    unfiltered_names = args[34:][2] #(15, False, ['a', 'b', 'c']) , 
+                                    #No clue why gradio does this
 
     assert not self.data == None , "Error: data class for TokenMixer is NoneType!"
 
@@ -212,10 +204,36 @@ class TokenMixer :
     self.data.pursuit_strength = copy.copy(pursuit_strength)
     self.data.doping_strength = copy.copy(doping_strength)
 
+    #Get unfiltered_indices form unfiltered_names
+    unfiltered_indices = []
+    tmp = None
+    for index in range(MAX_NUM_MIX):
+      if self.data.vector.isEmpty.get(index): break
+      for name in unfiltered_names:
+        if name == self.data.vector.name.get(index):
+          tmp = copy.copy(index)
+          unfiltered_indices.append(tmp)
+    ########
+    assert len(unfiltered_indices) == len(unfiltered_names) , "size mismatch!"
+    self.data.set_unfiltered_indices(unfiltered_indices)
+    self.data.set_filter_by_name(filter_by_name)
+    #####
+
     log = [] 
     emptyList = [None]*MAX_NUM_MIX 
 
-    log.append("INDEXBOX: " + indexbox)
+    log.append(str(unfiltered_indices))
+    log.append(str(unfiltered_names))
+
+    # Filter tokens (if enabled)
+    if len(unfiltered_names)>0 and filter_by_name: 
+      log.append('Filter enabled. Will only process the following tokens : ')
+      for name in unfiltered_names:
+        log.append(str(name))
+      #####
+      log.append('-------------------------------------------')
+    ######
+
 
     #Helper function
     def user_wrote_something_in(string):
@@ -466,8 +484,8 @@ class TokenMixer :
       input_list.append(self.inputs.sliders.vecsamplerand)          #30
       input_list.append(self.inputs.posbox)                         #31
       input_list.append(self.inputs.sliders.doping_strength)        #32
-      input_list.append(self.inputs.indexbox)                       #33
-      input_list.append(self.inputs.settings.index_filter)          #34
+      input_list.append(self.inputs.settings.filter_by_name)        #33
+      input_list.append(self.inputs.unfiltered_names)               #34 = (15, False, ['a', 'b', 'c'])
       ########
 
       output_list.append(self.outputs.log)            #1
@@ -523,7 +541,7 @@ class TokenMixer :
                 Settings.fullsample = []
                 Settings.rolletter = []
                 Settings.randchoice = []
-                Settings.index_filter = []
+                Settings.filter_by_name = []
 
           class Local :
             #Class to store local variables
@@ -578,7 +596,7 @@ class TokenMixer :
                 Inputs.sub_name = []
                 Inputs.negbox = []
                 Inputs.posbox = []
-                Inputs.indexbox = []
+                Inputs.unfiltered_names = []
 
 
           class Outputs :
@@ -681,9 +699,20 @@ class TokenMixer :
                                         " in the Embeddings/TokenMixer/* folder under an autoselector name. ")
 
                                 with gr.Accordion('Filters',open=False , visible = True):
-                                  gr.Markdown("Not yet implemented")
-                                  self.inputs.settings.index_filter = gr.Checkbox(value=False,label="Only process vectors at given indices", interactive = True)   
-                                  self.inputs.indexbox = gr.Textbox(label="Embedding indices",lines=1, placeholder="e.g '2,3,5'" , interactive = True) # or '[1:3]'
+                                  self.inputs.settings.filter_by_name = gr.Checkbox(value=False,label="Enable", interactive = True)   
+                                
+                                  self.inputs.unfiltered_names = \
+                                  gr.Dropdown(\
+                                  choices = [] , \
+                                  value = None , \
+                                  type = 'value' , \
+                                  multiselect = True , \
+                                  max_choices = None , \
+                                  label = "Only process vectors at given indices" , \
+                                  info = None, \
+                                  show_label = True , \
+                                  container = True , \
+                                  interactive = True )
 
                                 with gr.Accordion('Experimental',open=False , visible = False): #Experimental         
                                   self.inputs.override_box = gr.Textbox(label="Similarity settings override",lines=1,placeholder='(costheta|length|rand|interp|iters|gain)')

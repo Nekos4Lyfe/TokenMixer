@@ -29,10 +29,16 @@ class MiniTokenizer:
     literal_mode = args[8]
     random_token_length_randomization = (1/100) * args[9]
 
+    name_list = []
+    
     send_to_temporary = False
 
     if mini_input == None : 
-      return tokenmixer_vectors , '' , '' , '' , ''
+      for index in range(MAX_NUM_MIX):
+        if self.data.vector.isEmpty.get(index): continue
+        name_list.append(self.data.vector.name.get(index))
+      #####
+      return tokenmixer_vectors , '' , '' , '' , '' , gr.Dropdown.update(choices = name_list)
 
     assert not (
           sendtomix == None or
@@ -43,8 +49,8 @@ class MiniTokenizer:
           send_to_temporary == None
           ) , "NoneType in Tokenizer input!"
 
-    tokenmixer_vectors = mix_input
-    if sendtomix : tokenmixer_vectors= ''
+    tokenmixer_vectors = ''
+    if not sendtomix : tokenmixer_vectors= mix_input
 
     distance = torch.nn.PairwiseDistance(p=2)
     origin = self.data.vector.origin.cpu()
@@ -261,8 +267,15 @@ class MiniTokenizer:
         if (tokenbox != '') and not _ID ==318 : tokenbox = tokenbox + ' , '
         tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
     ####### End loop
-        
-    return tokenmixer_vectors , tokenbox , splitbox , negbox , posbox
+
+    name_list = []
+    for index in range(MAX_NUM_MIX):
+        if self.data.vector.isEmpty.get(index): continue
+        name_list.append(self.data.vector.name.get(index))
+      #####
+
+    return tokenmixer_vectors , tokenbox , splitbox , negbox , posbox , gr.Dropdown.update(choices = name_list)
+    
        
     
   def setupIO_with (self, module):
@@ -289,13 +302,14 @@ class MiniTokenizer:
       input_list.append(module.inputs.mix_input)  #6
       input_list.append(self.inputs.stack_mode)   #7
       input_list.append(self.inputs.literal_mode) #8
-      input_list.append(self.inputs.randlenrand) #9
+      input_list.append(self.inputs.randlenrand)  #9
       #######
       output_list.append(module.inputs.mix_input) #0
       output_list.append(self.outputs.tokenbox)   #1
       output_list.append(self.outputs.splitbox)   #2
       output_list.append(module.inputs.negbox)    #3
       output_list.append(module.inputs.posbox)    #4
+      output_list.append(module.inputs.unfiltered_names)  #5
       #######
       self.buttons.tokenize.click(fn=self.Tokenize , inputs = input_list , outputs = output_list)
 
