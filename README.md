@@ -17,11 +17,12 @@ Informal discussions about the TokenMixer can be found here (You will need to na
 This extension is published under a MIT License. 
 
 ## Latest update
-Advanced Sample Mode added (guide for this will be written later)
+Token Filtering is now available
 
-![Advanced sampling](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0b8b49f4-621a-4b62-a046-84bae76a9cb7)
+![FilterMode](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f0fb4fbd-7a2c-4ad1-8b9d-21250c9adac6)
 
 **Summary of how Sampler Mode works:**
+
 
 * Generate N semi-random vectors from the input tokens (set by the randomization % slider) as "Samples". 
 
@@ -272,6 +273,9 @@ The prompt you use to set the tone of the image (the so called "base prompt") do
 
 ![protect obscure](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/c1957537-791a-47be-b247-4c4c565520cb)
 
+Advanced Sample Mode added (guide for this will be written later)
+
+![Advanced sampling](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/0b8b49f4-621a-4b62-a046-84bae76a9cb7)
 
 ### Sample Mode
 
