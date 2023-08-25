@@ -335,8 +335,8 @@ class Data :
         iters+=1
         ##### Calculate doping vector
         doping = None
-        if lenpos>0 :
-          doping = torch.tensor(random.choice(positives))\
+        if lenpos>0 and doping_strength>0:
+          doping = random.choice(positives)\
           .to(device = "cpu" , dtype = torch.float32)
           ddist = distance(doping , origin)\
           .to(device = "cpu" , dtype = torch.float32)
