@@ -626,8 +626,14 @@ class TokenMixer :
                                 self.buttons.save = gr.Button(value="Create embedding", variant="primary")
                                 self.inputs.save_name = gr.Textbox(label="New embedding name",lines=1,placeholder='Enter file name to save', interactive = True)
                                 self.inputs.settings.enable_overwrite = gr.Checkbox(value=False,label="Enable overwrite", interactive = True)
-        
-                                with gr.Accordion('TokenMixer modes of operation',open=True):
+                                      
+                          with gr.Column(): 
+                              self.buttons.reset = gr.Button(value="Clear")
+                              self.outputs.embedding_box = gr.Textbox(label="------> Output",lines=1,placeholder='Embedding name output')
+                              
+                        with gr.Row():
+                          with gr.Column(): 
+                              with gr.Accordion('TokenMixer modes of operation',open=True):
                                   self.inputs.settings.order_randomize_mode = gr.Checkbox(value=False,label="Randomize token order ", interactive = True)
                                   self.inputs.settings.sample_mode = gr.Checkbox(value=False,label="Sample Mode  : Replace input token with sample vector", interactive = True)
                                   self.inputs.settings.roll_mode = gr.Checkbox(value=False,label="Roll Mode : Shift the elements of the input vector", interactive = True)
@@ -659,7 +665,7 @@ class TokenMixer :
                                       " input #7 is empty then #6 and #8 can merge). \n \n Order of operations for the selected Modes are as follows : \n " + \
                                       " 1) Similar Mode (if selected) \n 2) Interpolate Mode (if selected) \n 3) Merge Mode (if selected, otherwise Concat Mode will be performed)")
 
-                                with gr.Accordion('Save Settings',open=False):
+                              with gr.Accordion('Save Settings',open=False):
                                     self.inputs.settings.five_sets_mode = gr.Checkbox(value=False,label="Make multiple embeddings at once", interactive = True)   
                                                                  
                                     self.inputs.sliders.no_of_sets = gr.Slider(value = 5, minimum=1, maximum=100, step=1, label="No. of embeddings", default=5 , interactive = True)
@@ -698,7 +704,9 @@ class TokenMixer :
                                         "if an embedding is already saved under the output name. \n \n Take care not to save anything important " + \
                                         " in the Embeddings/TokenMixer/* folder under an autoselector name. ")
 
-                                with gr.Accordion('Filters',open=False , visible = True):
+                        
+                          with gr.Column(): 
+                              with gr.Accordion('Filters',open=False , visible = True):
                                   self.inputs.settings.filter_by_name = gr.Checkbox(value=False,label="Enable", interactive = True)   
                                 
                                   self.inputs.unfiltered_names = \
@@ -714,17 +722,13 @@ class TokenMixer :
                                   container = True , \
                                   interactive = True )
 
-                                with gr.Accordion('Experimental',open=False , visible = False): #Experimental         
+                              with gr.Accordion('Experimental',open=False , visible = False): #Experimental         
                                   self.inputs.override_box = gr.Textbox(label="Similarity settings override",lines=1,placeholder='(costheta|length|rand|interp|iters|gain)')
                                   with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_2 : 
                                       gr.Markdown("Memorizing the position of all the sliders can be difficult. \n \n " + \
                                       "In this field you can paste a string to re-create the " +  \
                                       "settings from a previous session. ")  
-                                      
-                          with gr.Column(): 
-                              self.buttons.reset = gr.Button(value="Clear")
-                              self.outputs.embedding_box = gr.Textbox(label="------> Output",lines=1,placeholder='Embedding name output')
-                              gr.Markdown("### TokenMixer Operation Settings")
+
                               with gr.Accordion('General Settings',open=True):
                                 self.inputs.sliders.gain = gr.Slider(value = 1 , minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
                               #Sample Mode
@@ -778,8 +782,8 @@ class TokenMixer :
                                   with gr.Row():         
                                     self.inputs.sliders.negative_strength = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                     label="Negative strength % ", default=50 , interactive = True) 
-
-
+                        with gr.Row(): 
+                          with gr.Column(): 
                               with gr.Accordion("'Roll Mode' Settings",open=False):
                                 ####
                                 self.inputs.sliders.rollcount = gr.Slider(value = 1 , minimum=0, maximum=self.data.vector.size , step=1, \
