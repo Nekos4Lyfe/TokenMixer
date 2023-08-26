@@ -703,9 +703,7 @@ class TokenMixer :
                                         "The autoselector is a counter that outputs the strings 'a'-'z' in sequence as it is called. It does NOT check " + \
                                         "if an embedding is already saved under the output name. \n \n Take care not to save anything important " + \
                                         " in the Embeddings/TokenMixer/* folder under an autoselector name. ")
-
-                        
-                          with gr.Column(): 
+                              #############
                               with gr.Accordion('Filters',open=False , visible = True):
                                   self.inputs.settings.filter_by_name = gr.Checkbox(value=False,label="Enable", interactive = True)   
                                 
@@ -721,21 +719,21 @@ class TokenMixer :
                                   show_label = True , \
                                   container = True , \
                                   interactive = True )
-
+                              ###########
+                          with gr.Column(): 
                               with gr.Accordion('Experimental',open=False , visible = False): #Experimental         
                                   self.inputs.override_box = gr.Textbox(label="Similarity settings override",lines=1,placeholder='(costheta|length|rand|interp|iters|gain)')
                                   with gr.Accordion('Tutorial : What is this?',open=False , visible= False) as tutorial_2 : 
                                       gr.Markdown("Memorizing the position of all the sliders can be difficult. \n \n " + \
                                       "In this field you can paste a string to re-create the " +  \
                                       "settings from a previous session. ")  
-
+                              ############
                               with gr.Accordion('General Settings',open=True):
                                 self.inputs.sliders.gain = gr.Slider(value = 1 , minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
-                              #Sample Mode
+                              #########
                               with gr.Accordion("'Sample Mode' Settings",open=False):
                                 self.inputs.sliders.randomize = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                 label="Sample randomization %", default=50 , interactive = True)
-                                
                                 #######
                                 with gr.Accordion("Advanced randomization",open=False):
                                   self.inputs.sliders.samplegain = gr.Slider(value = 1 , minimum=0, maximum=50, step=0.1, \
@@ -749,29 +747,9 @@ class TokenMixer :
 
                                   self.inputs.sliders.vecsamplerand = gr.Slider(value =0 , minimum=0, maximum=100, step=0.1, \
                                   label="Vectorwise gain randomization %", default=0 , interactive = True)
-
-                                  with gr.Accordion("Sample Pursuit",open=False):
-                                    with gr.Row(): 
-                                      gr.Markdown("Reduce randomization % of sample vector for " + \
-                                      "every iteration. Higher % means the algorithm will become " + \
-                                      "more 'greedy' , i.e stick with the best sample vector it currently has " + \
-                                      "intead of trying out new (potentially better) vectors.")
-                                    with gr.Row():
-                                      self.inputs.sliders.pursuit_strength = gr.Slider(value = 0 , minimum=0, maximum=100, step=0.1, \
-                                      label="Sample pursuit strength %", default=0 , interactive = True)
-
-                                  with gr.Accordion("Sample Doping",open=False):
-                                    with gr.Row(): 
-                                      gr.Markdown("Randomly pick a token from the positives " + \
-                                      "and add a fraction of it to the sample vector " + \
-                                      "('Advanced Sampling mode' must be enabled)")
-                                    with gr.Row(): 
-                                      self.inputs.sliders.doping_strength = gr.Slider(value = 0 , minimum=0, maximum=100, \
-                                      step=0.1, label="Positive token sample doping_strength %", default=0 , interactive = True)
-                                      
-                                ######
-                                with gr.Accordion("Advanced sampling settings",open=False):
-                                  self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Enable advanced Sampling Mode", interactive = True)
+                              ######
+                              with gr.Accordion("Advanced sampling settings",open=False):
+                                  self.inputs.settings.similar_mode = gr.Checkbox(value=False,label="Enable", interactive = True)
                                   self.inputs.sliders.iterations = gr.Slider(value = 200 , minimum=0, maximum=3000, step=1, label="Max no. of samples to find best vector", default=200 , interactive = True)
                                   with gr.Row(): 
                                     self.inputs.posbox = gr.Textbox(label= 'Positives: Reward similarity with these tokens' , lines=3 , interactive = False)
@@ -781,7 +759,26 @@ class TokenMixer :
                                     self.inputs.negbox = gr.Textbox(label= 'Negatives: Penalize similarity with these tokens' , lines=3 , interactive = False)
                                   with gr.Row():         
                                     self.inputs.sliders.negative_strength = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
-                                    label="Negative strength % ", default=50 , interactive = True) 
+                                    label="Negative strength % ", default=50 , interactive = True)
+                              ########
+                              with gr.Accordion("Sample Pursuit",open=False):
+                                    with gr.Row(): 
+                                      gr.Markdown("Reduce randomization % of sample vector for " + \
+                                      "every iteration. Higher % means the algorithm will become " + \
+                                      "more 'greedy' , i.e stick with the best sample vector it currently has " + \
+                                      "intead of trying out new (potentially better) vectors.")
+                                    with gr.Row():
+                                      self.inputs.sliders.pursuit_strength = gr.Slider(value = 0 , minimum=0, maximum=100, step=0.1, \
+                                      label="Sample pursuit strength %", default=0 , interactive = True)
+                              ##########
+                              with gr.Accordion("Sample Doping",open=False):
+                                    with gr.Row(): 
+                                      gr.Markdown("Randomly pick a token from the positives " + \
+                                      "and add a fraction of it to the sample vector ")
+                                    with gr.Row(): 
+                                      self.inputs.sliders.doping_strength = gr.Slider(value = 0 , minimum=0, maximum=100, \
+                                      step=0.1, label="Positive token sample doping_strength %", default=0 , interactive = True)
+                              ###########
                         with gr.Row(): 
                           with gr.Column(): 
                               with gr.Accordion("'Roll Mode' Settings",open=False):
