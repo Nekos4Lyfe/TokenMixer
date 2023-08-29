@@ -729,20 +729,20 @@ class TokenMixer :
                                       "settings from a previous session. ")  
                               ############
                               with gr.Accordion('General Settings',open=True):
-                                self.inputs.sliders.gain = gr.Slider(value = 1 , minimum=0, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
+                                self.inputs.sliders.gain = gr.Slider(value = 1 , minimum=-20, maximum=20, step=0.1, label="Vector gain multiplier", default=1 , interactive = True)
                               #########
                               with gr.Accordion("'Sample Mode' Settings",open=False):
                                 self.inputs.sliders.randomize = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
                                 label="Sample randomization %", default=50 , interactive = True)
                                 #######
                                 with gr.Accordion("Advanced randomization",open=False):
-                                  self.inputs.sliders.samplegain = gr.Slider(value = 1 , minimum=0, maximum=50, step=0.1, \
+                                  self.inputs.sliders.samplegain = gr.Slider(value = 1 , minimum=-50, maximum=50, step=0.1, \
                                   label="Elementwise vector max gain", default=1 , interactive = True)
 
                                   self.inputs.sliders.samplerand = gr.Slider(value = 0 , minimum=0, maximum=100, step=0.1, \
                                   label="Elementwise vector gain randomization %", default=0 , interactive = True)
 
-                                  self.inputs.sliders.vecsamplegain = gr.Slider(value = 1 , minimum=0, maximum=50, step=0.1, \
+                                  self.inputs.sliders.vecsamplegain = gr.Slider(value = 1 , minimum=-50, maximum=50, step=0.1, \
                                   label="Vectorwise max gain", default=1 , interactive = True)
 
                                   self.inputs.sliders.vecsamplerand = gr.Slider(value =0 , minimum=0, maximum=100, step=0.1, \
@@ -754,11 +754,11 @@ class TokenMixer :
                                   with gr.Row(): 
                                     self.inputs.posbox = gr.Textbox(label= 'Positives: Reward similarity with these tokens' , lines=3 , interactive = False)
                                   with gr.Row(): 
-                                    self.inputs.sliders.positive_strength = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, label="Positive strength %", default=0 , interactive = True)
+                                    self.inputs.sliders.positive_strength = gr.Slider(value = 50 , minimum=-100, maximum=100, step=0.1, label="Positive strength %", default=0 , interactive = True)
                                   with gr.Row(): 
                                     self.inputs.negbox = gr.Textbox(label= 'Negatives: Penalize similarity with these tokens' , lines=3 , interactive = False)
                                   with gr.Row():         
-                                    self.inputs.sliders.negative_strength = gr.Slider(value = 50 , minimum=0, maximum=100, step=0.1, \
+                                    self.inputs.sliders.negative_strength = gr.Slider(value = 50 , minimum=-100, maximum=100, step=0.1, \
                                     label="Negative strength % ", default=50 , interactive = True)
                               ########
                               with gr.Accordion("Sample Pursuit",open=False):
