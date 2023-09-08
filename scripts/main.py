@@ -18,8 +18,8 @@ def add_tab():
   left_column = gr.Column(scale=2)
   right_column = gr.Column(scale=3)
 
-  settings_update_button = gr.Button(value="Update columns", variant="secondary")
-  settings_update_button.style(size="sm")
+  settings_update_button = gr.Button(value="Update columns", variant="secondary", size="sm")
+
 
   #Create UI
   with gr.Blocks() as ui :

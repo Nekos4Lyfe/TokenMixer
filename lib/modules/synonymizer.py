@@ -704,8 +704,8 @@ class Synonymizer:
         self.inputs.suggestions = gr.Slider(label="No. of suggestions",value=5, \
                                 minimum=0, maximum=100, step=1 , interactive = True)
       with gr.Row() :  
-          self.buttons.tokenize = gr.Button(value="Synonymize", variant="primary")
-          self.buttons.reset = gr.Button(value="Reset", variant = "secondary")
+          self.buttons.tokenize = gr.Button(value="Synonymize", variant="primary", size="sm")
+          self.buttons.reset = gr.Button(value="Reset", variant = "secondary" , size="sm")
       with gr.Row() : 
         self.inputs.mini_input = gr.Textbox(label='', lines=2, \
         placeholder="Enter a short prompt or name of embedding" , interactive = True)
@@ -774,8 +774,6 @@ class Synonymizer:
     self.randset = [randset]
 
     self.inputs.randlen.value = 0.35
-    self.buttons.tokenize.style(size="sm")
-    self.buttons.reset.style(size="sm")
 
     if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class MiniTokenizer--------------------------------------------------#

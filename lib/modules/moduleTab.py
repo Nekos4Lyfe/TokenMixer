@@ -109,8 +109,7 @@ class Modules :
           self.show_rand_settings = gr.Checkbox(value=True, label="Show random '_' token settings ", interactive = True)
           self.show_encoder = gr.Checkbox(value=show[5], label="Show image encoder", interactive = True)
         with gr.Row():
-          self.module_update_button = gr.Button(value="Update modules", variant="primary")
-          self.module_update_button.style(size="sm")
+          self.module_update_button = gr.Button(value="Update modules", variant="primary", size="sm")
         #####
         with gr.Accordion('How do I use this extension?',open=False):
           gr.Markdown(tutorial_string) 

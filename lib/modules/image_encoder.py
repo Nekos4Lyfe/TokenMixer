@@ -151,8 +151,8 @@ class ImageEncoder:
         gr.Markdown("Get the CLIP token encoding of an input image")
   
         with gr.Row() :  
-          self.buttons.create = gr.Button(value="Create Embedding", variant="primary")
-          self.buttons.reset = gr.Button(value="Reset", variant = "secondary") 
+          self.buttons.create = gr.Button(value="Create Embedding", variant="primary", size="sm")
+          self.buttons.reset = gr.Button(value="Reset", variant = "secondary", size="sm") 
         with gr.Row() :  
           self.inputs.length = gr.Slider(label="Desired vector length",value=0.35, \
                                       minimum=0, maximum=2, step=0.01 , interactive = True)
@@ -176,8 +176,6 @@ class ImageEncoder:
 
       self.tutorials = [tutorial_0]
       self.show = [show]
-      self.buttons.create.style(size="sm")
-      self.buttons.reset.style(size="sm")
       if self.data.tools.loaded : self.setupIO_with(self)
 
 

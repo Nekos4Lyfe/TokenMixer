@@ -313,8 +313,8 @@ class TokenCalculator:
           self.inputs.length = gr.Slider(label="Desired vector length",value=0.35, \
                                       minimum=0, maximum=2, step=0.01 , interactive = True)
       with gr.Row() :  
-          self.buttons.calculate = gr.Button(value="Calculate", variant="primary")
-          self.buttons.reset = gr.Button(value="Reset", variant = "secondary")
+          self.buttons.calculate = gr.Button(value="Calculate", variant="primary", size="sm")
+          self.buttons.reset = gr.Button(value="Reset", variant = "secondary", size="sm")
       with gr.Row() : 
         self.inputs.calc_input = gr.Textbox(label='', lines=2, \
         placeholder="Enter a short prompt (loaded embeddings or modifiers are not supported)" , interactive = True)
@@ -362,9 +362,6 @@ class TokenCalculator:
     self.show = [show]
     self.randset = [randset]
     self.logs = [logs]
-    
-  
-    self.buttons.calculate.style(size="sm")
-    self.buttons.reset.style(size="sm")
+
     if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class TokenCalculator--------------------------------------------------#

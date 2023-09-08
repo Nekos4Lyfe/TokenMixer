@@ -614,8 +614,8 @@ class TokenExtrapolator:
         self.inputs.desired_no_of_tokens = gr.Slider(label="Number of tokens",value=5, \
                                       minimum=0, maximum=100, step=1 , interactive = True)
       with gr.Row() :  
-          self.buttons.extrapolate = gr.Button(value="Extrapolate", variant="primary")
-          self.buttons.reset = gr.Button(value="Reset", variant = "secondary")
+          self.buttons.extrapolate = gr.Button(value="Extrapolate", variant="primary", size="sm")
+          self.buttons.reset = gr.Button(value="Reset", variant = "secondary", size="sm")
       with gr.Row() : 
         self.inputs.first = gr.Textbox(label="Initial token", lines=1, \
         placeholder="Enter a single token" , interactive = True)
@@ -757,9 +757,6 @@ class TokenExtrapolator:
 
     self.show = [show]
     self.logs = [logs]
-
-    self.buttons.extrapolate.style(size="sm")
-    self.buttons.reset.style(size="sm")
 
     if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class Extrapolator----------------------

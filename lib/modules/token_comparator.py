@@ -452,8 +452,8 @@ class TokenComparator :
         gr.Markdown("Compare tokens or embeddings")
   
         with gr.Row() :  
-          self.buttons.compare = gr.Button(value="Compare", variant="primary")
-          self.buttons.reset = gr.Button(value="Reset", variant = "secondary") 
+          self.buttons.compare = gr.Button(value="Compare", variant="primary", size="sm")
+          self.buttons.reset = gr.Button(value="Reset", variant = "secondary", size="sm") 
         with gr.Row() :  
           self.inputs.first = gr.Textbox(label='', lines=2, \
             placeholder="Enter name of token or embedding" , interactive = True)
@@ -482,8 +482,6 @@ class TokenComparator :
 
       self.tutorials = [tutorial_0]
       self.show = [show]
-      self.buttons.compare.style(size="sm")
-      self.buttons.reset.style(size="sm")
       if self.data.tools.loaded : self.setupIO_with(self)
 
 

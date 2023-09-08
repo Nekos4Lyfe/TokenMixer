@@ -351,8 +351,8 @@ class MiniTokenizer:
     #
     with gr.Accordion(label , open=True , visible = vis) as show :
       with gr.Row() :  
-          self.buttons.tokenize = gr.Button(value="Tokenize", variant="primary")
-          self.buttons.reset = gr.Button(value="Reset", variant = "secondary")
+          self.buttons.tokenize = gr.Button(value="Tokenize", variant="primary", size="sm")
+          self.buttons.reset = gr.Button(value="Reset", variant = "secondary", size="sm")
       with gr.Row() : 
         self.inputs.mini_input = gr.Textbox(label='', lines=2, \
         placeholder="Enter a short prompt or name of embedding" , interactive = True)
@@ -393,8 +393,6 @@ class MiniTokenizer:
     self.randset = [randset]
 
     self.inputs.randlen.value = 0.35
-    self.buttons.tokenize.style(size="sm")
-    self.buttons.reset.style(size="sm")
 
     if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class MiniTokenizer--------------------------------------------------#

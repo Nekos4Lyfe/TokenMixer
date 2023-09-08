@@ -623,12 +623,12 @@ class TokenMixer :
                           self.inputs.mix_input = gr.Textbox(label='', lines=3, interactive = False)                                                            
                         with gr.Row():                        
                           with gr.Column():
-                                self.buttons.save = gr.Button(value="Create embedding", variant="primary")
+                                self.buttons.save = gr.Button(value="Create embedding", variant="primary", size="lg")
                                 self.inputs.save_name = gr.Textbox(label="New embedding name",lines=1,placeholder='Enter file name to save', interactive = True)
                                 self.inputs.settings.enable_overwrite = gr.Checkbox(value=False,label="Enable overwrite", interactive = True)
                                       
                           with gr.Column(): 
-                              self.buttons.reset = gr.Button(value="Clear")
+                              self.buttons.reset = gr.Button(value="Clear", size="lg")
                               self.outputs.embedding_box = gr.Textbox(label="------> Output",lines=1,placeholder='Embedding name output')
                               
                         with gr.Row():
@@ -865,8 +865,6 @@ class TokenMixer :
           self.show = [show]
           self.logs = [logs]
 
-          self.buttons.save.style(size="lg")
-          self.buttons.reset.style(size="lg")
           if self.data.tools.loaded : self.setupIO_with(self)
           
 ## end  of class TokenMixer 

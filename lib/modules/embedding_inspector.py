@@ -343,8 +343,8 @@ class EmbeddingInspector :
           self.inputs.max_similar_embs = gr.Slider(label="Number of tokens to display",value=30, \
                                       minimum=0, maximum=300, step=1 , interactive = True)
       with gr.Row() : 
-          self.buttons.inspect = gr.Button(value="Get similar tokens", variant="primary")
-          self.buttons.reset = gr.Button(value="Reset", variant = "secondary") 
+          self.buttons.inspect = gr.Button(value="Get similar tokens", variant="primary", size="sm")
+          self.buttons.reset = gr.Button(value="Reset", variant = "secondary" , size="sm") 
       with gr.Row() : 
         self.inputs.mini_input = gr.Textbox(label='', lines=2, \
         placeholder="Enter a single vector token or embedding" , interactive = True)
@@ -394,8 +394,6 @@ class EmbeddingInspector :
     self.show = [show]
     self.logs = [logs]
     
-    self.buttons.inspect.style(size="sm")
-    self.buttons.reset.style(size="sm")
     if self.data.tools.loaded : self.setupIO_with(self)
 
     #self.buttons.split.click(fn=self.Split , inputs = None , outputs = None )
