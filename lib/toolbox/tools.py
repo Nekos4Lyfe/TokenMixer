@@ -1,5 +1,9 @@
 import gradio as gr
-from modules import script_callbacks, shared, sd_hijack , sd_models , sd_hijack_open_clip , textual_inversion
+from modules import script_callbacks, shared, sd_hijack , sd_models , sd_hijack_open_clip , textual_inversion , xlmr
+
+
+from transformers import XLMRobertaModel,XLMRobertaTokenizer
+
 from modules.shared import cmd_opts
 from pandas import Index
 from pandas.core.groupby.groupby import OutputFrameOrSeries
@@ -41,8 +45,9 @@ class Tools :
         is_sd2 = hasattr(model.cond_stage_model, 'model')
         is_sd1 = not is_sd2 and not is_sdxl
 
+        assert is_sdxl , "is_sdxl is False"
 
-        valid_model = is_sd2 or is_sd1
+        valid_model = is_sd2 or is_sd1 or is_sdxl
         if not valid_model:
           return None , None , None
         ########
@@ -55,19 +60,26 @@ class Tools :
         #Fetch the internal_embedding directory
         embedder = model.cond_stage_model.wrapped
         internal_emb_dir = None
+        
         if is_sd1: internal_emb_dir = embedder.transformer.text_model.embeddings
-        elif is_sdxl : internal_emb_dir = embedder.roberta.embeddings # SDXL :Check if this works
+        elif is_sdxl : internal_emb_dir = model.cond_stage_model.embedders[0].wrapped.transformer.text_model.embeddings
         elif is_sd2 : internal_emb_dir = embedder.model
+
+        assert internal_emb_dir != None , "internal_emb_dir is NoneType"
         
         internal_embs = internal_emb_dir.token_embedding.wrapped.weight # SDXL : See comment above
 
+        assert internal_embs != None , "internal_embs is NoneType!"
         #########
 
         #Fetch the tokenizer
         if is_sd2 : 
           from modules.sd_hijack_open_clip import tokenizer as open_clip_tokenizer
           tokenizer = open_clip_tokenizer
+        elif is_sdxl: tokenizer = model.cond_stage_model.embedders[0].wrapped.tokenizer
         else : tokenizer = embedder.tokenizer
+
+        assert tokenizer != None , "tokenizer is NoneType!"
 
         return tokenizer, internal_embs, loaded_embs
 
@@ -128,8 +140,6 @@ class Tools :
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.no_of_internal_embs = len(self.internal_embs)
         
-
-
         Tools.count = count 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
         'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
