@@ -6,6 +6,11 @@ import re #used to parse string to int
 import copy
 from lib.toolbox.constants import MAX_NUM_MIX
 
+
+import torch
+from safetensors import safe_open
+from safetensors.torch import save_file
+
 from lib.data import dataStorage
 
 class TokenMixer :
@@ -110,7 +115,11 @@ class TokenMixer :
                   log.append('⚠️WARNING: vector count>75, it may not work 🛑')
             ############
 
-            save_filename = os.path.join(self.data.tools.emb_savepath , f"{save_name}.pt")
+            save_filename = ''
+            if self.data.tools.is_sdxl: 
+              save_filename = os.path.join(self.data.tools.emb_savepath , f"{save_name}.safetensors")
+            else : 
+              save_filename = os.path.join(self.data.tools.emb_savepath , f"{save_name}.pt")
 
             #Check if save path exists. Exit if it does
             if (os.path.exists(save_filename)):
@@ -122,7 +131,16 @@ class TokenMixer :
 
            #Save the embedding           
             try:  
-                Embedding(tot_vec, save_name).save(save_filename)
+
+                if self.data.tools.is_sdxl: 
+                  tensors = {
+                  "clip_g": tot_vec , 
+                  "clip_l": torch.zeros((tot_vec.shape[0], 768))
+
+                  }
+                  save_file(tensors, save_filename)
+
+                else: Embedding(tot_vec, save_name).save(save_filename)
                 log.append('Saved "'+save_filename+'"')
                 anything_saved = True
             except: log.append('🛑 Error saving "'+save_filename+'" (filename might be invalid)')

@@ -685,16 +685,19 @@ class Data :
     log.append('-------------------------------------------')
     return output , '\n'.join(log)
 
-  def text_to_emb_ids(self, text):
+  def text_to_emb_ids(self, text , is_sdxl = False):
     text = copy.copy(text.lower())
-    if self.tools.tokenizer.__class__.__name__== 'CLIPTokenizer': # SD1.x detected
+    if self.tools.is_sdxl : #SDXL detected
+        emb_ids = self.tools.sdxl_tokenizer.encode(text)
+        #emb_ids = self.tools.tokenizer(text, truncation=False, add_special_tokens=False)["input_ids"]
+    elif self.tools.tokenizer.__class__.__name__== 'CLIPTokenizer': # SD1.x detected
         emb_ids = self.tools.tokenizer(text, truncation=False, add_special_tokens=False)["input_ids"]
     elif self.tools.tokenizer.__class__.__name__== 'SimpleTokenizer': # SD2.0 detected
         emb_ids =  self.tools.tokenizer.encode(text)
     else: emb_ids = None
     return emb_ids # return list of embedding IDs for text
 
-  def emb_id_to_vec(self, emb_id):
+  def emb_id_to_vec(self, emb_id , is_sdxl = False):
     if not isinstance(emb_id, int):
       return None
     if (emb_id > self.tools.no_of_internal_embs):
@@ -703,7 +706,7 @@ class Data :
       return None
     return self.tools.internal_embs[emb_id].to(device="cpu" , dtype = torch.float32)
 
-  def emb_id_to_name(self, text):
+  def emb_id_to_name(self, text , is_sdxl = False):
     emb_id = copy.copy(text)
     emb_name_utf8 = self.tools.tokenizer.decoder.get(emb_id)
     if emb_name_utf8 != None:
@@ -716,7 +719,7 @@ class Data :
 
     return emb_name # return embedding name for embedding ID
 
-  def get_embedding_info(self, string):
+  def get_embedding_info(self, string , is_sdxl = False):
 
       emb_id = None
       text = copy.copy(string.lower())
@@ -734,7 +737,6 @@ class Data :
         emb_vec = loaded_emb.vec.cpu()
         return emb_name, emb_id, emb_vec, loaded_emb #also return loaded_emb reference
 
-
       emb_ids = self.text_to_emb_ids(text)
       if emb_ids == None : return None, None, None, None
       
@@ -748,7 +750,7 @@ class Data :
         emb_vec = self.tools.internal_embs[emb_id].unsqueeze(0)
         emb_vecs.append(emb_vec)
     
-      #Emergency fix
+      #Might have to fix later , idk
       if emb_name == None : return None, None, None, None
       emb_ids = emb_ids[0]
       emb_names = emb_names[0]
@@ -891,7 +893,6 @@ class Data :
       self.vector.weight.place(self.weight , index)
   ###### End of recall()
 
-
   def norm (self, tensor , origin_input , distance_fcn):
         current = tensor.to(device = "cpu" , dtype = torch.float32)
         origin = origin_input.to(device = "cpu" , dtype = torch.float32)
@@ -920,7 +921,6 @@ class Data :
         current = current * (1/dist1)
 
         ####
-
         ref = tensor2.to(device = "cpu" , dtype = torch.float32)
         dist2 = distance(current, origin).numpy()[0]
         ref = ref * (1/dist2)
@@ -1011,13 +1011,8 @@ class Data :
     Data.negative = None
     Data.temporary = None
 
-
-
     Data.pursuit_strength = 0
     Data.doping_strength = 0
-
-
-
 
     if self.tools.loaded:
       self.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')

@@ -46,7 +46,6 @@ class Tools :
         is_sd2 = hasattr(model.cond_stage_model, 'model')
         is_sd1 = not is_sd2 and not is_sdxl
 
-
         valid_model = is_sd2 or is_sd1 or is_sdxl
         if not valid_model:
           return None , None , None , None , None , None
@@ -81,9 +80,8 @@ class Tools :
         sdxl_tokenizer = None
         if is_sdxl : 
           FrozenOpenCLIPEmbedder2 = model.cond_stage_model.embedders[1].wrapped
-          internal_sdxl_embs = FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped
+          internal_sdxl_embs = FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
           sdxl_tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-large')
-
 
         #Fetch the SDXL extra stuff (if SDXL model is loaded)
         #sdxl_tokenizer = None
@@ -114,6 +112,9 @@ class Tools :
           self.count = 1
         return self.letter[self.count]
 
+      def sdxl_encode(self,c):
+        return self.sdxl.encode(c)
+
       def get_best_ids (self , emb_id , similarity , max_similar_embs , emb_vec = None) :
         
         max_sim = copy.copy(max_similar_embs)
@@ -138,7 +139,6 @@ class Tools :
         scores = torch.mul(all_sim , torch.ge(simil * torch.ones(all_sim.shape) , 100*all_sim))
         sorted_scores, sorted_ids = torch.sort(scores, descending=True)
         best_ids = sorted_ids[0:max_sim].detach().numpy()
-
         return  best_ids , sorted_scores
 
       def __init__(self , count=1):
@@ -151,8 +151,12 @@ class Tools :
         Tools.loaded_embs = None
         Tools.no_of_internal_embs = 0
         Tools.is_sdxl = False
- 
-        tokenizer , internal_embs ,  loaded_embs , is_sdxl , internal_sdxl_embs , sdxl_tokenizer = self.get()
+
+        Tools.sdxl = xlmr.BertSeriesModelWithTransformation()
+
+        tokenizer , internal_embs ,  loaded_embs , is_sdxl , \
+        internal_sdxl_embs , sdxl_tokenizer = self.get()
+
         if tokenizer == None or internal_embs == None:
           warnings.warn("TokenMixer could not load model params")
           self.loaded = False
@@ -160,18 +164,32 @@ class Tools :
 
         assert sdxl_tokenizer != None , "sdxl_tokenizer is NoneType"
 
-
         self.is_sdxl = is_sdxl
-        self.sdxl_tokenizer = sdxl_tokenizer
+        self.sdxl_tokenizer = tokenizer
 
         if self.loaded:
           Tools.tokenizer = tokenizer
-          Tools.internal_embs = internal_embs
+          Tools.internal_embs = internal_sdxl_embs
           Tools.internal_sdxl_embs = internal_sdxl_embs
           Tools.loaded_embs = loaded_embs
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
-          Tools.no_of_internal_embs = len(self.internal_embs)
-        
+          Tools.no_of_internal_embs = len(internal_sdxl_embs)
+          ###
+          Tools.no_of_sdxl_internal_embs = len(internal_sdxl_embs)
+        ######
+
+        #Quick Hack
+        #if self.loaded and is_sdxl: 
+          #self.internal_embs = internal_sdxl_embs
+          #self.no_of_internal_embs = self.no_of_sdxl_internal_embs
+          #pprint("#####  internal_embs ######")
+          #pprint(vars(self.internal_embs))
+          #pprint("##########")
+          #pprint("#####  internal_sdxl_embs ######")
+          #pprint(vars(self.internal_sdxl_embs))
+          #pprint("##########") 
+        ######
+
         Tools.count = count 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
         'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
