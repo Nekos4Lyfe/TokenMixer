@@ -1,10 +1,8 @@
-# TokenMixer
+# TokenMixer (Now SDXL compatible!)
 
 The TokenMixer is an StableDiffusion extension for Automatic1111 and SD-Next for modifying embedding vectors and/or tokens. The TokenMixer consists of several modules in an integrated and adjustable interface.
 
 Disclaimer: 
-
-- This extension is not compatible with SDXL yet
 
 - This extension is not compatible with ComfyUI yet (still need to write the UI for the custom_nodes) 
 
@@ -17,25 +15,12 @@ Informal discussions about the TokenMixer can be found here (You will need to na
 This extension is published under a MIT License. 
 
 ## Latest update
-Token Filtering is now available
 
-![FilterMode](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f0fb4fbd-7a2c-4ad1-8b9d-21250c9adac6)
+TokenMixer is now SDXL compatible
 
-**Summary of how Sampler Mode works:**
+![blub1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/58f36df8-5a77-4d23-a1dd-56dd0d0a46b7)
 
-
-* Generate N semi-random vectors from the input tokens (set by the randomization % slider) as "Samples". 
-
-* Return the sample with the highest similarity to original input token
-
-**Summary of how Advanced Sampler mode works:**
-
-* Generate N semi-random vectors from the input tokens (set by the randomization % slider) as "Samples". 
-
-* Give each sample a "score" based on (the lowest possible) similarity to input tokens , positives and (the inverse of the highest possible) similarity to negatives
-
-* Return the sample with the highest score
-
+![blub2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/7862b6dd-477d-40bd-af05-e70ac9bdaec9)
 
 ## Usage 
 Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
@@ -288,6 +273,26 @@ Not written yet
 ## Token Synonymizer 
 
 Not written yet
+
+## Token Filtering
+
+Token Filtering is now available
+
+![FilterMode](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f0fb4fbd-7a2c-4ad1-8b9d-21250c9adac6)
+
+**Summary of how Sampler Mode works:**
+
+* Generate N semi-random vectors from the input tokens (set by the randomization % slider) as "Samples". 
+
+* Return the sample with the highest similarity to original input token
+
+**Summary of how Advanced Sampler mode works:**
+
+* Generate N semi-random vectors from the input tokens (set by the randomization % slider) as "Samples". 
+
+* Give each sample a "score" based on (the lowest possible) similarity to input tokens , positives and (the inverse of the highest possible) similarity to negatives
+
+* Return the sample with the highest score
 
 
 
