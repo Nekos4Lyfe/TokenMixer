@@ -3,3 +3,5 @@ svglib
 fvcore
 nltk
 gradio
+safetensors
+transformers
