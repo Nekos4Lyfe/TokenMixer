@@ -45,7 +45,6 @@ class Tools :
         is_sd2 = hasattr(model.cond_stage_model, 'model')
         is_sd1 = not is_sd2 and not is_sdxl
 
-        assert is_sdxl , "is_sdxl is False"
 
         valid_model = is_sd2 or is_sd1 or is_sdxl
         if not valid_model:
