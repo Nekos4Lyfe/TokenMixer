@@ -57,28 +57,23 @@ class Tools :
             key=lambda x: str(x[0]).lower()))
 
         #Fetch the internal_embedding directory
-        embedder = model.cond_stage_model.wrapped
+        embedder = None
+        if is_sdxl: embedder = model.cond_stage_model.embedders[0].wrapped
+        else: embedder = model.cond_stage_model.wrapped
+        
         internal_emb_dir = None
-        
         if is_sd1: internal_emb_dir = embedder.transformer.text_model.embeddings
-        elif is_sdxl : internal_emb_dir = model.cond_stage_model.embedders[0].wrapped.transformer.text_model.embeddings
+        elif is_sdxl : internal_emb_dir = embedder.transformer.text_model.embeddings
         elif is_sd2 : internal_emb_dir = embedder.model
-
-        assert internal_emb_dir != None , "internal_emb_dir is NoneType"
-        
         internal_embs = internal_emb_dir.token_embedding.wrapped.weight # SDXL : See comment above
-
-        assert internal_embs != None , "internal_embs is NoneType!"
         #########
 
         #Fetch the tokenizer
-        if is_sd2 : 
+        if is_sd2 :
           from modules.sd_hijack_open_clip import tokenizer as open_clip_tokenizer
           tokenizer = open_clip_tokenizer
-        elif is_sdxl: tokenizer = model.cond_stage_model.embedders[0].wrapped.tokenizer
         else : tokenizer = embedder.tokenizer
-
-        assert tokenizer != None , "tokenizer is NoneType!"
+        ########
 
         return tokenizer, internal_embs, loaded_embs
 
