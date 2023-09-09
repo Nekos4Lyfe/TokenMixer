@@ -79,11 +79,16 @@ class Tools :
 
         #fetch the internal sdxl embs
         internal_sdxl_embs = None
-        sdxl_tokenizer = None
+        sdxl_tokenizer = tokenizer #<<<<--- Might need some modification maybe
+
         if is_sdxl : 
           FrozenOpenCLIPEmbedder2 = model.cond_stage_model.embedders[1].wrapped
           internal_sdxl_embs = FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
-          sdxl_tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-large')
+          tensor = internal_sdxl_embs[1337].to(device="cpu" , dtype = torch.float32)
+          pprint("internal sdxl_embs sixe : " + str(tensor.shape))
+
+          tensor2 = internal_embs[1337].to(device="cpu" , dtype = torch.float32)
+          pprint("internal_embs size : " + str(tensor2.shape))
         ########
 
         #Fetch the SDXL extra stuff (if SDXL model is loaded)

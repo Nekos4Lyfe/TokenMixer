@@ -791,8 +791,10 @@ class Data :
       for emb_id in emb_ids:
         emb_name = self.emb_id_to_name(emb_id)
         emb_names.append(emb_name)
+
         if is_sdxl : emb_vec = self.tools.internal_sdxl_embs[emb_id].unsqueeze(0)
         else : emb_vec = self.tools.internal_embs[emb_id].unsqueeze(0)
+        
         emb_vecs.append(emb_vec)
     
       #Might have to fix later , idk
@@ -1141,7 +1143,6 @@ class Data :
     Data.emb_vec = None
     Data.loaded_emb = None
     ########
-
     if self.tools.loaded:
       emb_name, emb_id, emb_vec , loaded_emb = \
       self.get_embedding_info(',')
@@ -1149,7 +1150,7 @@ class Data :
       sdxl_emb_name, sdxl_emb_id, sdxl_emb_vec , sdxl_loaded_emb = \
       self.get_embedding_info(',', is_sdxl = True)
       ####
-      size = emb_vec.shape[1]
+      size = 768
       sdxl_size = sdxl_emb_vec.shape[1]
       ####
       self.vector = Vector(size)

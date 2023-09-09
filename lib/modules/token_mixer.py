@@ -139,7 +139,6 @@ class TokenMixer :
 
                   }
                   save_file(tensors, save_filename)
-
                 else: Embedding(tot_vec, save_name).save(save_filename)
                 log.append('Saved "'+save_filename+'"')
                 anything_saved = True

@@ -14,9 +14,9 @@ from lib.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
 
 class Negative :
-#Negative is a class which stores torch tensors as a list
+#self is a class which stores torch tensors as a list
 #It also stores functions which modify this tensor list
-#The Negative class also contains StringList lists 
+#The self class also contains StringList lists 
 #and Boolist lists 
 
   def get(self,index) :
@@ -50,25 +50,25 @@ class Negative :
     self.weight.clear(index)
 
   def __init__(self , size):
-    Negative.size = size
-    Negative.origin = torch.zeros(size).unsqueeze(0).cpu()
-    Negative.randomization = 0
-    Negative.interpolation = 0
-    Negative.itermax = 1000
-    Negative.gain = 1
-    Negative.allow_negative_gain = False
-    Negative.data = []
+    self.size = size
+    self.origin = torch.zeros(size).unsqueeze(0).cpu()
+    self.randomization = 0
+    self.interpolation = 0
+    self.itermax = 1000
+    self.gain = 1
+    self.allow_negative_gain = False
+    self.data = []
 
     for i in range (MAX_NUM_MIX):
       tmp = torch.zeros(size).unsqueeze(0).cpu()
-      Negative.data.append(tmp)
+      self.data.append(tmp)
       tmp=None
 
-    Negative.ID = IntList2(0)
-    Negative.name = StringList2()
-    Negative.isEmpty = BooList2(True)
-    Negative.weight = FloatList2(1)
-    Negative.strength = 0
+    self.ID = IntList2(0)
+    self.name = StringList2()
+    self.isEmpty = BooList2(True)
+    self.weight = FloatList2(1)
+    self.strength = 0
 #End of Negative class
 
 ###### SDXL STUFF #####
@@ -79,13 +79,61 @@ from lib.toolbox.intlist import IntList8
 from lib.toolbox.boolist import BooList8
 from lib.toolbox.stringlist import StringList8
 ####
-class Negative1280 (Negative) :
+class Negative1280 :
+#self is a class which stores torch tensors as a list
+#It also stores functions which modify this tensor list
+#The self class also contains StringList lists 
+#and Boolist lists 
+
+  def get(self,index) :
+    output = self.data[index]
+    assert not output == None , "Faulty get!"
+    return output
+
+  def validate(self, tensor) :
+    assert tensor != None , "Null tensor!"
+    assert tensor.shape[0] == 1 , "Too many tensors!"
+    assert tensor.shape[1] == self.size , \
+    "Wrong tensor dim! Size should be " + str(self.size) + " but input was "
+    "size " + str(tensor.shape[1])
+
+  def place(self, tensor , index) :
+    if (tensor != None) :
+      self.validate(tensor)
+      assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
+      self.data[index] = tensor.cpu()
+      self.isEmpty.place(False , index)
+      assert not self.isEmpty.data[index] , "Faulty place!"
+
+  def clear (self , index) :
+    assert not index == None , "Index is NoneType!"
+    assert not (index > MAX_NUM_MIX or index < 0) ,  "Index out of bounds!"
+    self.data[index] = torch.zeros(self.size).unsqueeze(0).cpu()
+    assert not self.data[index] == None , "Bad operation"
+    self.isEmpty.clear(index)
+    self.ID.clear(index)
+    self.name.clear(index)
+    self.weight.clear(index)
+
   def __init__(self , size):
-    super().__init__(size)
-    # Negative1280 is used by SDXL to store 1x768 Vectors , while
-    #the Vector class is used by SDXL to store 1x1280 Vectors
+    self.size = size
+    self.origin = torch.zeros(size).unsqueeze(0).cpu()
+    self.randomization = 0
+    self.interpolation = 0
+    self.itermax = 1000
+    self.gain = 1
+    self.allow_negative_gain = False
+    self.data = []
+
+    for i in range (MAX_NUM_MIX):
+      tmp = torch.zeros(size).unsqueeze(0).cpu()
+      self.data.append(tmp)
+      tmp=None
+
     self.ID = IntList8(0)
     self.name = StringList8()
     self.isEmpty = BooList8(True)
     self.weight = FloatList8(1)
+    self.strength = 0
+#End of Negative class
 #End of  Negative1280
