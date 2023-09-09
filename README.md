@@ -20,8 +20,6 @@ TokenMixer is now SDXL compatible for the Minitokenizer module and the Embedding
 
 For now , you can have fun with the randomizer "_" feature on the Minitokenizer if you like to investigate the latent space of SDXL.
 
-Remember to tweak the "Random '_' token slider settings" for crazy results! 
-
 ![rand 1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/b771edf3-d164-4c1e-9114-2b21ef9bde18)
 ![rand2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f0fe03f9-4187-4794-ac08-36df1cc1ef10)
 
