@@ -16,11 +16,13 @@ This extension is published under a MIT License.
 
 ## Latest update
 
-TokenMixer is now SDXL compatible (although only the first text encoder. Will add the second encoder shortly. Expect frequent changes in the repo)
+TokenMixer is now SDXL compatible. Not all features are guaranteed to work for SDXL yet. 
 
-![blub1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/58f36df8-5a77-4d23-a1dd-56dd0d0a46b7)
+For now , you can have fun with the randomizer "_" feature on the Minitokenizer if you like to investigate the latent space of SDXL 
 
-![blub2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/7862b6dd-477d-40bd-af05-e70ac9bdaec9)
+![rand 1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/b771edf3-d164-4c1e-9114-2b21ef9bde18)
+![rand2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f0fe03f9-4187-4794-ac08-36df1cc1ef10)
+
 
 ## Usage 
 Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
