@@ -67,3 +67,22 @@ class Positive :
     Positive.weight = FloatList3(1)
     Positive.strength = 0
 #End of Positive class
+
+###### SDXL STUFF #####
+
+#Vector768
+from lib.toolbox.floatlist import FloatList7
+from lib.toolbox.intlist import IntList7
+from lib.toolbox.boolist import BooList5
+from lib.toolbox.stringlist import StringList5
+####
+class Positive768 (Vector) :
+  def __init__(self , size):
+    super().__init__()
+    #Vector768 is used by SDXL to store 1x768 Vectors , while
+    #the Vector class is used by SDXL to store 1x1280 Vectors
+    self.ID = IntList5(0)
+    self.name = StringList5()
+    self.isEmpty = BooList5(True)
+    self.weight = FloatList5(1)
+#End of Positive768

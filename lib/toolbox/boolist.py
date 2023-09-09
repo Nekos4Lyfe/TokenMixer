@@ -159,3 +159,178 @@ class BooList4 :
         self.check(index)
         self.data[index] = self.default
 #End of BooList4 class
+
+class BooList5 :
+  #The class BooList5 stores booleans as a list
+  #It also stores functions which modify this list  
+
+      def validate(self, cond) :
+        assert cond != None , "Null boolean!"
+        assert isinstance(cond , bool) , "Not a boolean!"
+
+      def check(self, index) :
+        assert not index == None , "Index is NoneType!"
+        assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
+
+      def __init__(self , default) :
+        self.validate(default)
+        self.default = default
+        self.data = []
+        for i in range (MAX_NUM_MIX):
+          self.data.append(default)
+
+      def get(self,index) :
+        self.check(index)
+        self.validate(self.data[index])
+        return self.data[index]
+
+      def place(self , cond , index) :
+          self.validate(cond)
+          self.check(index)
+          self.data[index] = copy.copy(cond)
+
+      def clear(self , index):
+        self.validate(self.default)
+        self.check(index)
+        self.data[index] = self.default
+#End of BooList5 class
+
+class BooList6 :
+  #The class BooList6 stores booleans as a list
+  #It also stores functions which modify this list  
+
+      def validate(self, cond) :
+        assert cond != None , "Null boolean!"
+        assert isinstance(cond , bool) , "Not a boolean!"
+
+      def check(self, index) :
+        assert not index == None , "Index is NoneType!"
+        assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
+
+      def __init__(self , default) :
+        self.validate(default)
+        self.default = default
+        self.data = []
+        for i in range (MAX_NUM_MIX):
+          self.data.append(default)
+
+      def get(self,index) :
+        self.check(index)
+        self.validate(self.data[index])
+        return self.data[index]
+
+      def place(self , cond , index) :
+          self.validate(cond)
+          self.check(index)
+          self.data[index] = copy.copy(cond)
+
+      def clear(self , index):
+        self.validate(self.default)
+        self.check(index)
+        self.data[index] = self.default
+#End of BooList6 class
+
+class BooList7 :
+  #The class BooList7 stores booleans as a list
+  #It also stores functions which modify this list  
+
+      def validate(self, cond) :
+        assert cond != None , "Null boolean!"
+        assert isinstance(cond , bool) , "Not a boolean!"
+
+      def check(self, index) :
+        assert not index == None , "Index is NoneType!"
+        assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
+
+      def __init__(self , default) :
+        self.validate(default)
+        self.default = default
+        self.data = []
+        for i in range (MAX_NUM_MIX):
+          self.data.append(default)
+
+      def get(self,index) :
+        self.check(index)
+        self.validate(self.data[index])
+        return self.data[index]
+
+      def place(self , cond , index) :
+          self.validate(cond)
+          self.check(index)
+          self.data[index] = copy.copy(cond)
+
+      def clear(self , index):
+        self.validate(self.default)
+        self.check(index)
+        self.data[index] = self.default
+#End of BooList7 class
+
+class BooList8 :
+  #The class BooList5 stores booleans as a list
+  #It also stores functions which modify this list  
+
+      def validate(self, cond) :
+        assert cond != None , "Null boolean!"
+        assert isinstance(cond , bool) , "Not a boolean!"
+
+      def check(self, index) :
+        assert not index == None , "Index is NoneType!"
+        assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
+
+      def __init__(self , default) :
+        self.validate(default)
+        self.default = default
+        self.data = []
+        for i in range (MAX_NUM_MIX):
+          self.data.append(default)
+
+      def get(self,index) :
+        self.check(index)
+        self.validate(self.data[index])
+        return self.data[index]
+
+      def place(self , cond , index) :
+          self.validate(cond)
+          self.check(index)
+          self.data[index] = copy.copy(cond)
+
+      def clear(self , index):
+        self.validate(self.default)
+        self.check(index)
+        self.data[index] = self.default
+#End of BooList8 class
+
+class BooList9 :
+  #The class BooList5 stores booleans as a list
+  #It also stores functions which modify this list  
+
+      def validate(self, cond) :
+        assert cond != None , "Null boolean!"
+        assert isinstance(cond , bool) , "Not a boolean!"
+
+      def check(self, index) :
+        assert not index == None , "Index is NoneType!"
+        assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
+
+      def __init__(self , default) :
+        self.validate(default)
+        self.default = default
+        self.data = []
+        for i in range (MAX_NUM_MIX):
+          self.data.append(default)
+
+      def get(self,index) :
+        self.check(index)
+        self.validate(self.data[index])
+        return self.data[index]
+
+      def place(self , cond , index) :
+          self.validate(cond)
+          self.check(index)
+          self.data[index] = copy.copy(cond)
+
+      def clear(self , index):
+        self.validate(self.default)
+        self.check(index)
+        self.data[index] = self.default
+#End of BooList9 class

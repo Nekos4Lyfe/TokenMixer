@@ -286,3 +286,23 @@ class Vector :
     Vector.isEmpty = BooList(True)
     Vector.weight = FloatList(1)
 #End of Vector class
+
+###### SDXL STUFF #####
+
+#Vector768
+from lib.toolbox.floatlist import FloatList5
+from lib.toolbox.intlist import IntList5 
+from lib.toolbox.boolist import BooList5
+from lib.toolbox.stringlist import StringList5
+####
+class Vector768 (Vector) :
+  def __init__(self , size):
+    super().__init__()
+    #Vector768 is used by SDXL to store 1x768 Vectors , while
+    #the Vector class is used by SDXL to store 1x1280 Vectors
+    self.ID = IntList5(0)
+    self.name = StringList5()
+    self.isEmpty = BooList5(True)
+    self.weight = FloatList5(1)
+#End of Vector768
+

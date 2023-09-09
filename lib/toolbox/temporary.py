@@ -71,3 +71,25 @@ class Temporary :
     Temporary.weight = FloatList4(1)
     Temporary.strength = 0
 #End of Temporary class
+
+###### SDXL STUFF #####
+
+#Temporary768
+from lib.toolbox.floatlist import FloatList6
+from lib.toolbox.intlist import IntList6 
+from lib.toolbox.boolist import BooList6
+from lib.toolbox.stringlist import StringList6
+####
+class Temporary768 (Temporary) :
+  def __init__(self , size):
+    super().__init__()
+    #Temporary768 is used by SDXL to store 1x768 Vectors , while
+    #the Vector class is used by SDXL to store 1x1280 Vectors
+    self.ID = IntList6(0)
+    self.name = StringList6()
+    self.isEmpty = BooList6(True)
+    self.weight = FloatList6(1)
+#End of Temporary768
+
+
+
