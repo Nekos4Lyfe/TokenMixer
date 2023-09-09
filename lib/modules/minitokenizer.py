@@ -197,7 +197,7 @@ class MiniTokenizer:
       sdxl_emb_ids = None
       sdxl_emb_vecs = None 
       sdxl_loaded_emb = None
-      if self.tools.is_sdxl:
+      if self.data.tools.is_sdxl:
         sdxl_emb_name, sdxl_emb_ids, sdxl_emb_vecs , sdxl_loaded_emb  = \
         self.data.get_embedding_info(tmp , is_sdxl = True)
       ########
@@ -234,7 +234,7 @@ class MiniTokenizer:
           assert emb_vec != None , "emb_vec is NoneType"
           ####
           sdxl_emb_vec = None
-          if self.tools.is_sdxl: 
+          if self.data.tools.is_sdxl: 
             sdxl_emb_vec = sdxl_emb_vecs[token_num]\
             .to(device = "cpu" , dtype = torch.float32)
             assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
