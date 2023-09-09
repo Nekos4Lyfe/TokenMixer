@@ -16,7 +16,7 @@ This extension is published under a MIT License.
 
 ## Latest update
 
-TokenMixer is now SDXL compatible. Not all features are guaranteed to work for SDXL yet. 
+TokenMixer is now SDXL compatible for the Minitokenizer module and the Embedding Generator
 
 For now , you can have fun with the randomizer "_" feature on the Minitokenizer if you like to investigate the latent space of SDXL.
 
