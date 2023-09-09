@@ -55,15 +55,17 @@ class Tools :
         loaded_embs = collections.OrderedDict(
         sorted(sd_hijack.model_hijack.embedding_db.word_embeddings.items(),
             key=lambda x: str(x[0]).lower()))
+        ######
 
-        #Fetch the internal_embedding directory
+        #Fetch the internal_embeddings
         embedder = None
         if is_sdxl: embedder = model.cond_stage_model.embedders[0].wrapped
         else: embedder = model.cond_stage_model.wrapped
-        
+        #####
         internal_emb_dir = None
         if is_sd2 : internal_emb_dir = internal_emb_dir = embedder.model
         else : internal_emb_dir = embedder.transformer.text_model.embeddings
+        ####
         internal_embs = internal_emb_dir.token_embedding.wrapped.weight 
         #########
 
@@ -82,6 +84,7 @@ class Tools :
           FrozenOpenCLIPEmbedder2 = model.cond_stage_model.embedders[1].wrapped
           internal_sdxl_embs = FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
           sdxl_tokenizer = XLMRobertaTokenizer.from_pretrained('xlm-roberta-large')
+        ########
 
         #Fetch the SDXL extra stuff (if SDXL model is loaded)
         #sdxl_tokenizer = None
@@ -112,8 +115,8 @@ class Tools :
           self.count = 1
         return self.letter[self.count]
 
-      def sdxl_encode(self,c):
-        return self.sdxl.encode(c)
+      #def sdxl_encode(self,c):
+      #  return self.sdxl.encode(c)
 
       def get_best_ids (self , emb_id , similarity , max_similar_embs , emb_vec = None) :
         
@@ -143,7 +146,9 @@ class Tools :
 
       def __init__(self , count=1):
 
-        Tools.loaded = True
+        #Tools.sdxl = xlmr.BertSeriesModelWithTransformation()
+
+        #Fetch embeddings and tokenizer(s)
         Tools.tokenizer = None
         Tools.sdxl_tokenizer = None
         Tools.internal_embs = None
@@ -151,32 +156,36 @@ class Tools :
         Tools.loaded_embs = None
         Tools.no_of_internal_embs = 0
         Tools.is_sdxl = False
-
-        Tools.sdxl = xlmr.BertSeriesModelWithTransformation()
-
         tokenizer , internal_embs ,  loaded_embs , is_sdxl , \
         internal_sdxl_embs , sdxl_tokenizer = self.get()
+        #####
 
+        #Check if embeddings and tokenizers were loaded properly
+        Tools.loaded = True
         if tokenizer == None or internal_embs == None:
-          warnings.warn("TokenMixer could not load model params")
+          print("TokenMixer could not load model params")
           self.loaded = False
         #####
 
-        assert sdxl_tokenizer != None , "sdxl_tokenizer is NoneType"
-
-        self.is_sdxl = is_sdxl
-        self.sdxl_tokenizer = tokenizer
-
+        #Setup the Tools class for later use
         if self.loaded:
           Tools.tokenizer = tokenizer
-          Tools.internal_embs = internal_sdxl_embs
+          Tools.internal_embs = internal_embs
           Tools.internal_sdxl_embs = internal_sdxl_embs
           Tools.loaded_embs = loaded_embs
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
-          Tools.no_of_internal_embs = len(internal_sdxl_embs)
-          ###
+          Tools.no_of_internal_embs = len(internal_embs)
           Tools.no_of_sdxl_internal_embs = len(internal_sdxl_embs)
         ######
+
+        assert sdxl_tokenizer != None , "sdxl_tokenizer is NoneType"
+        self.is_sdxl = is_sdxl
+        self.sdxl_tokenizer = tokenizer
+
+        #SDXL quick fix
+        if is_sdxl: 
+          pass
+        ########
 
         #Quick Hack
         #if self.loaded and is_sdxl: 
