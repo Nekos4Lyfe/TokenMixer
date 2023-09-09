@@ -5,10 +5,10 @@ import re #used to parse string to int
 import copy
 from modules import  shared, sd_hijack
 
-from lib.toolbox.vector import Vector
-from lib.toolbox.negative import Negative
-from lib.toolbox.positive import Positive
-from lib.toolbox.temporary import Temporary
+from lib.toolbox.vector import Vector , Vector1280
+from lib.toolbox.negative import Negative , Negative1280
+from lib.toolbox.positive import Positive , Positive1280
+from lib.toolbox.temporary import Temporary , Temporary1280
 from lib.toolbox.tools import Tools
 from lib.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
@@ -204,7 +204,15 @@ class Data :
   #End of merge-all function
 
 
-  def concat_all(self , similar_mode) :
+  def _concat_all(self , similar_mode = False , target = None , is_sdxl_input = False) :
+    
+    #Set default value
+    is_sdxl = is_sdxl_input
+    if target == None: 
+      target = self.vector
+      is_sdxl = False
+    #####
+
     log = []
     log.append('Concat Mode :')
 
@@ -212,19 +220,19 @@ class Data :
     current = None
     dist = None
     tmp = None
-    origin = self.vector.origin.cpu()
+    origin = target.origin.cpu()
 
     no_of_tokens = 0
     distance = torch.nn.PairwiseDistance(p=2)
 
     for index in range (MAX_NUM_MIX):
-      if (self.vector.isEmpty.get(index)): continue 
+      if (target.isEmpty.get(index)): continue 
       no_of_tokens+=1
       
       if similar_mode : 
-        current , message = self.replace_with_similar(index)
+        current , message = self.replace_with_similar(index , is_sdxl)
         log.append(message)
-      else : current = self.vector.get(index).cpu()
+      else : current = target.get(index).cpu()
 
       current_weight = 1 #Will fix later
 
@@ -243,22 +251,42 @@ class Data :
     log.append('New embedding has '+ str(no_of_tokens) + ' tokens')
     log.append('-------------------------------------------')
     return output , '\n'.join(log)
-  
-  def replace_with_similar(self , index):
-      assert not (self.vector.isEmpty.get(index)) , "Empty token!"
+
+  def concat_all(self , similar_mode , is_sdxl = False):
+    target = None
+    if is_sdxl : target = self.vector1280
+    else : target = self.vector
+    return self._concat_all(self , similar_mode , target , is_sdxl)
+  ######
+
+  def _replace_with_similar(self , index , \
+   target = None , positive = None , negative = None):
+
+      conds = \
+        (target == None) or \
+        (positive == None) or \
+        (negative == None)
+      
+      if conds: 
+        target = self.vector
+        positive = self.positive
+        negative = self.positive
+      ######
+
+      assert not (target.isEmpty.get(index)) , "Empty token!"
       log = []
       dist = None
       current = None
       cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
       distance = torch.nn.PairwiseDistance(p=2)
       radialGain = 0.001 #deprecated
-      randomGain = self.vector.randomization/100  
+      randomGain = target.randomization/100  
       pursuit_strength = self.pursuit_strength/100
       doping_strength = self.doping_strength/100
-      origin = self.vector.origin.to(device="cpu" , dtype = torch.float32)
-      size = self.vector.size
-      gain = self.vector.gain
-      N = self.vector.itermax
+      origin = target.origin.to(device="cpu" , dtype = torch.float32)
+      size = target.size
+      gain = target.gain
+      N = target.itermax
       T = 1/N  
 
       similarity = None
@@ -267,7 +295,7 @@ class Data :
       no_of_tokens = 0
       iters = 0
 
-      tensor = self.vector.get(index).to(device="cpu" , dtype = torch.float32)
+      tensor = target.get(index).to(device="cpu" , dtype = torch.float32)
       dist_expected = distance(tensor, origin).to(device="cpu" , dtype = torch.float32)
       current = ((1/dist_expected) * tensor)\
       .to(device="cpu" , dtype = torch.float32)  #Tensor as unit vector
@@ -275,7 +303,7 @@ class Data :
       #Count the negatives
       no_of_negatives = 0
       for neg_index in range(MAX_NUM_MIX):
-        if self.negative.isEmpty.get(neg_index): continue
+        if negative.isEmpty.get(neg_index): continue
         no_of_negatives += 1
       #####
 
@@ -284,7 +312,7 @@ class Data :
       positives = []
       no_of_positives = 0
       for pos_index in range(MAX_NUM_MIX):
-        if self.positive.isEmpty.get(pos_index): continue
+        if positive.isEmpty.get(pos_index): continue
         no_of_positives += 1
         positives.append(pos_index)
       #####
@@ -314,8 +342,8 @@ class Data :
       worst_psim = None
       best_psim = None
       tmp = None
-      neg_strength = self.negative.strength/100
-      pos_strength = self.positive.strength/100
+      neg_strength = negative.strength/100
+      pos_strength = positive.strength/100
       #######
       best_similarity_score = None
       best_negative_similarity = None
@@ -324,7 +352,7 @@ class Data :
       best_worst_neg_index = None
       best_worst_pos_index = None
       best = None
-      doping = torch.zeros(self.vector.size).to(device="cpu" , dtype = torch.float32)
+      doping = torch.zeros(target.size).to(device="cpu" , dtype = torch.float32)
       #######
 
       randomReduce = pursuit_strength*randomGain/N
@@ -337,7 +365,7 @@ class Data :
         doping = None
         if lenpos>0 and doping_strength>0:
 
-          doping = self.positive.get(random.choice(positives))\
+          doping = positive.get(random.choice(positives))\
           .to(device = "cpu" , dtype = torch.float32)
 
           ddist = distance(doping , origin)\
@@ -349,9 +377,9 @@ class Data :
           .to(device = "cpu" , dtype = torch.float32) 
 
         ##### Calculate random vector
-        rand_vec = torch.rand(self.vector.size)\
+        rand_vec = torch.rand(target.size)\
         .to(device = "cpu" , dtype = torch.float32)
-        ones = torch.ones(self.vector.size)\
+        ones = torch.ones(target.size)\
         .to(device = "cpu" , dtype = torch.float32)
         rand_vec  = (2*rand_vec - ones)\
         .to(device = "cpu" , dtype = torch.float32)
@@ -367,7 +395,6 @@ class Data :
         .to(device = "cpu" , dtype = torch.float32)
         rando = (rand_vec * (1/rdist))\
         .to(device = "cpu" , dtype = torch.float32)
-
 
         #Calculate candidate vector
         if best == None : 
@@ -385,7 +412,6 @@ class Data :
         cdist = distance(candidate_vec, origin).to(device = "cpu" , dtype = torch.float32)
         candidate_vec = (candidate_vec*(1/cdist)).to(device = "cpu" , dtype = torch.float32)
 
-
         similarity = (100*cos(current, candidate_vec)\
         .to(device = "cpu" , dtype = torch.float32)).numpy()[0]
         if similarity<0 : similarity = -similarity
@@ -393,8 +419,8 @@ class Data :
         #Check negatives
         if no_of_negatives > 0: 
           for neg_index in range(MAX_NUM_MIX) :
-            if self.negative.isEmpty.get(neg_index): continue
-            neg_vec = self.negative.get(neg_index).to(device="cpu" , dtype = torch.float32)
+            if negative.isEmpty.get(neg_index): continue
+            neg_vec = negative.get(neg_index).to(device="cpu" , dtype = torch.float32)
             ndist = distance(neg_vec, origin).to(device = "cpu" , dtype = torch.float32)
             neg_vec = (neg_vec *(1/ndist)).to(device = "cpu" , dtype = torch.float32)
             tmp = math.floor((100*100*cos(neg_vec, candidate_vec)).numpy()[0])
@@ -415,8 +441,8 @@ class Data :
         pos_vec = None
         if no_of_positives > 0: 
           for pos_index in range(MAX_NUM_MIX) :
-            if self.positive.isEmpty.get(pos_index): continue
-            pos_vec = self.positive.get(pos_index)\
+            if positive.isEmpty.get(pos_index): continue
+            pos_vec = positive.get(pos_index)\
             .to(device="cpu" , dtype = torch.float32)
 
             pdist = distance(pos_vec, origin)\
@@ -533,8 +559,24 @@ class Data :
         "to token '" + self.positive.name.get(best_pos_index) + "'")
       ######
       log.append('Search took ' + str(iters) + ' iterations')
-
       return similar_token , '\n'.join(log)
+
+  def replace_with_similar(self , index , is_sdxl = False):
+    if is_sdxl: 
+      return self._replace_with_similar(
+        index , 
+        self.vector1280, 
+        self.positive1280 , 
+        self.negative1280)
+    else:
+      return self._replace_with_similar(
+        index , 
+        self.vector, 
+        self.positive , 
+        self.negative)
+  ###### End of replace_with_similar
+
+  
 
   def merge_if_similar(self, similar_mode):
     log = []
@@ -685,15 +727,11 @@ class Data :
     log.append('-------------------------------------------')
     return output , '\n'.join(log)
 
-  def text_to_emb_ids(self, text , is_sdxl = False):
+  def text_to_emb_ids(self, text):
     text = copy.copy(text.lower())
-
     emb_ids = None
     if self.tools.is_sdxl : #SDXL detected
         emb_ids = self.tools.tokenizer.encode(text)
-        #from pprint import pprint
-        #pprint(emb_ids)
-        #emb_ids = self.tools.tokenizer(text, truncation=False, add_special_tokens=False)["input_ids"]
     elif self.tools.tokenizer.__class__.__name__== 'CLIPTokenizer': # SD1.x detected
         emb_ids = self.tools.tokenizer(text, truncation=False, add_special_tokens=False)["input_ids"]
     elif self.tools.tokenizer.__class__.__name__== 'SimpleTokenizer': # SD2.0 detected
@@ -709,10 +747,10 @@ class Data :
       return None
     if emb_id < 0 :
       return None
-    if is_sdxl:return self.tools.internal_sdxl_embs[emb_id].to(device="cpu" , dtype = torch.float32)
+    if is_sdxl: return self.tools.internal_sdxl_embs[emb_id].to(device="cpu" , dtype = torch.float32)
     else : return self.tools.internal_embs[emb_id].to(device="cpu" , dtype = torch.float32)
 
-  def emb_id_to_name(self, text , is_sdxl = False):
+  def emb_id_to_name(self, text):
     emb_id = copy.copy(text)
     emb_name_utf8 = self.tools.tokenizer.decoder.get(emb_id)
     if emb_name_utf8 != None:
@@ -767,17 +805,22 @@ class Data :
       return emb_names, emb_ids, emb_vecs, None # return embedding name, ID, vector
 
   def shuffle(self , to_negative = None , to_mixer = None , \
-  to_positive = None , to_temporary = None):
+  to_positive = None , to_temporary = None , is_sdxl = False):
 
     if to_negative == None and to_mixer == None \
     and to_positive == None and to_temporary == None : 
-      self.vector.shuffle()
+
+      if is_sdxl : self.vector1280.shuffle()
+      else: self.vector.shuffle()
+
     else:
       if to_negative != None :
         if to_negative : pass # Not implemented
       #####
       if to_mixer != None : 
-        if to_mixer : self.vector.shuffle()
+        if to_mixer : 
+          if is_sdxl : self.vector1280.shuffle()
+          else: self.vector.shuffle()
       #####
       if to_temporary != None : 
         if to_temporary : pass # Not implemented
@@ -787,17 +830,20 @@ class Data :
   ######## End of shuffle function
 
   def roll (self , to_negative = None , to_mixer = None , \
-  to_positive = None , to_temporary = None):
+  to_positive = None , to_temporary = None , is_sdxl = False):
     message = ''
     if to_negative == None and to_mixer == None \
     and to_positive == None and to_temporary == None : 
-      message = self.vector.roll()
+      if is_sdxl : message = self.vector1280.roll()
+      else : message = self.vector.roll()
     else:
       if to_negative != None :
         if to_negative : pass # Not implemented
       #####
       if to_mixer != None : 
-        if to_mixer : message = self.vector.roll()
+        if to_mixer : 
+          if is_sdxl : message = self.vector1280.roll()
+          else : message = self.vector.roll()
       #####
       if to_temporary != None : 
         if to_temporary : pass # Not implemented
@@ -808,7 +854,7 @@ class Data :
   ######## End of roll function
 
   def random(self , is_sdxl = False):
-    if is_sdxl : return self.vector.random(self.tools.internal_sdxl_embs)
+    if is_sdxl : return self.vector1280.random(self.tools.internal_sdxl_embs)
     else : return self.vector.random(self.tools.internal_embs)
   ### End of random()
 
@@ -830,7 +876,7 @@ class Data :
       if to_mixer != None : 
         if to_mixer : 
           if is_sdxl : message = self.vector.sample(self.tools.internal_sdxl_embs)
-          else: message = self.vector.sample(self.tools.internal_embs)
+          else: message = self.vector1280.sample(self.tools.internal_embs)
       #####
       if to_temporary != None : 
         if to_temporary : pass #Not implemented
@@ -842,7 +888,7 @@ class Data :
 
   def place(self, index , vector = None , ID = None ,  name = None , \
     weight = None , to_negative = None , to_mixer = None ,  \
-    to_positive = None ,  to_temporary = None):
+    to_positive = None ,  to_temporary = None , is_sdxl = False):
 
     #Helper function
     def _place_values_in(target) :
@@ -859,16 +905,24 @@ class Data :
     else:
     
       if to_negative != None :
-        if to_negative : _place_values_in(self.negative)
+        if to_negative : 
+          if is_sdxl : _place_values_in(self.negative1280)
+          else: _place_values_in(self.negative)
 
       if to_mixer != None : 
-        if to_mixer : _place_values_in(self.vector)
+        if to_mixer : 
+          if is_sdxl : _place_values_in(self.vector1280)
+          else: _place_values_in(self.vector)
 
       if to_temporary != None : 
-        if to_temporary : _place_values_in(self.temporary)
+        if to_temporary : 
+          if is_sdxl : _place_values_in(self.temporary1280)
+          else: _place_values_in(self.temporary)
 
       if to_positive != None : 
-        if to_positive : _place_values_in(self.positive)
+        if to_positive : 
+          if is_sdxl : _place_values_in(self.positive1280)
+          else: _place_values_in(self.positive)
   #### End of place()
 
   def memorize(self) : 
@@ -886,6 +940,19 @@ class Data :
       self.temporary.ID.place(self.ID , index)
       self.temporary.name.place(self.name , index)
       self.temporary.weight.place(self.weight , index)
+      ########
+      if self.vector1280.isEmpty.get(index) : continue
+      self.vec = self.vector1280.get(index)\
+      .to(device = "cpu" , dtype = torch.float32)
+      self.ID = copy.copy(self.vector1280.ID.get(index))
+      self.name = copy.copy(self.vector1280.name.get(index))
+      self.weight = copy.copy(self.vector1280.weight.get(index))
+      ########
+      self.temporary1280.clear(index)
+      self.temporary1280.place(self.vec , index)
+      self.temporary1280.ID.place(self.ID , index)
+      self.temporary1280.name.place(self.name , index)
+      self.temporary1280.weight.place(self.weight , index)
   ###### End of memorize()
 
   def recall(self) :
@@ -902,6 +969,19 @@ class Data :
       self.vector.ID.place(self.ID , index)
       self.vector.name.place(self.name, index)
       self.vector.weight.place(self.weight , index)
+      ########
+      if self.temporary1280.isEmpty.get(index) : continue
+      self.vec = self.temporary1280.get(index)\
+      .to(device = "cpu" , dtype = torch.float32)
+      self.ID = copy.copy(self.temporary1280.ID.get(index))
+      self.name = copy.copy(self.temporary1280.name.get(index))
+      self.weight = copy.copy(self.temporary1280.weight.get(index))
+      #######
+      self.vector1280.clear(index)
+      self.vector1280.place(self.vec , index)
+      self.vector1280.ID.place(self.ID , index)
+      self.vector1280.name.place(self.name, index)
+      self.vector1280.weight.place(self.weight , index)
   ###### End of recall()
 
   def norm (self, tensor , origin_input , distance_fcn):
@@ -941,10 +1021,22 @@ class Data :
         if sim < 0 : sim = -sim
         return  str(round(sim.numpy()[0] , 2))
 
-  def get(self , index):
-    vector = self.vector.get(index).to(device = "cpu" , dtype = torch.float32)
-    ID = self.vector.ID.get(index)
-    name = self.vector.name.get(index)
+  def get(self , index , is_sdxl = False):
+
+    vector = None
+    ID = None
+    name = None
+
+    if is_sdxl:
+      vector = self.vector1280.get(index).to(device = "cpu" , dtype = torch.float32)
+      ID = self.vector1280.ID.get(index)
+      name = self.vector1280.name.get(index)
+    else:
+      vector = self.vector.get(index).to(device = "cpu" , dtype = torch.float32)
+      ID = self.vector.ID.get(index)
+      name = self.vector.name.get(index)
+
+
     return vector , ID ,  name
 
   def update_loaded_embs(self):
@@ -968,7 +1060,7 @@ class Data :
   ######### End of refresh()
 
   def clear (self, index , to_negative = None , to_mixer = None , \
-  to_positive = None , to_temporary = None):
+  to_positive = None , to_temporary = None , is_sdxl = False):
 
     if to_negative == None and to_mixer == None \
     and to_positive == None and to_temporary == None:
@@ -978,19 +1070,32 @@ class Data :
       self.positive.clear(index)
       self.temporary.clear(index)
 
+      self.vector1280.clear(index)
+      self.negative1280.clear(index)
+      self.positive1280.clear(index)
+      self.temporary1280.clear(index)
+
     else:
 
       if to_negative != None:
-        if to_negative: self.negative.clear(index)
+        if to_negative: 
+          self.negative.clear(index)
+          self.negative1280.clear(index)
 
       if to_mixer!= None:
-        if to_mixer: self.vector.clear(index)
+        if to_mixer: 
+          self.vector.clear(index)
+          self.vector1280.clear(index)
 
       if to_temporary!= None:
-        if to_temporary: self.temporary.clear(index)
+        if to_temporary: 
+          self.temporary.clear(index)
+          self.temporary1280.clear(index)
 
       if to_positive!= None:
-        if to_positive: self.positive.clear(index)
+        if to_positive: 
+          self.positive.clear(index)
+          self.positive1280.clear(index)
   ########## End of clear()
 
   def set_unfiltered_indices(self, unfiltered_indices):
@@ -1002,14 +1107,31 @@ class Data :
   ###### End of set_filter_by_name()
 
   def __init__(self):
+
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
     except: 
       sd_hijack.model_hijack.embedding_db.dir_mtime=0
       sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
       
+    #Data parameteres
     Data.tools = Tools()
+    ###
+    Data.vector = None
+    Data.negative = None
+    Data.positive = None
+    Data.temporary = None
+    ###
+    Data.vector1280 = None
+    Data.negative1280 = None
+    Data.positive1280 = None
+    Data.temporary1280 = None
+    ###
+    Data.pursuit_strength = 0
+    Data.doping_strength = 0
+    ######
 
+    ## There params should be removed
     Data.vec= None
     Data.ID = None
     Data.name = None
@@ -1018,25 +1140,39 @@ class Data :
     Data.emb_id = None
     Data.emb_vec = None
     Data.loaded_emb = None
-    Data.vector = None
-    Data.negative = None
-    Data.temporary = None
-
-    Data.pursuit_strength = 0
-    Data.doping_strength = 0
+    ########
 
     if self.tools.loaded:
-      self.emb_name, Data.emb_id, Data.emb_vec , Data.loaded_emb = self.get_embedding_info('test')
-      self.vector = Vector(self.emb_vec.shape[1])
-      self.negative = Negative(self.emb_vec.shape[1])
-      self.positive = Positive(self.emb_vec.shape[1])
-      self.temporary = Temporary(self.emb_vec.shape[1])
+      emb_name, emb_id, emb_vec , loaded_emb = \
+      self.get_embedding_info(',')
+      ####
+      sdxl_emb_name, sdxl_emb_id, sdxl_emb_vec , sdxl_loaded_emb = \
+      self.get_embedding_info(',', is_sdxl = True)
+      ####
+      size = emb_vec.shape[1]
+      sdxl_size = sdxl_emb_vec.shape[1]
+      ####
+      self.vector = Vector(size)
+      self.negative = Negative(size)
+      self.positive = Positive(size)
+      self.temporary = Temporary(size)
+      ######
+      self.vector1280 = Vector1280(sdxl_size)
+      self.negative1280 = Negative1280(sdxl_size)
+      self.positive1280 = Positive1280(sdxl_size)
+      self.temporary1280 = Temporary1280(sdxl_size)
     else: 
       #Just set size to 3 if no model can be loaded
       self.vector = Vector(3)
       self.negative = Negative(3)
       self.positive = Positive(3)
       self.temporary = Temporary(3)
+      ####
+      self.vector1280 = Vector1280(3)
+      self.negative1280 = Negative1280(3)
+      self.positive1280 = Positive1280(3)
+      self.temporary1280 = Temporary1280(3)
+    #####
 
 
 #End of Data class

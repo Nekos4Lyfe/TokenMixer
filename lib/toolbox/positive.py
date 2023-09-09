@@ -24,7 +24,9 @@ class Positive :
   def validate(self, tensor) :
     assert tensor != None , "Null tensor!"
     assert tensor.shape[0] == 1 , "Too many tensors!"
-    assert tensor.shape[1] == self.size , "Wrong tensor dim!"
+    assert tensor.shape[1] == self.size , \
+    "Wrong tensor dim! Size should be " + str(self.size) + " but input was "
+    "size " + str(tensor.shape[1])
 
   def place(self, tensor , index) :
     if (tensor != None) :
@@ -78,7 +80,7 @@ from lib.toolbox.stringlist import StringList7
 ####
 class Positive1280 (Positive) :
   def __init__(self , size):
-    super().__init__()
+    super().__init__(size)
     #Vector768 is used by SDXL to store 1x768 Vectors , while
     #the Vector class is used by SDXL to store 1x1280 Vectors
     self.ID = IntList7(0)

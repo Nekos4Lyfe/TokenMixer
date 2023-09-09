@@ -28,8 +28,9 @@ class MiniTokenizer:
     stack_mode = args[7]
     literal_mode = args[8]
     random_token_length_randomization = (1/100) * args[9]
-
     name_list = []
+
+    is_sdxl = self.data.tools.is_sdxl
     
     send_to_temporary = False
 
@@ -197,7 +198,7 @@ class MiniTokenizer:
       sdxl_emb_ids = None
       sdxl_emb_vecs = None 
       sdxl_loaded_emb = None
-      if self.data.tools.is_sdxl:
+      if is_sdxl:
         sdxl_emb_name, sdxl_emb_ids, sdxl_emb_vecs , sdxl_loaded_emb  = \
         self.data.get_embedding_info(tmp , is_sdxl = True)
       ########
@@ -234,7 +235,7 @@ class MiniTokenizer:
           assert emb_vec != None , "emb_vec is NoneType"
           ####
           sdxl_emb_vec = None
-          if self.data.tools.is_sdxl: 
+          if is_sdxl: 
             sdxl_emb_vec = sdxl_emb_vecs[token_num]\
             .to(device = "cpu" , dtype = torch.float32)
             assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
@@ -248,7 +249,18 @@ class MiniTokenizer:
               to_mixer = sendtomix , 
               to_positive = send_to_positives ,
               to_temporary = send_to_temporary)
-          
+
+          if is_sdxl:
+            self.data.place(index , 
+              vector = sdxl_emb_vec.unsqueeze(0) ,
+              ID = 0 ,
+              name = emb_name + '_' + str(token_num) , 
+              to_negative = send_to_negatives , 
+              to_mixer = sendtomix , 
+              to_positive = send_to_positives ,
+              to_temporary = send_to_temporary , 
+              is_sdxl = True)
+          #######
 
           if (splitbox != '') : splitbox = splitbox + ' , '    
           splitbox =  splitbox + emb_name + '_' + str(token_num)
@@ -277,6 +289,17 @@ class MiniTokenizer:
             to_mixer = sendtomix , 
             to_positive = send_to_positives , 
             to_temporary = send_to_temporary)
+
+          if is_sdxl:
+            self.data.place(index , 
+              vector = sdxl_emb_vec.unsqueeze(0) ,
+              ID = 0 ,
+              name = emb_name + '_' + str(token_num) , 
+              to_negative = send_to_negatives , 
+              to_mixer = sendtomix , 
+              to_positive = send_to_positives ,
+              to_temporary = send_to_temporary , 
+              is_sdxl = True)
 
         ID_index+=1 
         if ID_index+1> no_of_IDs : 
