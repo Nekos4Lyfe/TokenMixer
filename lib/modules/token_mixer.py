@@ -16,14 +16,12 @@ from lib.data import dataStorage
 class TokenMixer :
 
   def Reset (self):
-
     for index in range(MAX_NUM_MIX):
       self.data.clear(
         index, 
         to_negative = True ,
         to_mixer = True ,
         to_temporary = True)
-
     return '' , '' , '' , ''
 
   def Run(self, save_name) :
@@ -76,14 +74,14 @@ class TokenMixer :
 
     self.data.memorize() #Store all initial vector values in a temporary list
     message = ''
-    if (self.local.order_randomize_mode): self.data.shuffle()
+    if (self.local.order_randomize_mode): self.data.shuffle(is_sdxl = self.data.tools.is_sdxl)
 
     if (self.local.roll_mode): 
-      message = self.data.roll()
+      message = self.data.roll(is_sdxl = self.data.tools.is_sdxl)
       log.append(message)
 
     if (self.local.sample_mode) and not (self.local.similar_mode): 
-      message = self.data.sample()
+      message = self.data.sample(is_sdxl = self.data.tools.is_sdxl)
       log.append(message)
 
     ###########
@@ -95,6 +93,20 @@ class TokenMixer :
     else : 
       tot_vec , message = self.data.concat_all(self.local.similar_mode)
     log.append(message)
+    ######
+    if self.data.tools.is_sdxl:
+      sdxl_tot_vec = torch.zeros((tot_vec.shape[0], self.data.vector1280.size))
+      if(self.local.interpolate_mode):
+        pass # Not implemented yet
+      elif (self.local.merge_mode): 
+        pass # Not implemented yet
+      else : 
+        sdxl_tot_vec , message = \
+        self.data.concat_all(self.local.similar_mode , \
+        is_sdxl = self.data.tools.is_sdxl)
+      log.append(message)
+    ########
+
 #END PROCESSING THE VECTORS
 
       # save the mixed embedding
@@ -128,15 +140,12 @@ class TokenMixer :
                 else:  log.append('File already exists, overwrite is enabled')
             #######
 
-
            #Save the embedding           
             try:  
-
                 if self.data.tools.is_sdxl: 
                   tensors = {
-                  "clip_g": torch.zeros((tot_vec.shape[0], 1280)) , 
+                  "clip_g": sdxl_tot_vec , 
                   "clip_l": tot_vec
-
                   }
                   save_file(tensors, save_filename)
                 else: Embedding(tot_vec, save_name).save(save_filename)
@@ -864,7 +873,6 @@ class TokenMixer :
                                       "in the Token Calculator to get the desired output. \n \n " + \
                                       "Enabling 'Allow Negative Gain' option will have unpredictible effects on the output of the TokenMixer")
                                   
-
                               with gr.Accordion('Interpolate Mode Settings',open=False):
                                 self.inputs.sliders.interpolate = gr.Slider(minimum=0, maximum=100, step=0.1, label="Req. similarity to merge %", default=50 , interactive = True)
    

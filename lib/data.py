@@ -28,7 +28,7 @@ class Data :
 
     cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
     distance = torch.nn.PairwiseDistance(p=2)
-
+    #shuffle
     #Count the negatives
     no_of_negatives = 0
     for neg_index in range(MAX_NUM_MIX):
@@ -256,7 +256,7 @@ class Data :
     target = None
     if is_sdxl : target = self.vector1280
     else : target = self.vector
-    return self._concat_all(self , similar_mode , target , is_sdxl)
+    return self._concat_all(similar_mode , target , is_sdxl)
   ######
 
   def _replace_with_similar(self , index , \
@@ -813,7 +813,7 @@ class Data :
     and to_positive == None and to_temporary == None : 
 
       if is_sdxl : self.vector1280.shuffle()
-      else: self.vector.shuffle()
+      self.vector.shuffle()
 
     else:
       if to_negative != None :
@@ -822,7 +822,7 @@ class Data :
       if to_mixer != None : 
         if to_mixer : 
           if is_sdxl : self.vector1280.shuffle()
-          else: self.vector.shuffle()
+          self.vector.shuffle()
       #####
       if to_temporary != None : 
         if to_temporary : pass # Not implemented
@@ -834,25 +834,39 @@ class Data :
   def roll (self , to_negative = None , to_mixer = None , \
   to_positive = None , to_temporary = None , is_sdxl = False):
     message = ''
+    log = []
     if to_negative == None and to_mixer == None \
     and to_positive == None and to_temporary == None : 
-      if is_sdxl : message = self.vector1280.roll()
-      else : message = self.vector.roll()
+      if is_sdxl :
+        log.append("Performing roll on 1280 dimension vectors : ") 
+        message = self.vector1280.roll()
+        log.append(message)
+      #######
+      log.append("Performing roll on 768 dimension vectors : ") 
+      message = self.vector.roll()
+      log.append(message)
     else:
       if to_negative != None :
         if to_negative : pass # Not implemented
       #####
       if to_mixer != None : 
         if to_mixer : 
-          if is_sdxl : message = self.vector1280.roll()
-          else : message = self.vector.roll()
+          if is_sdxl : 
+            log.append("Performing roll on 1280 dimension vectors : ")
+            message = self.vector1280.roll()
+            log.append(message)
+          ######
+          log.append("Performing roll on 768 dimension vectors : ") 
+          message = self.vector.roll()
+          log.append(message)
       #####
       if to_temporary != None : 
         if to_temporary : pass # Not implemented
-
+      ######
       if to_positive != None : 
         if to_positive : pass # Not implemented
-    return message
+    #####
+    return '\n'.join(log)
   ######## End of roll function
 
   def random(self , is_sdxl = False):
@@ -867,25 +881,38 @@ class Data :
   def sample(self , to_negative = None , to_mixer = None , \
     to_positive = None , to_temporary = None , is_sdxl = False):
     message = ''
+    log = []
     if to_negative == None and to_mixer == None \
     and to_positive == None and to_temporary == None:
-      if is_sdxl : self.vector.sample(self.tools.internal_sdxl_embs)
-      else : message = self.vector.sample(self.tools.internal_embs)
+      if is_sdxl : 
+        log.append("Performing sample on 1280 dim vectors")
+        message = self.vector1280.sample(self.tools.internal_sdxl_embs)
+        log.append(message)
+      #######
+      log.append("Performing sample on 768 dim vectors")
+      message = self.vector.sample(self.tools.internal_embs)
+      log.append(message)
     else:
       if to_negative != None :
         if to_negative  : pass #Not implemented
       #####
       if to_mixer != None : 
         if to_mixer : 
-          if is_sdxl : message = self.vector.sample(self.tools.internal_sdxl_embs)
-          else: message = self.vector1280.sample(self.tools.internal_embs)
-      #####
+          if is_sdxl : 
+            log.append("Performing sample on 1280 dim vectors")
+            message = self.vector1280.sample(self.tools.internal_sdxl_embs)
+            log.append(message)
+          #######
+          log.append("Performing sample on 768 dim vectors")
+          message = self.vector.sample(self.tools.internal_embs)
+          log.append(message)
+      #########
       if to_temporary != None : 
         if to_temporary : pass #Not implemented
     #####
       if to_positive != None : 
         if to_positive : pass #Not implemented
-    return message
+    return '\n'.join(log)
   ### End of sample()
 
   def place(self, index , vector = None , ID = None ,  name = None , \
@@ -1150,7 +1177,7 @@ class Data :
       sdxl_emb_name, sdxl_emb_id, sdxl_emb_vec , sdxl_loaded_emb = \
       self.get_embedding_info(',', is_sdxl = True)
       ####
-      size = 768
+      size = emb_vec.shape[1]
       sdxl_size = sdxl_emb_vec.shape[1]
       ####
       self.vector = Vector(size)
