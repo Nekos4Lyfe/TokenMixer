@@ -16,7 +16,7 @@ This extension is published under a MIT License.
 
 ## Latest update
 
-TokenMixer is now SDXL compatible (although only the first text encoder. Will add the second encoder shortly)
+TokenMixer is now SDXL compatible (although only the first text encoder. Will add the second encoder shortly. Expect frequent changes in the repo)
 
 ![blub1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/58f36df8-5a77-4d23-a1dd-56dd0d0a46b7)
 
