@@ -183,7 +183,6 @@ class Tools :
           Tools.no_of_sdxl_internal_embs = len(internal_sdxl_embs)
         ######
 
-        assert sdxl_tokenizer != None , "sdxl_tokenizer is NoneType"
         self.is_sdxl = is_sdxl
         self.sdxl_tokenizer = tokenizer #<<<<--- NOTE
 
