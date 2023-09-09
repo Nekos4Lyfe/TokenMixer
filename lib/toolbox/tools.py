@@ -180,11 +180,10 @@ class Tools :
 
         assert sdxl_tokenizer != None , "sdxl_tokenizer is NoneType"
         self.is_sdxl = is_sdxl
-        self.sdxl_tokenizer = tokenizer
+        self.sdxl_tokenizer = tokenizer #<<<<--- NOTE
 
         #SDXL quick fix
-        if is_sdxl: 
-          pass
+        if is_sdxl: pass
         ########
 
         #Quick Hack

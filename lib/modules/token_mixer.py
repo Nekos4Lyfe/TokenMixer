@@ -134,8 +134,8 @@ class TokenMixer :
 
                 if self.data.tools.is_sdxl: 
                   tensors = {
-                  "clip_g": tot_vec , 
-                  "clip_l": torch.zeros((tot_vec.shape[0], 768))
+                  "clip_g": torch.zeros((tot_vec.shape[0], 1280)) , 
+                  "clip_l": tot_vec
 
                   }
                   save_file(tensors, save_filename)

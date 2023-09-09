@@ -54,7 +54,7 @@ class MiniTokenizer:
 
     distance = torch.nn.PairwiseDistance(p=2)
     origin = self.data.vector.origin.cpu()
-
+    #get_embedding_info
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
     except: 
@@ -191,6 +191,17 @@ class MiniTokenizer:
             end = numbers[1]
       ##########
       emb_name, emb_ids, emb_vecs , loaded_emb  = self.data.get_embedding_info(tmp)
+      ###
+      #SDXL Stuff
+      sdxl_emb_name = None
+      sdxl_emb_ids = None
+      sdxl_emb_vecs = None 
+      sdxl_loaded_emb = None
+      if self.tools.is_sdxl:
+        sdxl_emb_name, sdxl_emb_ids, sdxl_emb_vecs , sdxl_loaded_emb  = \
+        self.data.get_embedding_info(tmp , is_sdxl = True)
+      ########
+
       no_of_tokens = emb_vecs.shape[0]
       if no_of_tokens > MAX_NUM_MIX : no_of_tokens = MAX_NUM_MIX
       if tmp == None : end = no_of_tokens
@@ -218,9 +229,17 @@ class MiniTokenizer:
             token_num += 1 #Skip until token_num==start
             continue
 
+          #Fetch the vector
           emb_vec = emb_vecs[token_num].to(device = "cpu" , dtype = torch.float32)
-
           assert emb_vec != None , "emb_vec is NoneType"
+          ####
+          sdxl_emb_vec = None
+          if self.tools.is_sdxl: 
+            sdxl_emb_vec = sdxl_emb_vecs[token_num]\
+            .to(device = "cpu" , dtype = torch.float32)
+            assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
+          ######
+
           self.data.place(index , 
               vector = emb_vec.unsqueeze(0) ,
               ID = 0 ,

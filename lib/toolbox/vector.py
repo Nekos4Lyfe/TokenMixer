@@ -295,7 +295,7 @@ from lib.toolbox.intlist import IntList5
 from lib.toolbox.boolist import BooList5
 from lib.toolbox.stringlist import StringList5
 ####
-class Vector768 (Vector) :
+class Vector1280 (Vector) :
   def __init__(self , size):
     super().__init__()
     #Vector768 is used by SDXL to store 1x768 Vectors , while

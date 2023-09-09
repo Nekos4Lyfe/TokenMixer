@@ -68,3 +68,22 @@ class Negative :
     Negative.weight = FloatList2(1)
     Negative.strength = 0
 #End of Negative class
+
+###### SDXL STUFF #####
+
+# Negative1280
+from lib.toolbox.floatlist import FloatList8
+from lib.toolbox.intlist import IntList8
+from lib.toolbox.boolist import BooList8
+from lib.toolbox.stringlist import StringList8
+####
+class Negative1280 (Negative) :
+  def __init__(self , size):
+    super().__init__()
+    # Negative1280 is used by SDXL to store 1x768 Vectors , while
+    #the Vector class is used by SDXL to store 1x1280 Vectors
+    self.ID = IntList8(0)
+    self.name = StringList8()
+    self.isEmpty = BooList8(True)
+    self.weight = FloatList8(1)
+#End of  Negative1280

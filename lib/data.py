@@ -687,14 +687,19 @@ class Data :
 
   def text_to_emb_ids(self, text , is_sdxl = False):
     text = copy.copy(text.lower())
+
+    emb_ids = None
     if self.tools.is_sdxl : #SDXL detected
-        emb_ids = self.tools.sdxl_tokenizer.encode(text)
+        emb_ids = self.tools.tokenizer.encode(text)
+        #from pprint import pprint
+        #pprint(emb_ids)
         #emb_ids = self.tools.tokenizer(text, truncation=False, add_special_tokens=False)["input_ids"]
     elif self.tools.tokenizer.__class__.__name__== 'CLIPTokenizer': # SD1.x detected
         emb_ids = self.tools.tokenizer(text, truncation=False, add_special_tokens=False)["input_ids"]
     elif self.tools.tokenizer.__class__.__name__== 'SimpleTokenizer': # SD2.0 detected
         emb_ids =  self.tools.tokenizer.encode(text)
     else: emb_ids = None
+
     return emb_ids # return list of embedding IDs for text
 
   def emb_id_to_vec(self, emb_id , is_sdxl = False):
@@ -704,7 +709,8 @@ class Data :
       return None
     if emb_id < 0 :
       return None
-    return self.tools.internal_embs[emb_id].to(device="cpu" , dtype = torch.float32)
+    if is_sdxl:return self.tools.internal_sdxl_embs[emb_id].to(device="cpu" , dtype = torch.float32)
+    else : return self.tools.internal_embs[emb_id].to(device="cpu" , dtype = torch.float32)
 
   def emb_id_to_name(self, text , is_sdxl = False):
     emb_id = copy.copy(text)
@@ -747,7 +753,8 @@ class Data :
       for emb_id in emb_ids:
         emb_name = self.emb_id_to_name(emb_id)
         emb_names.append(emb_name)
-        emb_vec = self.tools.internal_embs[emb_id].unsqueeze(0)
+        if is_sdxl : emb_vec = self.tools.internal_sdxl_embs[emb_id].unsqueeze(0)
+        else : emb_vec = self.tools.internal_embs[emb_id].unsqueeze(0)
         emb_vecs.append(emb_vec)
     
       #Might have to fix later , idk
@@ -800,8 +807,9 @@ class Data :
     return message
   ######## End of roll function
 
-  def random(self):
-    return self.vector.random(self.tools.internal_embs)
+  def random(self , is_sdxl = False):
+    if is_sdxl : return self.vector.random(self.tools.internal_sdxl_embs)
+    else : return self.vector.random(self.tools.internal_embs)
   ### End of random()
 
   def random_quick(self):
@@ -809,17 +817,20 @@ class Data :
   ## End of random_quick()
 
   def sample(self , to_negative = None , to_mixer = None , \
-    to_positive = None , to_temporary = None):
+    to_positive = None , to_temporary = None , is_sdxl = False):
     message = ''
     if to_negative == None and to_mixer == None \
     and to_positive == None and to_temporary == None:
-      message = self.vector.sample(self.tools.internal_embs)
+      if is_sdxl : self.vector.sample(self.tools.internal_sdxl_embs)
+      else : message = self.vector.sample(self.tools.internal_embs)
     else:
       if to_negative != None :
         if to_negative  : pass #Not implemented
       #####
       if to_mixer != None : 
-        if to_mixer : message = self.vector.sample(self.tools.internal_embs)
+        if to_mixer : 
+          if is_sdxl : message = self.vector.sample(self.tools.internal_sdxl_embs)
+          else: message = self.vector.sample(self.tools.internal_embs)
       #####
       if to_temporary != None : 
         if to_temporary : pass #Not implemented
