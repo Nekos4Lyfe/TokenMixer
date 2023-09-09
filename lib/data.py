@@ -1067,7 +1067,7 @@ class Data :
 
 
     return vector , ID ,  name
-
+  #sample
   def update_loaded_embs(self):
     self.refresh()
 

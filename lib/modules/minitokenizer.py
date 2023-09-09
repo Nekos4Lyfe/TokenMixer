@@ -14,7 +14,6 @@ class MiniTokenizer:
   def Reset (self , mini_input , tokenbox) : 
     return '' , ''
 
-
   def Tokenize (self  , *args) :
 
     #Get the inputs
@@ -54,7 +53,8 @@ class MiniTokenizer:
     if not sendtomix : tokenmixer_vectors= mix_input
 
     distance = torch.nn.PairwiseDistance(p=2)
-    origin = self.data.vector.origin.cpu()
+    origin = self.data.vector.origin.to(device = "cpu" , dtype = torch.float32)
+    origin1280 = self.data.vector1280.origin.to(device = "cpu" , dtype = torch.float32)
     #get_embedding_info
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
@@ -139,9 +139,9 @@ class MiniTokenizer:
         emb_vec = (tmp/dist)*emb_vec
         #####
         if is_sdxl: 
-          sdxl_emb_vec = torch.rand(self.data.vector.size)\
+          sdxl_emb_vec = torch.rand(self.data.vector1280.size)\
           .to(device = "cpu" , dtype = torch.float32)
-          dist = distance(sdxl_emb_vec  , origin).numpy()[0]
+          dist = distance(sdxl_emb_vec  , origin1280).numpy()[0]
           tmp = random_token_length * \
           (1 - random_token_length_randomization*random.random())
           sdxl_emb_vec  = (tmp/dist)*sdxl_emb_vec 
