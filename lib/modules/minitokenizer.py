@@ -14,6 +14,65 @@ class MiniTokenizer:
   def Reset (self , mini_input , tokenbox) : 
     return '' , ''
 
+  def place (self , \
+    index  , \
+    send_to_negatives , \
+    sendtomix , \
+    send_to_positives , \
+    send_to_temporary , 
+    emb_id 
+    ) :
+
+    is_sdxl = self.data.tools.is_sdxl
+
+    #Do some checks
+    valid_ID = (emb_id < self.data.tools.no_of_internal_embs) and emb_id>=0
+    assert isinstance(emb_id , int) , \
+    "Error: emb id is not an integer , it is a " + str(type(emb_id)) + " !" 
+    if is_sdxl : valid_ID = valid_ID and \
+    (emb_id < self.data.tools.no_of_sdxl_internal_embs)
+    assert valid_ID , "Error: ID with value " + str(emb_id) + \
+    " is outside the range of permissable values from 0 to " + \
+    str(self.data.tools.no_of_internal_embs)
+    ####
+
+    #### Append start-of-text token (if model is SDXL)
+    if valid_ID :
+        emb_vec = self.data.tools.internal_embs[emb_id]\
+        .to(device = "cpu" , dtype = torch.float32)
+        emb_name = self.data.emb_id_to_name(emb_id)
+        assert emb_vec != None ,"emb_vec is NoneType!"
+
+        #Add to 768 dimension vectors
+        self.data.place(index , 
+            vector =  emb_vec.unsqueeze(0) ,
+            ID =  emb_id ,
+            name = emb_name , 
+            to_negative = send_to_negatives ,
+            to_mixer = sendtomix , 
+            to_positive = send_to_positives , 
+            to_temporary = send_to_temporary)
+
+        if is_sdxl:
+          sdxl_emb_vec = self.data.tools.internal_sdxl_embs[emb_id]\
+          .to(device = "cpu" , dtype = torch.float32)
+          assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
+
+          #Add to 1280 dimension vectors
+          self.data.place(index , 
+              vector = sdxl_emb_vec.unsqueeze(0) ,
+              ID = emb_id ,
+              name = emb_name , 
+              to_negative = send_to_negatives , 
+              to_mixer = sendtomix , 
+              to_positive = send_to_positives ,
+              to_temporary = send_to_temporary , 
+              is_sdxl = True)
+    ###############
+    return valid_ID
+
+
+
   def Tokenize (self  , *args) :
 
     #Get the inputs
@@ -28,40 +87,41 @@ class MiniTokenizer:
     literal_mode = args[8]
     random_token_length_randomization = (1/100) * args[9]
     name_list = []
-
-    is_sdxl = self.data.tools.is_sdxl
     
-    send_to_temporary = False
-
+    # Do some checks
     if mini_input == None : 
       for index in range(MAX_NUM_MIX):
         if self.data.vector.isEmpty.get(index): continue
         name_list.append(self.data.vector.name.get(index))
-      #####
       return tokenmixer_vectors , '' , '' , '' , '' , gr.Dropdown.update(choices = name_list)
-
     assert not (
           sendtomix == None or
           id_mode == None or
           send_to_negatives == None or
           random_token_length == None or
-          literal_mode == None or
-          send_to_temporary == None
+          literal_mode == None
           ) , "NoneType in Tokenizer input!"
+    ###########
 
+    send_to_temporary = False
     tokenmixer_vectors = ''
     if not sendtomix : tokenmixer_vectors= mix_input
 
+    # Vector length stuff
     distance = torch.nn.PairwiseDistance(p=2)
-    origin = self.data.vector.origin.to(device = "cpu" , dtype = torch.float32)
-    origin1280 = self.data.vector1280.origin.to(device = "cpu" , dtype = torch.float32)
-    #get_embedding_info
+    origin = self.data.vector.origin\
+    .to(device = "cpu" , dtype = torch.float32)
+    origin1280 = self.data.vector1280.origin\
+    .to(device = "cpu" , dtype = torch.float32)
+    #######
+
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
     except: 
       sd_hijack.model_hijack.embedding_db.dir_mtime=0
       sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings()
     self.data.update_loaded_embs() 
+    ########
 
     #clear all slots to give room for new data
     for index in range(MAX_NUM_MIX):
@@ -72,12 +132,15 @@ class MiniTokenizer:
           to_temporary = send_to_temporary)
     ######
 
+
+    #Convert text input to list of 'words'
     sentence = mini_input.strip().split()
     word_index = 0
     for splits in sentence :
       word_index += 1
     no_of_words = word_index 
     no_of_internal_embs = self.data.tools.no_of_internal_embs
+    ########
 
     #Parameters
     section = None
@@ -100,6 +163,20 @@ class MiniTokenizer:
     emb_vec = None
     sdxl_emb_vec = None
 
+    ## SDXL stuff
+    is_sdxl = self.data.tools.is_sdxl
+    start_of_text_ID = 49406
+    end_of_text_ID = 49407
+    ######
+    
+    #Append start_of_text_ID to output before loop (SDXL only)
+    first_index = 0
+    if is_sdxl:
+      self.place (first_index  , \
+      send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
+      start_of_text_ID) 
+    ######
+
     ########## Start loop : 
     for index in range(MAX_NUM_MIX):
       if sendtomix and not self.data.vector.isEmpty.get(index): continue
@@ -121,16 +198,15 @@ class MiniTokenizer:
           tokenmixer_vectors = tokenmixer_vectors + name
       ######
 
+      #Go word-for-word through the list of words
       if not word_index>0: continue
-
       word = sentence[no_of_words-word_index]
-
-
       if word == "," :  
         word_index -=1 
         continue  #Ignore comma inputs
       ########
 
+      # If word is '_' represent it as a random token
       if word == "_":
         emb_vec = torch.rand(self.data.vector.size).to(device = "cpu" , dtype = torch.float32)
         dist = distance(emb_vec , origin).numpy()[0]
@@ -149,7 +225,6 @@ class MiniTokenizer:
         emb_id = 0
         emb_name = "random_" + str(index)
       ###########
-
         self.data.place(index , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  emb_id ,
@@ -170,12 +245,11 @@ class MiniTokenizer:
               to_temporary = send_to_temporary , 
               is_sdxl = True)
         ##########
-
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
         tokenbox =  tokenbox + emb_name + '_#' + str(emb_id)
         word_index -=1 
         continue
-      ##########
+      ########## End of the '_' random token stuff
 
       #Extract emb_vec from emb_id if id_mode is selected
       if (id_mode and word.isdigit()):
@@ -212,7 +286,8 @@ class MiniTokenizer:
         tokenbox =  tokenbox + emb_name + '_#' + str(emb_id)
         word_index -=1 
         continue
-      #########
+      ######### End of id_mode stuff
+
       #Find which section of embedding vectors to 
       #add to the output if the user has written [n:m] in
       #the mini_input
@@ -237,7 +312,8 @@ class MiniTokenizer:
       if is_sdxl:
         sdxl_emb_name, sdxl_emb_ids, sdxl_emb_vecs , sdxl_loaded_emb  = \
         self.data.get_embedding_info(tmp , is_sdxl = True)
-      ########
+      ######## End of the [n:m] in mini_input stuff
+
 
       no_of_tokens = emb_vecs.shape[0]
       if no_of_tokens > MAX_NUM_MIX : no_of_tokens = MAX_NUM_MIX
@@ -257,17 +333,18 @@ class MiniTokenizer:
           .to(device = "cpu" , dtype = torch.float32)
           no_of_tokens +=1
           break
-      #############
+      ########## End of 'literal mode' stuff
+
+      # Normal operation
       if no_of_tokens > 1 :
+        #If embedding contains multiple tokens
           if (token_num+1>min(end, no_of_tokens)) or (start>end) :
             token_num = 0  #Reset token_num
             word_index -=1 #Go to next word
             continue
-
           if (token_num<start):
             token_num += 1 #Skip until token_num==start
             continue
-
           #Fetch the vector
           emb_vec = emb_vecs[token_num].to(device = "cpu" , dtype = torch.float32)
           assert emb_vec != None , "emb_vec is NoneType"
@@ -277,7 +354,6 @@ class MiniTokenizer:
             .to(device = "cpu" , dtype = torch.float32)
             assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
           ######
-
           self.data.place(index , 
               vector = emb_vec.unsqueeze(0) ,
               ID = 0 ,
@@ -286,7 +362,7 @@ class MiniTokenizer:
               to_mixer = sendtomix , 
               to_positive = send_to_positives ,
               to_temporary = send_to_temporary)
-
+          ######
           if is_sdxl:
             self.data.place(index , 
               vector = sdxl_emb_vec.unsqueeze(0) ,
@@ -303,6 +379,8 @@ class MiniTokenizer:
           token_num += 1
       ###########
       else:
+        #If embedding is single token
+
         if found_IDs == None:
           found_IDs = self.data.text_to_emb_ids(word)
           no_of_IDs = len(found_IDs)
@@ -318,7 +396,7 @@ class MiniTokenizer:
           .to(device = "cpu" , dtype = torch.float32)
           assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
         #######
-        if not _ID ==318:
+        if not (is_sdxl and (_ID == 49406 or _ID == 49407)) :
           self.data.place(index , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  _ID ,
@@ -344,15 +422,32 @@ class MiniTokenizer:
             found_IDs = None
             word_index -=1 
         ##########
-        if (tokenbox != '') and not _ID ==318 : tokenbox = tokenbox + ' , '
+        if (tokenbox != '') : tokenbox = tokenbox + ' , '
         tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
+      #### End of 'Normal operation'
     ####### End loop
 
+    #Try to append end_of_text_ID to output after loop (SDXL only)
+    last_index = None
+    for index in range(MAX_NUM_MIX):
+      if not is_sdxl: break
+      if sendtomix and not self.data.vector.isEmpty.get(index): continue
+      last_index = copy.copy(index)
+    ########
+    if is_sdxl:
+      self.place (last_index  , \
+      send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
+      end_of_text_ID) 
+      if (tokenbox != '') : tokenbox = tokenbox + ' , '
+      tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
+    ###### End of append end_of_text_ID to output
+
+    #Filter stuff
     name_list = []
     for index in range(MAX_NUM_MIX):
         if self.data.vector.isEmpty.get(index): continue
         name_list.append(self.data.vector.name.get(index))
-    #########
+    ######### End of filter stuff
 
     return tokenmixer_vectors , tokenbox , splitbox , negbox , posbox , gr.Dropdown.update(choices = name_list)
     
