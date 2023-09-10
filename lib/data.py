@@ -1170,36 +1170,35 @@ class Data :
     Data.emb_vec = None
     Data.loaded_emb = None
     ########
+    #Default initial values
+    self.vector = Vector(3)
+    self.negative = Negative(3)
+    self.positive = Positive(3)
+    self.temporary = Temporary(3)
+    ####
+    self.vector1280 = Vector1280(3)
+    self.negative1280 = Negative1280(3)
+    self.positive1280 = Positive1280(3)
+    self.temporary1280 = Temporary1280(3)
+    ########
     if self.tools.loaded:
       emb_name, emb_id, emb_vec , loaded_emb = \
       self.get_embedding_info(',')
-      ####
-      sdxl_emb_name, sdxl_emb_id, sdxl_emb_vec , sdxl_loaded_emb = \
-      self.get_embedding_info(',', is_sdxl = True)
-      ####
       size = emb_vec.shape[1]
-      sdxl_size = sdxl_emb_vec.shape[1]
+      ####
+      if self.tools.is_sdxl:
+        sdxl_emb_name, sdxl_emb_id, sdxl_emb_vec , sdxl_loaded_emb = \
+        self.get_embedding_info(',', is_sdxl = True)
+        sdxl_size = sdxl_emb_vec.shape[1]
+        self.vector1280 = Vector1280(sdxl_size)
+        self.negative1280 = Negative1280(sdxl_size)
+        self.positive1280 = Positive1280(sdxl_size)
+        self.temporary1280 = Temporary1280(sdxl_size)
       ####
       self.vector = Vector(size)
       self.negative = Negative(size)
       self.positive = Positive(size)
       self.temporary = Temporary(size)
-      ######
-      self.vector1280 = Vector1280(sdxl_size)
-      self.negative1280 = Negative1280(sdxl_size)
-      self.positive1280 = Positive1280(sdxl_size)
-      self.temporary1280 = Temporary1280(sdxl_size)
-    else: 
-      #Just set size to 3 if no model can be loaded
-      self.vector = Vector(3)
-      self.negative = Negative(3)
-      self.positive = Positive(3)
-      self.temporary = Temporary(3)
-      ####
-      self.vector1280 = Vector1280(3)
-      self.negative1280 = Negative1280(3)
-      self.positive1280 = Positive1280(3)
-      self.temporary1280 = Temporary1280(3)
     #####
 
 

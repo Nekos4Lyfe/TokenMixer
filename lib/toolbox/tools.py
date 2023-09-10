@@ -180,7 +180,10 @@ class Tools :
           Tools.loaded_embs = loaded_embs
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.no_of_internal_embs = len(internal_embs)
-          Tools.no_of_sdxl_internal_embs = len(internal_sdxl_embs)
+          #####
+          if internal_sdxl_embs != None:
+            Tools.no_of_sdxl_internal_embs = len(internal_sdxl_embs)
+          else: Tools.no_of_sdxl_internal_embs = 0
         ######
 
         self.is_sdxl = is_sdxl
