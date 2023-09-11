@@ -7,10 +7,10 @@ import copy
 from modules import script_callbacks
 #---------------------------------
 
-from lib.modules.token_mixer import TokenMixer     
-from lib.modules.moduleTab import Modules
-from lib.modules.cross_attention_mixer import CrossAttentionMixer
-from lib.modules.token_comparator import TokenComparator
+from library.modules.token_mixer import TokenMixer     
+from library.modules.moduleTab import Modules
+from library.modules.cross_attention_mixer import CrossAttentionMixer
+from library.modules.token_comparator import TokenComparator
 
 #A111 + SDNext stuff
 def add_tab():

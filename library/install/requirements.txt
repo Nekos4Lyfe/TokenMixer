@@ -1,0 +1,5 @@
+mediapipe
+svglib
+fvcore
+nltk
+gradio
