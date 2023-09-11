@@ -25,11 +25,14 @@ You can now use the "<" and ">" to append the cutoff tokens |start-of-text| and 
 ![cutoff2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/da541adf-d92a-4480-884e-7d10e0743719)
 
 
-With SDXL you can use  "_" feature on the Minitokenizer if you like to investigate the latent space of SDXL.
+You can use  "_" feature on the Minitokenizer with SDXL
 
-![rand 1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/b771edf3-d164-4c1e-9114-2b21ef9bde18)
 ![rand2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f0fe03f9-4187-4794-ac08-36df1cc1ef10)
 
+![rand 1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/b771edf3-d164-4c1e-9114-2b21ef9bde18)
+
+
+More features for SDXL are soon to follow
 
 ## Usage 
 Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
