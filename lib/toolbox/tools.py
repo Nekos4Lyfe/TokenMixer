@@ -85,10 +85,10 @@ class Tools :
           FrozenOpenCLIPEmbedder2 = model.cond_stage_model.embedders[1].wrapped
           internal_sdxl_embs = FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
           tensor = internal_sdxl_embs[1337].to(device="cpu" , dtype = torch.float32)
-          pprint("internal sdxl_embs sixe : " + str(tensor.shape))
+          #pprint("internal sdxl_embs sixe : " + str(tensor.shape))
 
           tensor2 = internal_embs[1337].to(device="cpu" , dtype = torch.float32)
-          pprint("internal_embs size : " + str(tensor2.shape))
+          #pprint("internal_embs size : " + str(tensor2.shape))
         ########
 
         #Fetch the SDXL extra stuff (if SDXL model is loaded)

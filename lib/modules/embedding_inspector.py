@@ -112,14 +112,22 @@ class EmbeddingInspector :
 
     #ID input mode
     if (emb_id < self.data.tools.no_of_internal_embs) and (emb_id > 0): 
-      emb_vec = self.data.tools.internal_embs[emb_id].unsqueeze(0)
+      emb_vec = self.data.tools.internal_embs[emb_id].unsqueeze(0)\
+      .to(device = choosen_device , dtype = torch.float32)
       emb_name = self.data.emb_id_to_name(emb_id)
       results.append("Id mode : Found vector '" + \
       emb_name + "' with ID #" + str(emb_id))
     else:
-      emb_name, emb_id, emb_vec, loaded_emb = self.data.get_embedding_info(text)
-      results.append("Tokenize : Found vector '" + \
-      emb_name + "' with ID #" + str(emb_id))
+      emb_name, emb_id, emb_vec, loaded_emb = \
+      self.data.get_embedding_info(text , \
+      is_sdxl = self.data.tools.is_sdxl)
+
+      if self.data.tools.is_sdxl :
+        results.append("Tokenize : Found SDXL vector '" + \
+        emb_name)
+      else:
+        results.append("Tokenize : Found vector '" + \
+        emb_name + "' with ID #" + str(emb_id))
     ######
 
     if emb_vec == None : 
@@ -172,15 +180,25 @@ class EmbeddingInspector :
         self.data.tools.get_best_ids(emb_id , similarity , max_similar_embs , None)
         best_ids_list.append(_best_ids)
         sorted_scores_list.append(_sorted_scores)
-
       else:
         assert loaded_emb != None , "loaded emb is NoneType yet ID is not int!"
-        emb_vec = loaded_emb.vec.to(device = choosen_device , dtype = torch.float32)
+        # Fetch emb_vec from loaded_emb
+        if self.data.tools.is_sdxl: 
+          emb_vec = loaded_emb.vec.get("clip_l")\
+          .to(device = choosen_device , dtype = torch.float32)
+        else: 
+          emb_vec = loaded_emb.vec\
+          .to(device = choosen_device , dtype = torch.float32)
+      #######
+        
+        # Fetch the vectors which most closely match
+        # the given embedding
         for k in range (emb_vec.shape[0]):
           _best_ids , _sorted_scores = \
           self.data.tools.get_best_ids(emb_id , similarity , max_similar_embs , emb_vec[k])
           best_ids_list.append(_best_ids)
           sorted_scores_list.append(_sorted_scores)
+        ######
 
     else: 
       results.append('Vector size is not compatible with current SD model')

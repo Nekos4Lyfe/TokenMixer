@@ -167,6 +167,7 @@ class MiniTokenizer:
     emb_vecs = None
     emb_vec = None
     sdxl_emb_vec = None
+    trailing_end_of_text = False
 
     ## SDXL stuff
     is_sdxl = self.data.tools.is_sdxl
@@ -256,6 +257,36 @@ class MiniTokenizer:
         continue
       ########## End of the '_' random token stuff
 
+      #Place a start-of-text token if running SDXL
+      if word == "<" and is_sdxl :
+        if word_index < no_of_words - 1 :
+          self.place (index  , \
+            send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
+            start_of_text_ID) 
+          #####
+          emb_name = "<|startoftext|>_#49406"
+          if (tokenbox != '') : tokenbox = tokenbox + ' , '
+          tokenbox =  tokenbox + emb_name
+        ########
+        word_index -=1 
+        continue
+      ####### End of the '<' start-of-text stuff
+
+      #Place a end-of-text token if running SDXL
+      if word == ">" and is_sdxl:
+        self.place (index  , \
+          send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
+          end_of_text_ID) 
+        #####
+        emb_name = "<|endoftext|>_#49407"
+        if (tokenbox != '') : tokenbox = tokenbox + ' , '
+        tokenbox =  tokenbox + emb_name
+        word_index -=1 
+        trailing_end_of_text = True
+        continue
+      else :  trailing_end_of_text = False
+      #######End of the '>' end-of-text stuff
+
       #Extract emb_vec from emb_id if id_mode is selected
       if (id_mode and word.isdigit()):
         emb_id = int(word)
@@ -319,7 +350,6 @@ class MiniTokenizer:
         self.data.get_embedding_info(tmp , is_sdxl = True)
       ######## End of the [n:m] in mini_input stuff
 
-
       no_of_tokens = emb_vecs.shape[0]
       if no_of_tokens > MAX_NUM_MIX : no_of_tokens = MAX_NUM_MIX
       if tmp == None : end = no_of_tokens
@@ -340,7 +370,7 @@ class MiniTokenizer:
           break
       ########## End of 'literal mode' stuff
 
-      # Normal operation
+      # 'Normal operation'
       if no_of_tokens > 1 :
         #If embedding contains multiple tokens
           if (token_num+1>min(end, no_of_tokens)) or (start>end) :
@@ -385,7 +415,6 @@ class MiniTokenizer:
       ###########
       else:
         #If embedding is single token
-
         if found_IDs == None:
           found_IDs = self.data.text_to_emb_ids(word)
           no_of_IDs = len(found_IDs)
@@ -436,15 +465,17 @@ class MiniTokenizer:
     last_index = None
     for index in range(MAX_NUM_MIX):
       if not is_sdxl: break
+      if trailing_end_of_text : break
       if sendtomix and not self.data.vector.isEmpty.get(index): continue
       last_index = copy.copy(index)
     ########
-    if is_sdxl:
+    if is_sdxl and not trailing_end_of_text:
+      emb_name = "<|endoftext|>_#49407"
       self.place (last_index  , \
       send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
       end_of_text_ID) 
       if (tokenbox != '') : tokenbox = tokenbox + ' , '
-      tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
+      tokenbox =  tokenbox + emb_name
     ###### End of append end_of_text_ID to output
 
     #Filter stuff

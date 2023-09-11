@@ -784,8 +784,14 @@ class Data :
               
       if loaded_emb != None: 
         emb_name = loaded_emb.name
-        emb_id = '['+ loaded_emb.checksum()+']' # emb_id is string for loaded embeddings
-        emb_vec = loaded_emb.vec.to(device = choosen_device , dtype = torch.float32)
+        if is_sdxl : 
+          emb_id = 'unknown' #<<<< Will figure this out later
+          emb_vec = loaded_emb.vec.get("clip_l")\
+          .to(device = choosen_device , dtype = torch.float32)
+        else: 
+          emb_id = '['+ loaded_emb.checksum()+']' # emb_id is string for loaded embeddings
+          emb_vec = loaded_emb.vec\
+          .to(device = choosen_device , dtype = torch.float32)
         return emb_name, emb_id, emb_vec, loaded_emb #also return loaded_emb reference
 
       emb_ids = self.text_to_emb_ids(text)
