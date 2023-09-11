@@ -1,4 +1,4 @@
-# TokenMixer (Now SDXL compatible!)
+# TokenMixer
 
 The TokenMixer is an StableDiffusion extension for Automatic1111 and SD-Next for modifying embedding vectors and/or tokens. The TokenMixer consists of several modules in an integrated and adjustable interface.
 
