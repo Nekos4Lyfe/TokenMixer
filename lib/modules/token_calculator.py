@@ -10,10 +10,10 @@ from lib.toolbox.constants import MAX_NUM_MIX
 from lib.data import dataStorage
 
 # Check that MPS is available (for MAC users)
-choosen_device = None
-if torch.backends.mps.is_available(): 
-  choosen_device = torch.device("mps")
-else : choosen_device = torch.device("cpu")
+choosen_device = torch.device("cpu")
+#if torch.backends.mps.is_available(): 
+#  choosen_device = torch.device("mps")
+#else : choosen_device = torch.device("cpu")
 #######
 
 class TokenCalculator:
