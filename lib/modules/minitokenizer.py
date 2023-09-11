@@ -9,6 +9,13 @@ from torch.nn.modules import ConstantPad1d, container
 from lib.toolbox.constants import MAX_NUM_MIX
 from lib.data import dataStorage
 
+# Check that MPS is available (for MAC users)
+choosen_device = None
+if torch.backends.mps.is_available(): 
+  choosen_device = torch.device("mps")
+else : choosen_device = torch.device("cpu")
+#######
+
 class MiniTokenizer:
 
   def Reset (self , mini_input , tokenbox) : 
@@ -39,7 +46,7 @@ class MiniTokenizer:
     #### Append start-of-text token (if model is SDXL)
     if valid_ID :
         emb_vec = self.data.tools.internal_embs[emb_id]\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         emb_name = self.data.emb_id_to_name(emb_id)
         assert emb_vec != None ,"emb_vec is NoneType!"
 
@@ -55,7 +62,7 @@ class MiniTokenizer:
 
         if is_sdxl:
           sdxl_emb_vec = self.data.tools.internal_sdxl_embs[emb_id]\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
           assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
 
           #Add to 1280 dimension vectors
@@ -70,8 +77,6 @@ class MiniTokenizer:
               is_sdxl = True)
     ###############
     return valid_ID
-
-
 
   def Tokenize (self  , *args) :
 
@@ -110,9 +115,9 @@ class MiniTokenizer:
     # Vector length stuff
     distance = torch.nn.PairwiseDistance(p=2)
     origin = self.data.vector.origin\
-    .to(device = "cpu" , dtype = torch.float32)
+    .to(device = choosen_device , dtype = torch.float32)
     origin1280 = self.data.vector1280.origin\
-    .to(device = "cpu" , dtype = torch.float32)
+    .to(device = choosen_device , dtype = torch.float32)
     #######
 
     #Check if new embeddings have been added 
@@ -208,7 +213,7 @@ class MiniTokenizer:
 
       # If word is '_' represent it as a random token
       if word == "_":
-        emb_vec = torch.rand(self.data.vector.size).to(device = "cpu" , dtype = torch.float32)
+        emb_vec = torch.rand(self.data.vector.size).to(device = choosen_device , dtype = torch.float32)
         dist = distance(emb_vec , origin).numpy()[0]
         tmp = random_token_length * \
         (1 - random_token_length_randomization*random.random())
@@ -216,7 +221,7 @@ class MiniTokenizer:
         #####
         if is_sdxl: 
           sdxl_emb_vec = torch.rand(self.data.vector1280.size)\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
           dist = distance(sdxl_emb_vec  , origin1280).numpy()[0]
           tmp = random_token_length * \
           (1 - random_token_length_randomization*random.random())
@@ -256,9 +261,9 @@ class MiniTokenizer:
         emb_id = int(word)
         if emb_id >= no_of_internal_embs: continue
         emb_vec = self.data.tools.internal_embs[emb_id]\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         if is_sdxl: sdxl_emb_vec = self.data.tools.internal_sdxl_embs[emb_id]\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         emb_name = self.data.emb_id_to_name(emb_id)
         ######
         assert emb_vec != None , "emb_vec is NoneType"
@@ -327,10 +332,10 @@ class MiniTokenizer:
         emb_vecs = []
         for emb_id in emb_ids:
           emb_vec = self.data.emb_id_to_vec(emb_id)\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
           if is_sdxl: sdxl_emb_vec = \
           self.data.emb_id_to_vec(emb_id , is_sdxl = True)\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
           no_of_tokens +=1
           break
       ########## End of 'literal mode' stuff
@@ -346,12 +351,12 @@ class MiniTokenizer:
             token_num += 1 #Skip until token_num==start
             continue
           #Fetch the vector
-          emb_vec = emb_vecs[token_num].to(device = "cpu" , dtype = torch.float32)
+          emb_vec = emb_vecs[token_num].to(device = choosen_device , dtype = torch.float32)
           assert emb_vec != None , "emb_vec is NoneType"
           ####
           if is_sdxl: 
             sdxl_emb_vec = sdxl_emb_vecs[token_num]\
-            .to(device = "cpu" , dtype = torch.float32)
+            .to(device = choosen_device , dtype = torch.float32)
             assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
           ######
           self.data.place(index , 
@@ -388,12 +393,12 @@ class MiniTokenizer:
         #######
         _ID = found_IDs[ID_index] 
         emb_name = self.data.emb_id_to_name(_ID)
-        emb_vec = self.data.emb_id_to_vec(_ID).to(device = "cpu" , dtype = torch.float32)
+        emb_vec = self.data.emb_id_to_vec(_ID).to(device = choosen_device , dtype = torch.float32)
         assert emb_vec != None , "emb_vec is NoneType"
         ######
         if is_sdxl: 
           sdxl_emb_vec = self.data.emb_id_to_vec(_ID , is_sdxl = True)\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
           assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
         #######
         if not (is_sdxl and (_ID == 49406 or _ID == 49407)) :
@@ -557,6 +562,9 @@ class MiniTokenizer:
           "write a ID number between 0 and" + str(self.data.tools.no_of_internal_embs) + \
           ",  like for example '6228 20198' which gives the " + \
           "tokens 'example' and 'prompt' . \n \n " + \
+          "when using SDXL , you can write '<' to place a 'start-of-text' token  " + \
+          " and '>' to place a 'end-of-text' token in the output , e.g " + \
+          " < red banana > < blue car > ." + \
           "Observe : When you write example[3:5] and send the vectors to the mixer, " + \
           "the vectors will not show up at the top. You will need to scroll down to see them. \n \n " + \
           "The code for this module is built upon the extension provided by tkalayci71: \n " + \

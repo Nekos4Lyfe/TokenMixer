@@ -9,8 +9,14 @@ from lib.toolbox.constants import MAX_NUM_MIX
 import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
-
 from lib.data import dataStorage
+
+# Check that MPS is available (for MAC users)
+choosen_device = None
+if torch.backends.mps.is_available(): 
+  choosen_device = torch.device("mps")
+else : choosen_device = torch.device("cpu")
+######
 
 class TokenMixer :
 
@@ -140,12 +146,6 @@ class TokenMixer :
             #######
 
             #Send the vectors to the correct torch.device prior to saving
-
-            # Check that MPS is available (for MAC users)
-            choosen_device = None
-            if torch.backends.mps.is_available(): 
-              choosen_device = torch.device("mps")
-            else : choosen_device = torch.device("cpu")
             tot_vec = tot_vec.to(device = choosen_device , dtype = torch.float32)
             if self.data.tools.is_sdxl: sdxl_tot_vec = \
               sdxl_tot_vec.to(device = choosen_device , dtype = torch.float32)

@@ -9,6 +9,13 @@ from lib.toolbox.constants import MAX_NUM_MIX
 
 from lib.data import dataStorage
 
+# Check that MPS is available (for MAC users)
+choosen_device = None
+if torch.backends.mps.is_available(): 
+  choosen_device = torch.device("mps")
+else : choosen_device = torch.device("cpu")
+#######
+
 class TokenCalculator:
 
   def Reset (self , calc_input , sumbox) : 
@@ -16,14 +23,14 @@ class TokenCalculator:
 
   def addition (self, tensor1 , tensor2):
     if (tensor1 == None) or (tensor2 == None) : return None
-    tmp1 = tensor1.cpu()
-    tmp2 = tensor2.cpu()
+    tmp1 = tensor1.to(device = choosen_device , dtype = torch.float32)
+    tmp2 = tensor2.to(device = choosen_device , dtype = torch.float32)
     return tmp1 + tmp2
   
   def subtraction (self, tensor1 , tensor2):
     if (tensor1 == None) or (tensor2 == None) : return None
-    tmp1 = tensor1.cpu()
-    tmp2 = tensor2.cpu()
+    tmp1 = tensor1.to(device = choosen_device , dtype = torch.float32)
+    tmp2 = tensor2.to(device = choosen_device , dtype = torch.float32)
     return tmp1 - tmp2
 
   def get_emb_vec (self, string , id_mode , no_of_internal_embs) :
@@ -181,7 +188,7 @@ class TokenCalculator:
       return tokenmixer_vectors , '' , '\n'.join(log) , negbox
 
     distance = torch.nn.PairwiseDistance(p=2)
-    output = calc_sum.unsqueeze(0).cpu()
+    output = calc_sum.unsqueeze(0).to(device = choosen_device , dtype = torch.float32)
     dist = distance(output , 0*output).numpy()[0]
 
     tmp = output_length * \
@@ -263,7 +270,8 @@ class TokenCalculator:
   #End of setupIO_with()
 
   def get_length(self, emb_vec):
-    self.emb_vec = emb_vec.cpu()
+    self.emb_vec = emb_vec\
+    .to(device = choosen_device , dtype = torch.float32)
     assert self.emb_vec != None, "emb_vec is None!"
     dist = self.distance(self.emb_vec, self.origin).numpy()[0]
     dist = round(dist , 2)
@@ -274,7 +282,8 @@ class TokenCalculator:
     self.data = dataStorage 
     self.emb_vec = None
     self.size = copy.copy(self.data.vector.size)
-    self.origin = torch.zeros(self.size).unsqueeze(0).cpu()
+    self.origin = torch.zeros(self.size).unsqueeze(0)\
+    .to(device = choosen_device , dtype = torch.float32)
     self.distance = torch.nn.PairwiseDistance(p=2)
     self.random_token_length = 0
     self.random_token_length_randomization = 0

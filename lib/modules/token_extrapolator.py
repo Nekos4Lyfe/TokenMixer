@@ -8,6 +8,13 @@ import copy
 from lib.toolbox.constants import MAX_NUM_MIX 
 from lib.data import dataStorage
 
+# Check that MPS is available (for MAC users)
+choosen_device = None
+if torch.backends.mps.is_available(): 
+  choosen_device = torch.device("mps")
+else : choosen_device = torch.device("cpu")
+#######
+
 class TokenExtrapolator:
 
   def Reset (self , first , tokenbox) : 
@@ -121,7 +128,8 @@ class TokenExtrapolator:
       if (not sendtomix) or suggestion > 0: break
       if not self.data.vector.isEmpty.get(k) : continue
       self.data.place(k , 
-        vector =   emb_vec.cpu(),
+        vector =   emb_vec\
+        .to(device = choosen_device , dtype = torch.float32),
         ID =  emb_id ,
         name = emb_name , 
         to_mixer = sendtomix , 
@@ -133,7 +141,8 @@ class TokenExtrapolator:
       if (not send_to_negatives) or suggestion > 0: break
       if not self.data.negative.isEmpty.get(k) : continue
       self.data.place(k , 
-        vector =   emb_vec.cpu(),
+        vector =   emb_vec\
+        .to(device = choosen_device , dtype = torch.float32),
         ID =  emb_id ,
         name = emb_name , 
         to_mixer = False , 

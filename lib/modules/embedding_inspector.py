@@ -8,6 +8,13 @@ import copy
 from lib.toolbox.constants import MAX_NUM_MIX , SEP_STR
 from lib.data import dataStorage
 
+# Check that MPS is available (for MAC users)
+choosen_device = None
+if torch.backends.mps.is_available(): 
+  choosen_device = torch.device("mps")
+else : choosen_device = torch.device("cpu")
+#######
+
 class EmbeddingInspector :
 
   def reset(self):
@@ -147,8 +154,10 @@ class EmbeddingInspector :
     if (emb_vec.shape[1] == self.data.vector.size) :
       
       distance = torch.nn.PairwiseDistance(p=2)
-      origin = self.data.vector.origin.cpu()
-      tmp = emb_vec.cpu()
+      origin = self.data.vector.origin\
+      .to(device = choosen_device , dtype = torch.float32)
+      tmp = emb_vec\
+      .to(device = choosen_device , dtype = torch.float32)
       dist = distance(tmp , origin).numpy()[0]
 
       results.append('Vector length: '+str(dist))
@@ -166,7 +175,7 @@ class EmbeddingInspector :
 
       else:
         assert loaded_emb != None , "loaded emb is NoneType yet ID is not int!"
-        emb_vec = loaded_emb.vec.cpu()
+        emb_vec = loaded_emb.vec.to(device = choosen_device , dtype = torch.float32)
         for k in range (emb_vec.shape[0]):
           _best_ids , _sorted_scores = \
           self.data.tools.get_best_ids(emb_id , similarity , max_similar_embs , emb_vec[k])
@@ -206,7 +215,8 @@ class EmbeddingInspector :
           for index in range(MAX_NUM_MIX):
             if (not self.data.negative.isEmpty.get(index)): continue
             self.data.place(index , \
-                vector =   emb_vec.unsqueeze(0).cpu(),
+                vector =   emb_vec.unsqueeze(0)\
+                .to(device = choosen_device , dtype = torch.float32),
                 ID =  emb_id ,
                 name = copy.copy(emb_name) , 
                 to_mixer = False , 
@@ -219,7 +229,8 @@ class EmbeddingInspector :
           for index in range(MAX_NUM_MIX):
             if (not self.data.vector.isEmpty.get(index)): continue
             self.data.place(index , \
-                vector =   emb_vec.unsqueeze(0).cpu(),
+                vector =   emb_vec.unsqueeze(0)\
+                .to(device = choosen_device , dtype = torch.float32),
                 ID =  emb_id ,
                 name = copy.copy(emb_name) , 
                 to_mixer = sendtomix , 

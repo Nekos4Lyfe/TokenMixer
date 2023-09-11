@@ -8,6 +8,12 @@ from lib.toolbox.constants import MAX_NUM_MIX
 
 from lib.data import dataStorage
 
+# Check that MPS is available (for MAC users)
+choosen_device = None
+if torch.backends.mps.is_available(): 
+  choosen_device = torch.device("mps")
+else : choosen_device = torch.device("cpu")
+#######
 
 class TokenComparator :
 
@@ -184,7 +190,8 @@ class TokenComparator :
     if sendtomix : tokenmixer_vectors= ''
 
     distance = torch.nn.PairwiseDistance(p=2)
-    origin = self.data.vector.origin.cpu()
+    origin = self.data.vector.origin\
+    .to(device = choosen_device , dtype = torch.float32)
 
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
