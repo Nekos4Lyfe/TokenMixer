@@ -13,6 +13,13 @@ from lib.toolbox.tools import Tools
 from lib.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
 
+# Check that MPS is available (for MAC users)
+choosen_device = None
+if torch.backends.mps.is_available(): 
+  choosen_device = torch.device("mps")
+else : choosen_device = torch.device("cpu")
+######
+
 class Data :
   #The Data class consists of all the shared resources between the modules
   #This includes the vector class and the tools class
@@ -49,7 +56,7 @@ class Data :
       if similar_mode : 
         current , message = self.replace_with_similar(index)
         log.append(message)
-      else : current = self.vector.get(index).cpu()
+      else : current = self.vector.get(index).to(device = choosen_device , dtype = torch.float32)
 
       current_weight = 1
       #self.vector.weight.get(index)
@@ -87,7 +94,7 @@ class Data :
 
     for step in range (N):
       rand_vec  = ((2*torch.rand(size) - torch.ones(size))\
-      .to(device = "cpu" , dtype = torch.float32)).unsqueeze(0)
+      .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0)
       rdist = distance(rand_vec, origin).numpy()[0]
       rando = (1/rdist) * rand_vec #Create random unit vector
 
@@ -101,7 +108,7 @@ class Data :
         if (self.vector.isFiltered(index)): continue
 
         #Get current token
-        tmp = self.vector.get(index).cpu()
+        tmp = self.vector.get(index).to(device = choosen_device , dtype = torch.float32)
         dist = distance(tmp, origin).numpy()[0]
         current = (1/dist) * tmp 
 
@@ -220,7 +227,7 @@ class Data :
     current = None
     dist = None
     tmp = None
-    origin = target.origin.cpu()
+    origin = target.origin.to(device = choosen_device , dtype = torch.float32)
 
     no_of_tokens = 0
     distance = torch.nn.PairwiseDistance(p=2)
@@ -232,7 +239,7 @@ class Data :
       if similar_mode : 
         current , message = self.replace_with_similar(index , is_sdxl)
         log.append(message)
-      else : current = target.get(index).cpu()
+      else : current = target.get(index).to(device = choosen_device , dtype = torch.float32)
 
       current_weight = 1 #Will fix later
 
@@ -245,7 +252,7 @@ class Data :
           log.append('Placed token with length '+ str(dist)  +' in new embedding ')
           continue
       output = torch.cat([output,current], dim=0)\
-      .to(device = "cpu" , dtype = torch.float32)
+      .to(device = choosen_device , dtype = torch.float32)
       log.append('Placed token with length '+ str(dist)  +' in new embedding ')
     
     log.append('New embedding has '+ str(no_of_tokens) + ' tokens')
@@ -366,54 +373,54 @@ class Data :
         if lenpos>0 and doping_strength>0:
 
           doping = positive.get(random.choice(positives))\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
 
           ddist = distance(doping , origin)\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
           doping = (doping * (1/ddist))\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
         else:
           doping = origin\
-          .to(device = "cpu" , dtype = torch.float32) 
+          .to(device = choosen_device , dtype = torch.float32) 
 
         ##### Calculate random vector
         rand_vec = torch.rand(target.size)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         ones = torch.ones(target.size)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         rand_vec  = (2*rand_vec - ones)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         rdist = distance(rand_vec , origin)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         rand_vec = ((1/rdist) * rand_vec)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         ##### Perform doping on the random vector
         rand_vec = (doping*doping_strength  + rand_vec*(1 - doping_strength))\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         #### Calculate the doped random vector
         rdist = distance(rand_vec , origin)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         rando = (rand_vec * (1/rdist))\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
 
         #Calculate candidate vector
         if best == None : 
           candidate_vec = (rando * randomGain +  current * (1 - randomGain))\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
         else:
           #Reduce randomness a bit for every step
           randomGain = copy.copy(randomGain - randomReduce)
-          bdist = distance(best, origin).to(device = "cpu" , dtype = torch.float32)
+          bdist = distance(best, origin).to(device = choosen_device , dtype = torch.float32)
           if randomGain<0 : randomGain = 0
           #####
           candidate_vec = (rand_vec*(1/rdist)*randomGain +  best*(1/bdist)*(1 - randomGain))\
-          .to(device = "cpu" , dtype = torch.float32)
+          .to(device = choosen_device , dtype = torch.float32)
         #####
-        cdist = distance(candidate_vec, origin).to(device = "cpu" , dtype = torch.float32)
-        candidate_vec = (candidate_vec*(1/cdist)).to(device = "cpu" , dtype = torch.float32)
+        cdist = distance(candidate_vec, origin).to(device = choosen_device , dtype = torch.float32)
+        candidate_vec = (candidate_vec*(1/cdist)).to(device = choosen_device , dtype = torch.float32)
 
         similarity = (100*cos(current, candidate_vec)\
-        .to(device = "cpu" , dtype = torch.float32)).numpy()[0]
+        .to(device = choosen_device , dtype = torch.float32)).numpy()[0]
         if similarity<0 : similarity = -similarity
         #######
         #Check negatives
@@ -421,8 +428,8 @@ class Data :
           for neg_index in range(MAX_NUM_MIX) :
             if negative.isEmpty.get(neg_index): continue
             neg_vec = negative.get(neg_index).to(device="cpu" , dtype = torch.float32)
-            ndist = distance(neg_vec, origin).to(device = "cpu" , dtype = torch.float32)
-            neg_vec = (neg_vec *(1/ndist)).to(device = "cpu" , dtype = torch.float32)
+            ndist = distance(neg_vec, origin).to(device = choosen_device , dtype = torch.float32)
+            neg_vec = (neg_vec *(1/ndist)).to(device = choosen_device , dtype = torch.float32)
             tmp = math.floor((100*100*cos(neg_vec, candidate_vec)).numpy()[0])
             if tmp<0 : tmp = -tmp
             nsim = copy.copy(tmp/100)
@@ -446,13 +453,13 @@ class Data :
             .to(device="cpu" , dtype = torch.float32)
 
             pdist = distance(pos_vec, origin)\
-            .to(device = "cpu" , dtype = torch.float32)
+            .to(device = choosen_device , dtype = torch.float32)
 
             pos_vec = (pos_vec*(1/pdist))\
-            .to(device = "cpu" , dtype = torch.float32)
+            .to(device = choosen_device , dtype = torch.float32)
 
             tmp = math.floor((100*100*cos(pos_vec,candidate_vec))\
-            .to(device = "cpu" , dtype = torch.float32).numpy()[0])
+            .to(device = choosen_device , dtype = torch.float32).numpy()[0])
             
             if tmp<0 : tmp = -tmp
             psim = copy.copy(tmp/100)
@@ -505,18 +512,18 @@ class Data :
           worst_neg_index = copy.copy(best_worst_neg_index)
           worst_pos_index = copy.copy(best_worst_pos_index)
           similarity = copy.copy(best_similarity)
-          candidate_vec = best.to(device = "cpu" , dtype = torch.float32)
+          candidate_vec = best.to(device = choosen_device , dtype = torch.float32)
                 
       #length of candidate vector
       cdist = distance(candidate_vec , origin)\
-      .to(device = "cpu" , dtype = torch.float32)
+      .to(device = choosen_device , dtype = torch.float32)
 
       #length of output vector
       output_length = copy.copy(gain * dist_expected)
 
       #Set the length of found similar vector
       similar_token = ((output_length/cdist) * candidate_vec)\
-      .to(device = "cpu" , dtype = torch.float32)
+      .to(device = choosen_device , dtype = torch.float32)
 
       #round the values before printing them
       output_length = output_length.numpy()[0]
@@ -629,7 +636,7 @@ class Data :
       if similar_mode : 
         current , message = self.replace_with_similar(index)
         log.append(message)
-      else : current = self.vector.get(index).cpu()
+      else : current = self.vector.get(index).to(device = choosen_device , dtype = torch.float32)
 
       current_weight = 1
       #self.vector.weight.get(index)
@@ -642,15 +649,15 @@ class Data :
       assert not current == None , "current tensor is None!"
       assert not prev == None , "prev tensor is None!"
 
-      tmp = ((current + prev) * 0.5).cpu() #Expected merge vector
+      tmp = ((current + prev) * 0.5).to(device = choosen_device , dtype = torch.float32) #Expected merge vector
       avg_dist = distance(tmp, origin).numpy()[0]
-      merge_norm = ((1/avg_dist)*tmp).cpu()
+      merge_norm = ((1/avg_dist)*tmp).to(device = choosen_device , dtype = torch.float32)
 
       current_dist = distance(current, origin).numpy()[0]
-      current_norm = ((1/current_dist)*current).cpu() 
+      current_norm = ((1/current_dist)*current).to(device = choosen_device , dtype = torch.float32) 
 
       prev_dist = distance(prev, origin).numpy()[0]
-      prev_norm = ((1/prev_dist)*prev).cpu()
+      prev_norm = ((1/prev_dist)*prev).to(device = choosen_device , dtype = torch.float32)
 
       assert not ( 
         merge_norm == None or
@@ -668,7 +675,7 @@ class Data :
         iters+=1
 
         tmp  = ((torch.rand(size) - 0.5* torch.ones(size))\
-        .to(device = "cpu" , dtype = torch.float32)).unsqueeze(0)
+        .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0)
         rdist = distance(tmp, origin).numpy()[0]
         rand_norm = (1/rdist) * tmp  #Create random unit vector
 
@@ -714,7 +721,7 @@ class Data :
 
         if output == None : output = similar_token
         else :  output = torch.cat([output,similar_token], dim=0)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         log.append('Placed token with length '+ str(output_length)  +' in new embedding ')
 
       else:
@@ -778,7 +785,7 @@ class Data :
       if loaded_emb != None: 
         emb_name = loaded_emb.name
         emb_id = '['+ loaded_emb.checksum()+']' # emb_id is string for loaded embeddings
-        emb_vec = loaded_emb.vec.cpu()
+        emb_vec = loaded_emb.vec.to(device = choosen_device , dtype = torch.float32)
         return emb_name, emb_id, emb_vec, loaded_emb #also return loaded_emb reference
 
       emb_ids = self.text_to_emb_ids(text)
@@ -922,7 +929,7 @@ class Data :
     #Helper function
     def _place_values_in(target) :
       if vector != None: target.place(vector\
-      .to(device = "cpu" , dtype = torch.float32),index)
+      .to(device = choosen_device , dtype = torch.float32),index)
       if ID != None: target.ID.place(ID, index)
       if name != None: target.name.place(name, index)
       if weight != None : target.weight.place(float(weight) , index)
@@ -959,7 +966,7 @@ class Data :
     for index in range(MAX_NUM_MIX):
       if self.vector.isEmpty.get(index) : continue
       self.vec = self.vector.get(index)\
-      .to(device = "cpu" , dtype = torch.float32)
+      .to(device = choosen_device , dtype = torch.float32)
       self.ID = copy.copy(self.vector.ID.get(index))
       self.name = copy.copy(self.vector.name.get(index))
       self.weight = copy.copy(self.vector.weight.get(index))
@@ -972,7 +979,7 @@ class Data :
       ########
       if self.vector1280.isEmpty.get(index) : continue
       self.vec = self.vector1280.get(index)\
-      .to(device = "cpu" , dtype = torch.float32)
+      .to(device = choosen_device , dtype = torch.float32)
       self.ID = copy.copy(self.vector1280.ID.get(index))
       self.name = copy.copy(self.vector1280.name.get(index))
       self.weight = copy.copy(self.vector1280.weight.get(index))
@@ -988,7 +995,7 @@ class Data :
     for index in range(MAX_NUM_MIX):
       if self.temporary.isEmpty.get(index) : continue
       self.vec = self.temporary.get(index)\
-      .to(device = "cpu" , dtype = torch.float32)
+      .to(device = choosen_device , dtype = torch.float32)
       self.ID = copy.copy(self.temporary.ID.get(index))
       self.name = copy.copy(self.temporary.name.get(index))
       self.weight = copy.copy(self.temporary.weight.get(index))
@@ -1001,7 +1008,7 @@ class Data :
       ########
       if self.temporary1280.isEmpty.get(index) : continue
       self.vec = self.temporary1280.get(index)\
-      .to(device = "cpu" , dtype = torch.float32)
+      .to(device = choosen_device , dtype = torch.float32)
       self.ID = copy.copy(self.temporary1280.ID.get(index))
       self.name = copy.copy(self.temporary1280.name.get(index))
       self.weight = copy.copy(self.temporary1280.weight.get(index))
@@ -1014,39 +1021,39 @@ class Data :
   ###### End of recall()
 
   def norm (self, tensor , origin_input , distance_fcn):
-        current = tensor.to(device = "cpu" , dtype = torch.float32)
-        origin = origin_input.to(device = "cpu" , dtype = torch.float32)
+        current = tensor.to(device = choosen_device , dtype = torch.float32)
+        origin = origin_input.to(device = choosen_device , dtype = torch.float32)
         return current
 
   def distance (self, tensor1 , tensor2):
         distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         #######
-        current = tensor1.to(device = "cpu" , dtype = torch.float32)
-        ref = tensor2.to(device = "cpu" , dtype = torch.float32)
+        current = tensor1.to(device = choosen_device , dtype = torch.float32)
+        ref = tensor2.to(device = choosen_device , dtype = torch.float32)
         dist = distance(current, ref).numpy()[0]
         return  str(round(dist , 2))
 
   def similarity (self , tensor1 , tensor2):
         distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         origin = (self.vector.origin)\
-        .to(device = "cpu" , dtype = torch.float32)
+        .to(device = choosen_device , dtype = torch.float32)
         #######
 
-        current = tensor1.to(device = "cpu" , dtype = torch.float32)
+        current = tensor1.to(device = choosen_device , dtype = torch.float32)
         dist1 = distance(current, origin).numpy()[0]
         current = current * (1/dist1)
 
         ####
-        ref = tensor2.to(device = "cpu" , dtype = torch.float32)
+        ref = tensor2.to(device = choosen_device , dtype = torch.float32)
         dist2 = distance(current, origin).numpy()[0]
         ref = ref * (1/dist2)
 
         ########
-        sim = (100*cos(current , ref)).to(device = "cpu" , dtype = torch.float32)
+        sim = (100*cos(current , ref)).to(device = choosen_device , dtype = torch.float32)
         if sim < 0 : sim = -sim
         return  str(round(sim.numpy()[0] , 2))
 
@@ -1057,11 +1064,11 @@ class Data :
     name = None
 
     if is_sdxl:
-      vector = self.vector1280.get(index).to(device = "cpu" , dtype = torch.float32)
+      vector = self.vector1280.get(index).to(device = choosen_device , dtype = torch.float32)
       ID = self.vector1280.ID.get(index)
       name = self.vector1280.name.get(index)
     else:
-      vector = self.vector.get(index).to(device = "cpu" , dtype = torch.float32)
+      vector = self.vector.get(index).to(device = choosen_device , dtype = torch.float32)
       ID = self.vector.ID.get(index)
       name = self.vector.name.get(index)
 

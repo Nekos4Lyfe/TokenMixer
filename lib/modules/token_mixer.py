@@ -6,7 +6,6 @@ import re #used to parse string to int
 import copy
 from lib.toolbox.constants import MAX_NUM_MIX
 
-
 import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
@@ -140,6 +139,18 @@ class TokenMixer :
                 else:  log.append('File already exists, overwrite is enabled')
             #######
 
+            #Send the vectors to the correct torch.device prior to saving
+
+            # Check that MPS is available (for MAC users)
+            choosen_device = None
+            if torch.backends.mps.is_available(): 
+              choosen_device = torch.device("mps")
+            else : choosen_device = torch.device("cpu")
+            tot_vec = tot_vec.to(device = choosen_device , dtype = torch.float32)
+            if self.data.tools.is_sdxl: sdxl_tot_vec = \
+              sdxl_tot_vec.to(device = choosen_device , dtype = torch.float32)
+            #######
+
            #Save the embedding           
             try:  
                 if self.data.tools.is_sdxl: 
@@ -151,8 +162,9 @@ class TokenMixer :
                 else: Embedding(tot_vec, save_name).save(save_filename)
                 log.append('Saved "'+save_filename+'"')
                 anything_saved = True
-            except: log.append('🛑 Error saving "'+save_filename+'" (filename might be invalid)')
-            ########
+            except: log.append('🛑 Error saving "'+ \
+              save_filename+'" (filename might be invalid)')
+          ########
 
     #Update the embedding database and the data class if we have saved an embedding
     if anything_saved:

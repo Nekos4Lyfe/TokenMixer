@@ -10,6 +10,14 @@ from lib.toolbox.boolist import BooList3
 from lib.toolbox.stringlist import StringList3
 #-------------------------------------------------------------------------------
 
+
+# Check that MPS is available (for MAC users)
+choosen_device = None
+if torch.backends.mps.is_available(): 
+  choosen_device = torch.device("mps")
+else : choosen_device = torch.device("cpu")
+######
+
 class Positive :
 #self is a class which stores torch tensors as a list
 #It also stores functions which modify this tensor list
@@ -32,14 +40,16 @@ class Positive :
     if (tensor != None) :
       self.validate(tensor)
       assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
-      self.data[index] = tensor.cpu()
+      self.data[index] = tensor\
+      .to(device = choosen_device , dtype = torch.float32)
       self.isEmpty.place(False , index)
       assert not self.isEmpty.data[index] , "Faulty place!"
 
   def clear (self , index) :
     assert not index == None , "Index is NoneType!"
     assert not (index > MAX_NUM_MIX or index < 0) ,  "Index out of bounds!"
-    self.data[index] = torch.zeros(self.size).unsqueeze(0).cpu()
+    self.data[index] = torch.zeros(self.size).unsqueeze(0)\
+      .to(device = choosen_device , dtype = torch.float32)
     assert not self.data[index] == None , "Bad operation"
     self.isEmpty.clear(index)
     self.ID.clear(index)
@@ -48,7 +58,8 @@ class Positive :
 
   def __init__(self , size):
     self.size = size
-    self.origin = torch.zeros(size).unsqueeze(0).cpu()
+    self.origin = torch.zeros(size).unsqueeze(0)\
+      .to(device = choosen_device , dtype = torch.float32)
     self.costheta = 0
     self.radius = 0
     self.randomization = 0
@@ -59,7 +70,8 @@ class Positive :
     self.data = []
 
     for i in range (MAX_NUM_MIX):
-      tmp = torch.zeros(size).unsqueeze(0).cpu()
+      tmp = torch.zeros(size).unsqueeze(0)\
+      .to(device = choosen_device , dtype = torch.float32)
       self.data.append(tmp)
       tmp=None
 
@@ -100,14 +112,16 @@ class Positive1280 :
     if (tensor != None) :
       self.validate(tensor)
       assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
-      self.data[index] = tensor.cpu()
+      self.data[index] = tensor\
+      .to(device = choosen_device , dtype = torch.float32)
       self.isEmpty.place(False , index)
       assert not self.isEmpty.data[index] , "Faulty place!"
 
   def clear (self , index) :
     assert not index == None , "Index is NoneType!"
     assert not (index > MAX_NUM_MIX or index < 0) ,  "Index out of bounds!"
-    self.data[index] = torch.zeros(self.size).unsqueeze(0).cpu()
+    self.data[index] = torch.zeros(self.size).unsqueeze(0)\
+      .to(device = choosen_device , dtype = torch.float32)
     assert not self.data[index] == None , "Bad operation"
     self.isEmpty.clear(index)
     self.ID.clear(index)
@@ -116,7 +130,8 @@ class Positive1280 :
 
   def __init__(self , size):
     self.size = size
-    self.origin = torch.zeros(size).unsqueeze(0).cpu()
+    self.origin = torch.zeros(size).unsqueeze(0)\
+      .to(device = choosen_device , dtype = torch.float32)
     self.costheta = 0
     self.radius = 0
     self.randomization = 0
@@ -127,7 +142,8 @@ class Positive1280 :
     self.data = []
 
     for i in range (MAX_NUM_MIX):
-      tmp = torch.zeros(size).unsqueeze(0).cpu()
+      tmp = torch.zeros(size).unsqueeze(0)\
+      .to(device = choosen_device , dtype = torch.float32)
       self.data.append(tmp)
       tmp=None
 

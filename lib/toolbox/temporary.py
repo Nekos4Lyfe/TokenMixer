@@ -11,6 +11,15 @@ from lib.toolbox.boolist import BooList4 # done
 from lib.toolbox.stringlist import StringList4 # done
 from lib.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
+
+# Check that MPS is available (for MAC users)
+choosen_device = None
+if torch.backends.mps.is_available(): 
+  choosen_device = torch.device("mps")
+else : choosen_device = torch.device("cpu")
+######
+
+
 class Temporary :
 #self is a class which stores torch tensors as a list
 
@@ -23,7 +32,8 @@ class Temporary :
 #and Boolist lists 
 
   def get(self,index) :
-    output = self.data[index].to(device = "cpu" , dtype = torch.float32)
+    output = self.data[index]\
+        .to(device = choosen_device , dtype = torch.float32)
     assert not output == None , "Faulty get!"
     return output
 
@@ -38,7 +48,8 @@ class Temporary :
     if (tensor != None) :
       self.validate(tensor)
       assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
-      self.data[index] = tensor.to(device = "cpu" , dtype = torch.float32)
+      self.data[index] = tensor\
+        .to(device = choosen_device , dtype = torch.float32)
       self.isEmpty.place(False , index)
       assert not self.isEmpty.data[index] , "Faulty place!"
 
@@ -46,7 +57,8 @@ class Temporary :
     assert not index == None , "Index is NoneType!"
     assert not (index > MAX_NUM_MIX or index < 0) ,  "Index out of bounds!"
     self.data[index] = torch.zeros(self.size).unsqueeze(0)\
-    .to(device = "cpu" , dtype = torch.float32)
+    \
+        .to(device = choosen_device , dtype = torch.float32)
     assert not self.data[index] == None , "Bad operation"
     self.isEmpty.clear(index)
     self.ID.clear(index)
@@ -55,7 +67,8 @@ class Temporary :
 
   def __init__(self , size):
     self.size = size
-    self.origin = (torch.zeros(size).to(device = "cpu" , dtype = torch.float32)).unsqueeze(0)
+    self.origin = (torch.zeros(size)\
+        .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0)
     self.randomization = 0
     self.interpolation = 0
     self.itermax = 1000
@@ -65,7 +78,8 @@ class Temporary :
 
     for i in range (MAX_NUM_MIX):
       self.data.append((torch.zeros(size)\
-      .to(device = "cpu" , dtype = torch.float32)).unsqueeze(0))
+      \
+        .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0))
 
     self.ID = IntList4(0)
     self.name = StringList4()
@@ -94,7 +108,8 @@ class Temporary1280 :
 #and Boolist lists 
 
   def get(self,index) :
-    output = self.data[index].to(device = "cpu" , dtype = torch.float32)
+    output = self.data[index]\
+        .to(device = choosen_device , dtype = torch.float32)
     assert not output == None , "Faulty get!"
     return output
 
@@ -109,7 +124,8 @@ class Temporary1280 :
     if (tensor != None) :
       self.validate(tensor)
       assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
-      self.data[index] = tensor.to(device = "cpu" , dtype = torch.float32)
+      self.data[index] = tensor\
+        .to(device = choosen_device , dtype = torch.float32)
       self.isEmpty.place(False , index)
       assert not self.isEmpty.data[index] , "Faulty place!"
 
@@ -117,7 +133,7 @@ class Temporary1280 :
     assert not index == None , "Index is NoneType!"
     assert not (index > MAX_NUM_MIX or index < 0) ,  "Index out of bounds!"
     self.data[index] = torch.zeros(self.size).unsqueeze(0)\
-    .to(device = "cpu" , dtype = torch.float32)
+    .to(device = choosen_device , dtype = torch.float32)
     assert not self.data[index] == None , "Bad operation"
     self.isEmpty.clear(index)
     self.ID.clear(index)
@@ -126,7 +142,8 @@ class Temporary1280 :
 
   def __init__(self , size):
     self.size = size
-    self.origin = (torch.zeros(size).to(device = "cpu" , dtype = torch.float32)).unsqueeze(0)
+    self.origin = (torch.zeros(size)\
+    .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0)
     self.randomization = 0
     self.interpolation = 0
     self.itermax = 1000
@@ -136,7 +153,7 @@ class Temporary1280 :
 
     for i in range (MAX_NUM_MIX):
       self.data.append((torch.zeros(size)\
-      .to(device = "cpu" , dtype = torch.float32)).unsqueeze(0))
+      .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0))
 
     self.ID = IntList6(0)
     self.name = StringList6()
