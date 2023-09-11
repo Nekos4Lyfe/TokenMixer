@@ -18,6 +18,12 @@ This extension is published under a MIT License.
 
 TokenMixer is now SDXL compatible for the Minitokenizer module and the Embedding Generator
 
+You can now use the "<" and ">" to append the cutoff tokens |start-of-text| and |end-of-text| to the embeddings
+
+![cutoff1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/21cba74a-c269-4da7-a154-e7e0096cc4c9)
+![cutoff2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/da541adf-d92a-4480-884e-7d10e0743719)
+
+
 For now , you can have fun with the randomizer "_" feature on the Minitokenizer if you like to investigate the latent space of SDXL.
 
 ![rand 1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/b771edf3-d164-4c1e-9114-2b21ef9bde18)
