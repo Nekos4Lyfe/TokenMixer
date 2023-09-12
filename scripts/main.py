@@ -9,7 +9,7 @@ from modules import script_callbacks
 
 from library.modules.token_mixer import TokenMixer     
 from library.modules.moduleTab import Modules
-from library.modules.cross_attention_mixer import CrossAttentionMixer
+#from library.modules.cross_attention_mixer import CrossAttentionMixer
 from library.modules.token_comparator import TokenComparator
 
 #A111 + SDNext stuff
@@ -53,8 +53,8 @@ def add_tab():
                 tokm4 = TokenMixer("Embedding generator #4")
                 tokm5 = TokenMixer("Embedding generator #5")
                 #####
-              with gr.Tab(label = "Visualizers"  , visible = True):
-                catm = CrossAttentionMixer("Cross Attention Visualizer" , True)
+              #with gr.Tab(label = "Visualizers"  , visible = True):
+              #  catm = CrossAttentionMixer("Cross Attention Visualizer" , True)
               
         with gr.Row() : 
           with gr.Accordion('Hide Columns',open=False):

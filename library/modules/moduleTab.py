@@ -13,7 +13,6 @@ from library.modules.embedding_inspector import EmbeddingInspector
 from library.modules.token_mixer import TokenMixer      
 from library.modules.token_calculator import TokenCalculator 
 from library.modules.token_extrapolator import TokenExtrapolator 
-from library.modules.cross_attention_mixer import CrossAttentionMixer
 from library.modules.synonymizer import Synonymizer
 from library.modules.image_encoder import ImageEncoder
 from library.modules.text_encoder import TextEncoder
