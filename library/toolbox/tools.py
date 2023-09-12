@@ -17,6 +17,14 @@ from torch.nn.modules import ConstantPad1d, container
 from library.toolbox.constants import MAX_NUM_MIX 
 #-------------------------------------------------------------------------------
 
+
+# Check that MPS is available (for MAC users)
+choosen_device = torch.device("cpu")
+#if torch.backends.mps.is_available(): 
+#  choosen_device = torch.device("mps")
+#else : choosen_device = torch.device("cpu")
+######
+
 class Tools :
   #The class tools contain built in functions for handling 
   #tokens and embeddings
@@ -41,7 +49,6 @@ class Tools :
         is_sdxl = True
         internal_sdxl_embs = model.text_encoder_2.get_input_embeddings().weight
         return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_sdxl_embs , sdxl_tokenizer
-
 
       def get(self):
         #Check if a valid model is loaded
@@ -97,8 +104,8 @@ class Tools :
         if is_sdxl : 
           FrozenOpenCLIPEmbedder2 = model.cond_stage_model.embedders[1].wrapped
           internal_sdxl_embs = FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
-          tensor = internal_sdxl_embs[1337].to(device="cpu" , dtype = torch.float32)
-          tensor2 = internal_embs[1337].to(device="cpu" , dtype = torch.float32)
+          tensor = internal_sdxl_embs[1337].to(device = choosen_device , dtype = torch.float32)
+          tensor2 = internal_embs[1337].to(device = choosen_device , dtype = torch.float32)
 
         return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_sdxl_embs , sdxl_tokenizer
 
@@ -113,13 +120,11 @@ class Tools :
           self.count = 1
         return self.letter[self.count]
 
-
       def get_best_ids (self , emb_id , similarity , max_similar_embs , emb_vec = None) :
-        
         max_sim = copy.copy(max_similar_embs)
         simil = copy.copy(similarity)
         ID = copy.copy(emb_id)
-        internal_embs = self.internal_embs.to(device='cpu',dtype=torch.float32)
+        internal_embs = self.internal_embs.to(device = choosen_device , dtype = torch.float32)
         cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
         all_sim = None
         scores = None
@@ -129,7 +134,7 @@ class Tools :
         vector = None
 
         if emb_vec != None:
-          vector = emb_vec.to(device='cpu',dtype=torch.float32)
+          vector = emb_vec.to(device = choosen_device , dtype = torch.float32)
         elif isinstance(ID, int):
           vector = internal_embs[ID]
         else: return None , None
@@ -141,8 +146,6 @@ class Tools :
         return  best_ids , sorted_scores
 
       def __init__(self , count=1):
-
-        #Tools.sdxl = xlmr.BertSeriesModelWithTransformation()
 
         #Fetch embeddings and tokenizer(s)
         Tools.tokenizer = None
