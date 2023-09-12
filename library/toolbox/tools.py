@@ -12,12 +12,8 @@ from modules.textual_inversion.textual_inversion import Embedding
 from pprint import pprint
 
 import collections, math, random , numpy
-import re #used to parse string to int
 import copy
 from torch.nn.modules import ConstantPad1d, container
-
-import warnings
-
 from library.toolbox.constants import MAX_NUM_MIX 
 #-------------------------------------------------------------------------------
 
@@ -32,20 +28,37 @@ class Tools :
         except: pass
         return savepath
 
-      def get(self):
+      def get_diffusers(self):
+        model = shared.sd_model
+        tokenizer = model.tokenizer
+        sdxl_tokenizer = model.tokenizer_2
+        loaded_embs = collections.OrderedDict(
+        sorted(sd_hijack.model_hijack.embedding_db.word_embeddings.items(),
+            key=lambda x: str(x[0]).lower())) #doesn't actually work with diffusers
+        internal_embs = model.text_encoder.get_input_embeddings().weight
+        print('test')
+        print(internal_embs.shape)
+        is_sdxl = True
+        internal_sdxl_embs = model.text_encoder_2.get_input_embeddings().weight
+        return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_sdxl_embs , sdxl_tokenizer
 
+
+      def get(self):
+        #Check if a valid model is loaded
         if not hasattr(shared, 'sd_model'):
           return None , None , None , None , None , None
-
-        #Check if a valid model is loaded
+        #######
         model = shared.sd_model
         if model == None : 
           return None , None , None , None , None , None
-
-        is_sdxl = hasattr(model, 'conditioner')
-        is_sd2 = hasattr(model.cond_stage_model, 'model')
-        is_sd1 = not is_sd2 and not is_sdxl
-
+        #######
+        try:
+          is_sdxl = hasattr(model, 'conditioner')
+          is_sd2 = hasattr(model.cond_stage_model, 'model')
+          is_sd1 = not is_sd2 and not is_sdxl
+        except:
+          return self.get_diffusers()
+        ######
         valid_model = is_sd2 or is_sd1 or is_sdxl
         if not valid_model:
           return None , None , None , None , None , None
@@ -79,33 +92,13 @@ class Tools :
 
         #fetch the internal sdxl embs
         internal_sdxl_embs = None
-        sdxl_tokenizer = tokenizer #<<<<--- Might need some modification maybe
+        sdxl_tokenizer = tokenizer 
 
         if is_sdxl : 
           FrozenOpenCLIPEmbedder2 = model.cond_stage_model.embedders[1].wrapped
           internal_sdxl_embs = FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
           tensor = internal_sdxl_embs[1337].to(device="cpu" , dtype = torch.float32)
-          #pprint("internal sdxl_embs sixe : " + str(tensor.shape))
-
           tensor2 = internal_embs[1337].to(device="cpu" , dtype = torch.float32)
-          #pprint("internal_embs size : " + str(tensor2.shape))
-        ########
-
-        #Fetch the SDXL extra stuff (if SDXL model is loaded)
-        #sdxl_tokenizer = None
-        
-        #sdxl_internal_embs = None
-        #pprint("####model.cond_stage_model.embedders.wrapped[0]####")
-        #pprint(vars(model.cond_stage_model.embedders[0].wrapped))
-        #pprint("####model.cond_stage_model.embedders[1]####")
-        #pprint(vars(model.cond_stage_model.embedders[1]))
-        #sdxl_embedder = model.cond_stage_model.embedders[1].wrapped
-        ####
-        #if False:
-        #  sdxl_internal_emb_dir = sdxl_embedder.transformer.text_model.embeddings
-        #  sdxl_internal_embs = sdxl_internal_emb_dir.token_embedding.wrapped.weight
-        #  sdxl_tokenizer = sdxl_embedder.tokenizer
-        #######
 
         return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_sdxl_embs , sdxl_tokenizer
 
@@ -120,8 +113,6 @@ class Tools :
           self.count = 1
         return self.letter[self.count]
 
-      #def sdxl_encode(self,c):
-      #  return self.sdxl.encode(c)
 
       def get_best_ids (self , emb_id , similarity , max_similar_embs , emb_vec = None) :
         
@@ -195,9 +186,29 @@ class Tools :
         self.is_sdxl = is_sdxl
         self.sdxl_tokenizer = tokenizer #<<<<--- NOTE
 
-        #SDXL quick fix
-        if is_sdxl: pass
+        Tools.count = count 
+        Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
+        'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
+        'v' , 'w' , 'x' , 'y' , 'z']
+#End of Tools class
+
         ########
+        #Fetch the SDXL extra stuff (if SDXL model is loaded)
+        #sdxl_tokenizer = None
+        #pprint("internal_embs size : " + str(tensor2.shape))
+        #pprint("internal sdxl_embs sixe : " + str(tensor.shape))
+        #sdxl_internal_embs = None
+        #pprint("####model.cond_stage_model.embedders.wrapped[0]####")
+        #pprint(vars(model.cond_stage_model.embedders[0].wrapped))
+        #pprint("####model.cond_stage_model.embedders[1]####")
+        #pprint(vars(model.cond_stage_model.embedders[1]))
+        #sdxl_embedder = model.cond_stage_model.embedders[1].wrapped
+        ####
+        #if False:
+        #  sdxl_internal_emb_dir = sdxl_embedder.transformer.text_model.embeddings
+        #  sdxl_internal_embs = sdxl_internal_emb_dir.token_embedding.wrapped.weight
+        #  sdxl_tokenizer = sdxl_embedder.tokenizer
+        #######
 
         #Quick Hack
         #if self.loaded and is_sdxl: 
@@ -210,9 +221,3 @@ class Tools :
           #pprint(vars(self.internal_sdxl_embs))
           #pprint("##########") 
         ######
-
-        Tools.count = count 
-        Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
-        'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
-        'v' , 'w' , 'x' , 'y' , 'z']
-#End of Tools class
