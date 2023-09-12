@@ -19,6 +19,10 @@ from library.modules.text_encoder import TextEncoder
 
 from library.data import dataStorage
 
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
 class Modules : 
 
   def __init__(self, label , \

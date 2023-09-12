@@ -8,8 +8,12 @@ import copy
 from library.toolbox.constants import MAX_NUM_MIX , SEP_STR
 from library.data import dataStorage
 
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
+# datatype
 # Check that MPS is available (for MAC users)
-choosen_device = torch.device("cpu")
 #if torch.backends.mps.is_available(): 
 #  choosen_device = torch.device("mps")
 #else : choosen_device = torch.device("cpu")
@@ -113,7 +117,7 @@ class EmbeddingInspector :
     #ID input mode
     if (emb_id < self.data.tools.no_of_internal_embs) and (emb_id > 0): 
       emb_vec = self.data.tools.internal_embs[emb_id].unsqueeze(0)\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       emb_name = self.data.emb_id_to_name(emb_id)
       results.append("Id mode : Found vector '" + \
       emb_name + "' with ID #" + str(emb_id))
@@ -163,9 +167,9 @@ class EmbeddingInspector :
       
       distance = torch.nn.PairwiseDistance(p=2)
       origin = self.data.vector.origin\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       tmp = emb_vec\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       dist = distance(tmp , origin).numpy()[0]
 
       results.append('Vector length: '+str(dist))
@@ -185,10 +189,10 @@ class EmbeddingInspector :
         # Fetch emb_vec from loaded_emb
         if self.data.tools.is_sdxl: 
           emb_vec = loaded_emb.vec.get("clip_l")\
-          .to(device = choosen_device , dtype = torch.float32)
+          .to(device = choosen_device , dtype = datatype)
         else: 
           emb_vec = loaded_emb.vec\
-          .to(device = choosen_device , dtype = torch.float32)
+          .to(device = choosen_device , dtype = datatype)
       #######
         
         # Fetch the vectors which most closely match
@@ -234,7 +238,7 @@ class EmbeddingInspector :
             if (not self.data.negative.isEmpty.get(index)): continue
             self.data.place(index , \
                 vector =   emb_vec.unsqueeze(0)\
-                .to(device = choosen_device , dtype = torch.float32),
+                .to(device = choosen_device , dtype = datatype),
                 ID =  emb_id ,
                 name = copy.copy(emb_name) , 
                 to_mixer = False , 
@@ -248,7 +252,7 @@ class EmbeddingInspector :
             if (not self.data.vector.isEmpty.get(index)): continue
             self.data.place(index , \
                 vector =   emb_vec.unsqueeze(0)\
-                .to(device = choosen_device , dtype = torch.float32),
+                .to(device = choosen_device , dtype = datatype),
                 ID =  emb_id ,
                 name = copy.copy(emb_name) , 
                 to_mixer = sendtomix , 

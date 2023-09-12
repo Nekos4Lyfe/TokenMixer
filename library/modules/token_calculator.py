@@ -9,8 +9,11 @@ from library.toolbox.constants import MAX_NUM_MIX
 
 from library.data import dataStorage
 
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
 # Check that MPS is available (for MAC users)
-choosen_device = torch.device("cpu")
 #if torch.backends.mps.is_available(): 
 #  choosen_device = torch.device("mps")
 #else : choosen_device = torch.device("cpu")
@@ -23,14 +26,14 @@ class TokenCalculator:
 
   def addition (self, tensor1 , tensor2):
     if (tensor1 == None) or (tensor2 == None) : return None
-    tmp1 = tensor1.to(device = choosen_device , dtype = torch.float32)
-    tmp2 = tensor2.to(device = choosen_device , dtype = torch.float32)
+    tmp1 = tensor1.to(device = choosen_device , dtype = datatype)
+    tmp2 = tensor2.to(device = choosen_device , dtype = datatype)
     return tmp1 + tmp2
   
   def subtraction (self, tensor1 , tensor2):
     if (tensor1 == None) or (tensor2 == None) : return None
-    tmp1 = tensor1.to(device = choosen_device , dtype = torch.float32)
-    tmp2 = tensor2.to(device = choosen_device , dtype = torch.float32)
+    tmp1 = tensor1.to(device = choosen_device , dtype = datatype)
+    tmp2 = tensor2.to(device = choosen_device , dtype = datatype)
     return tmp1 - tmp2
 
   def get_emb_vec (self, string , id_mode , no_of_internal_embs) :
@@ -188,7 +191,7 @@ class TokenCalculator:
       return tokenmixer_vectors , '' , '\n'.join(log) , negbox
 
     distance = torch.nn.PairwiseDistance(p=2)
-    output = calc_sum.unsqueeze(0).to(device = choosen_device , dtype = torch.float32)
+    output = calc_sum.unsqueeze(0).to(device = choosen_device , dtype = datatype)
     dist = distance(output , 0*output).numpy()[0]
 
     tmp = output_length * \
@@ -271,7 +274,7 @@ class TokenCalculator:
 
   def get_length(self, emb_vec):
     self.emb_vec = emb_vec\
-    .to(device = choosen_device , dtype = torch.float32)
+    .to(device = choosen_device , dtype = datatype)
     assert self.emb_vec != None, "emb_vec is None!"
     dist = self.distance(self.emb_vec, self.origin).numpy()[0]
     dist = round(dist , 2)
@@ -283,7 +286,7 @@ class TokenCalculator:
     self.emb_vec = None
     self.size = copy.copy(self.data.vector.size)
     self.origin = torch.zeros(self.size).unsqueeze(0)\
-    .to(device = choosen_device , dtype = torch.float32)
+    .to(device = choosen_device , dtype = datatype)
     self.distance = torch.nn.PairwiseDistance(p=2)
     self.random_token_length = 0
     self.random_token_length_randomization = 0

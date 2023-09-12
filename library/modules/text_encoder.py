@@ -10,6 +10,10 @@ from torch.nn.modules import ConstantPad1d, container
 from library.toolbox.constants import MAX_NUM_MIX
 from library.data import dataStorage
 
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
 class TextEncoder:
 
   def Reset (self , mini_input , tokenbox) : 

@@ -17,8 +17,12 @@ from library.toolbox.stringlist import StringList
 from library.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
 
+
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
 # Check that MPS is available (for MAC users)
-choosen_device = torch.device("cpu")
 #if torch.backends.mps.is_available(): 
 #  choosen_device = torch.device("mps")
 #else : choosen_device = torch.device("cpu")
@@ -48,7 +52,7 @@ class Vector :
     if (tensor != None) :
       self.validate(tensor)
       assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
-      self.data[index] = tensor.to(device = choosen_device , dtype = torch.float32)
+      self.data[index] = tensor.to(device = choosen_device , dtype = datatype)
       self.isEmpty.place(False , index)
       assert not self.isEmpty.data[index] , "Faulty place!"
 
@@ -56,7 +60,7 @@ class Vector :
     assert not index == None , "Index is NoneType!"
     assert not (index > MAX_NUM_MIX or index < 0) ,  "Index out of bounds!"
     self.data[index] = torch.zeros(self.size).unsqueeze(0)\
-    .to(device = choosen_device , dtype = torch.float32)
+    .to(device = choosen_device , dtype = datatype)
     assert not self.data[index] == None , "Bad operation"
     self.isEmpty.clear(index)
     self.ID.clear(index)
@@ -92,45 +96,45 @@ class Vector :
         self.swap(self.weight  , index1 , index2)
         #####
         self.tmp = self.data[index1]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         self.data[index1] = self.data[index2]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         self.data[index2] = self.tmp\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
   ####### End of shuffle function
 
   def similarity (self , tensor1 , tensor2):
         distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         origin = (self.origin)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         #######
 
-        current = tensor1.to(device = choosen_device , dtype = torch.float32)
+        current = tensor1.to(device = choosen_device , dtype = datatype)
         dist1 = distance(current, origin).numpy()[0]
         current = current * (1/dist1)
 
         ####
 
-        ref = tensor2.to(device = choosen_device , dtype = torch.float32)
+        ref = tensor2.to(device = choosen_device , dtype = datatype)
         dist2 = distance(current, origin).numpy()[0]
         ref = ref * (1/dist2)
 
         ########
         sim = (100*cos(current , ref))\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         if sim < 0 : sim = -sim
         output = str(round(sim.numpy()[0] , 2))
         return  output
 
   def distance (self, tensor1 , tensor2):
         distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         #######
-        current = tensor1.to(device = choosen_device , dtype = torch.float32)
-        ref = tensor2.to(device = choosen_device , dtype = torch.float32)
+        current = tensor1.to(device = choosen_device , dtype = datatype)
+        ref = tensor2.to(device = choosen_device , dtype = datatype)
         dist = distance(current, ref).numpy()[0]
         output = str(round(dist , 2))
         return  output
@@ -144,7 +148,7 @@ class Vector :
     rand = None 
     prev = None
     current = None
-    origin = self.origin.to(device = choosen_device , dtype = torch.float32)
+    origin = self.origin.to(device = choosen_device , dtype = datatype)
     tokenCount = 0
     tmp = None
     for index in range(MAX_NUM_MIX):
@@ -155,10 +159,10 @@ class Vector :
       rollCount = math.floor(self.rollcount * ((1 - r) + (r) * random.random()))
       #########
       prev = self.data[index]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
       current = torch.roll(prev , rollCount)\
-        .to(device = choosen_device , dtype = torch.float32)
-      self.data[index] = current.to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
+      self.data[index] = current.to(device = choosen_device , dtype = datatype)
       ########
       similarity = self.similarity(current, prev)
       dist = self.distance(current, self.origin)
@@ -175,12 +179,12 @@ class Vector :
   
   def random_quick(self):
     randvec = torch.rand(self.size)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
     gain = None
     for k in range(self.size):
       gain = self.samplegain * (1 - (self.samplerand/100)*random.random())
       randvec[k] = (randvec[k] * gain)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
     #####
     return randvec
 
@@ -188,7 +192,7 @@ class Vector :
   def random(self , internal_embs):
 
         output = torch.ones(self.size)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
 
         #This list shares storage with 'output'
         output_data = output.numpy() 
@@ -198,7 +202,7 @@ class Vector :
         for k in range(self.size):
           randvec = \
           random.choice(internal_embs)\
-          .to(device = choosen_device , dtype = torch.float32)
+          .to(device = choosen_device , dtype = datatype)
           gain = self.samplegain * (1 - (self.samplerand/100)*random.random())
           internal_emb_data = randvec.numpy() 
           randvec_data = internal_emb_data.copy()
@@ -231,7 +235,7 @@ class Vector :
     rand = None 
     prev = None
     current = None
-    origin = self.origin.to(device = choosen_device , dtype = torch.float32)
+    origin = self.origin.to(device = choosen_device , dtype = datatype)
     tokenCount = 0
     tmp = None
     gain = None
@@ -242,23 +246,23 @@ class Vector :
       if isFiltered: continue
 
       rand = self.random(interal_embs)\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       rdist = distance(rand , origin).numpy()[0]
       gain = self.vecsamplegain * (1 - (self.vecsamplerand/100)*random.random())
       #########
       prev = self.data[index]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
       prev_dist = distance(prev , origin).numpy()[0]
       current = (prev*(1 - r)*(1/prev_dist) + rand * r * (1/rdist))\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       #########
       curr_dist = distance(current , origin).numpy()[0]
       self.data[index] = \
       (current * (gain*prev_dist/curr_dist))\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       ########
       tmp = self.data[index]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
       similarity = 100*cos(tmp, prev).numpy()[0]
       if similarity < 0 : similarity = -similarity
       dist = distance(tmp , origin).numpy()[0]
@@ -277,7 +281,7 @@ class Vector :
   def __init__(self , size):
     self.size = size
     self.origin = (torch.zeros(size)\
-    .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0)
+    .to(device = choosen_device , dtype = datatype)).unsqueeze(0)
     self.randomization = 0
     self.interpolation = 0
     self.itermax = 1000
@@ -300,7 +304,7 @@ class Vector :
 
     for i in range (MAX_NUM_MIX):
       tmp = torch.zeros(size).unsqueeze(0)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
       self.data.append(tmp)
       tmp=None
 
@@ -343,7 +347,7 @@ class Vector1280 :
     if (tensor != None) :
       self.validate(tensor)
       assert not (index > MAX_NUM_MIX or index < 0) , "Index out of bounds!"
-      self.data[index] = tensor.to(device = choosen_device , dtype = torch.float32)
+      self.data[index] = tensor.to(device = choosen_device , dtype = datatype)
       self.isEmpty.place(False , index)
       assert not self.isEmpty.data[index] , "Faulty place!"
 
@@ -351,7 +355,7 @@ class Vector1280 :
     assert not index == None , "Index is NoneType!"
     assert not (index > MAX_NUM_MIX or index < 0) ,  "Index out of bounds!"
     self.data[index] = torch.zeros(self.size).unsqueeze(0)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
     assert not self.data[index] == None , "Bad operation"
     self.isEmpty.clear(index)
     self.ID.clear(index)
@@ -387,45 +391,45 @@ class Vector1280 :
         self.swap(self.weight  , index1 , index2)
         #####
         self.tmp = self.data[index1]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         self.data[index1] = self.data[index2]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         self.data[index2] = self.tmp\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
   ####### End of shuffle function
 
   def similarity (self , tensor1 , tensor2):
         distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         origin = (self.origin)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         #######
 
-        current = tensor1.to(device = choosen_device , dtype = torch.float32)
+        current = tensor1.to(device = choosen_device , dtype = datatype)
         dist1 = distance(current, origin).numpy()[0]
         current = current * (1/dist1)
 
         ####
 
-        ref = tensor2.to(device = choosen_device , dtype = torch.float32)
+        ref = tensor2.to(device = choosen_device , dtype = datatype)
         dist2 = distance(current, origin).numpy()[0]
         ref = ref * (1/dist2)
 
         ########
         sim = (100*cos(current , ref))\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         if sim < 0 : sim = -sim
         output = str(round(sim.numpy()[0] , 2))
         return  output
 
   def distance (self, tensor1 , tensor2):
         distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         #######
-        current = tensor1.to(device = choosen_device , dtype = torch.float32)
-        ref = tensor2.to(device = choosen_device , dtype = torch.float32)
+        current = tensor1.to(device = choosen_device , dtype = datatype)
+        ref = tensor2.to(device = choosen_device , dtype = datatype)
         dist = distance(current, ref).numpy()[0]
         output = str(round(dist , 2))
         return  output
@@ -439,7 +443,7 @@ class Vector1280 :
     rand = None 
     prev = None
     current = None
-    origin = self.origin.to(device = choosen_device , dtype = torch.float32)
+    origin = self.origin.to(device = choosen_device , dtype = datatype)
     tokenCount = 0
     tmp = None
     for index in range(MAX_NUM_MIX):
@@ -450,10 +454,10 @@ class Vector1280 :
       rollCount = math.floor(self.rollcount * ((1 - r) + (r) * random.random()))
       #########
       prev = self.data[index]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
       current = torch.roll(prev , rollCount)\
-        .to(device = choosen_device , dtype = torch.float32)
-      self.data[index] = current.to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
+      self.data[index] = current.to(device = choosen_device , dtype = datatype)
       ########
       similarity = self.similarity(current, prev)
       dist = self.distance(current, self.origin)
@@ -470,12 +474,12 @@ class Vector1280 :
   
   def random_quick(self):
     randvec = torch.rand(self.size)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
     gain = None
     for k in range(self.size):
       gain = self.samplegain * (1 - (self.samplerand/100)*random.random())
       randvec[k] = (randvec[k] * gain)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
     #####
     return randvec
 
@@ -483,7 +487,7 @@ class Vector1280 :
   def random(self , internal_embs):
 
         output = torch.ones(self.size)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
 
         #This list shares storage with 'output'
         output_data = output.numpy() 
@@ -493,7 +497,7 @@ class Vector1280 :
         for k in range(self.size):
           randvec = \
           random.choice(internal_embs)\
-          .to(device = choosen_device , dtype = torch.float32)
+          .to(device = choosen_device , dtype = datatype)
           gain = self.samplegain * (1 - (self.samplerand/100)*random.random())
           internal_emb_data = randvec.numpy() 
           randvec_data = internal_emb_data.copy()
@@ -526,7 +530,7 @@ class Vector1280 :
     rand = None 
     prev = None
     current = None
-    origin = self.origin.to(device = choosen_device , dtype = torch.float32)
+    origin = self.origin.to(device = choosen_device , dtype = datatype)
     tokenCount = 0
     tmp = None
     gain = None
@@ -537,23 +541,23 @@ class Vector1280 :
       if isFiltered: continue
 
       rand = self.random(interal_embs)\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       rdist = distance(rand , origin).numpy()[0]
       gain = self.vecsamplegain * (1 - (self.vecsamplerand/100)*random.random())
       #########
       prev = self.data[index]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
       prev_dist = distance(prev , origin).numpy()[0]
       current = (prev*(1 - r)*(1/prev_dist) + rand * r * (1/rdist))\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       #########
       curr_dist = distance(current , origin).numpy()[0]
       self.data[index] = \
       (current * (gain*prev_dist/curr_dist))\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       ########
       tmp = self.data[index]\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
       similarity = 100*cos(tmp, prev).numpy()[0]
       if similarity < 0 : similarity = -similarity
       dist = distance(tmp , origin).numpy()[0]
@@ -572,7 +576,7 @@ class Vector1280 :
   def __init__(self , size):
     self.size = size
     self.origin = (torch.zeros(size)\
-    .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0)
+    .to(device = choosen_device , dtype = datatype)).unsqueeze(0)
     self.randomization = 0
     self.interpolation = 0
     self.itermax = 1000
@@ -595,7 +599,7 @@ class Vector1280 :
 
     for i in range (MAX_NUM_MIX):
       tmp = torch.zeros(size).unsqueeze(0)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
       self.data.append(tmp)
       tmp=None
 

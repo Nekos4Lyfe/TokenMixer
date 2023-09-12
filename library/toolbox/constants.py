@@ -8,3 +8,8 @@ GRAPH_VECTOR_LIMIT = 8 # max number of vectors to draw in graph
 ENABLE_SHOW_CHECKSUM = False #slows down listing loaded embeddings
 REMOVE_ZEROED_VECTORS = False #optional
 EMB_SAVE_EXT = '.pt' #'.bin'
+
+
+import torch
+TENSOR_DEVICE_TYPE = "cpu"
+TENSOR_DATA_TYPE = torch.float32

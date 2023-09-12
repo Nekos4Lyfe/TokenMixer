@@ -12,7 +12,11 @@ from library.modules.moduleTab import Modules
 #from library.modules.cross_attention_mixer import CrossAttentionMixer
 from library.modules.token_comparator import TokenComparator
 
-#A111 + SDNext stuff
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
+
 def add_tab():
 
   left_column = gr.Column(scale=2)

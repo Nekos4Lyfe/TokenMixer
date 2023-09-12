@@ -10,6 +10,9 @@ nltk.download('wordnet')
 nltk.download('omw-1.4')
 from nltk.corpus import wordnet as wn
 
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
 
 class Synonymizer:
 

@@ -8,8 +8,11 @@ import copy
 from library.toolbox.constants import MAX_NUM_MIX 
 from library.data import dataStorage
 
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
 # Check that MPS is available (for MAC users)
-choosen_device = torch.device("cpu")
 #if torch.backends.mps.is_available(): 
 #  choosen_device = torch.device("mps")
 #else : choosen_device = torch.device("cpu")
@@ -129,7 +132,7 @@ class TokenExtrapolator:
       if not self.data.vector.isEmpty.get(k) : continue
       self.data.place(k , 
         vector =   emb_vec\
-        .to(device = choosen_device , dtype = torch.float32),
+        .to(device = choosen_device , dtype = datatype),
         ID =  emb_id ,
         name = emb_name , 
         to_mixer = sendtomix , 
@@ -142,7 +145,7 @@ class TokenExtrapolator:
       if not self.data.negative.isEmpty.get(k) : continue
       self.data.place(k , 
         vector =   emb_vec\
-        .to(device = choosen_device , dtype = torch.float32),
+        .to(device = choosen_device , dtype = datatype),
         ID =  emb_id ,
         name = emb_name , 
         to_mixer = False , 

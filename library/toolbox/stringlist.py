@@ -6,6 +6,10 @@ import copy
 from library.toolbox.constants import MAX_NUM_MIX
 #-------------------------------------------------------------------------------
 
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
 class StringList :
   #The class StringList stores token names as a list
   #It also stores functions which modify this list  

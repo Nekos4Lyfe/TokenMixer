@@ -8,8 +8,11 @@ from library.toolbox.constants import MAX_NUM_MIX
 
 from library.data import dataStorage
 
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
 # Check that MPS is available (for MAC users)
-choosen_device = torch.device("cpu")
 #if torch.backends.mps.is_available(): 
 #  choosen_device = torch.device("mps")
 #else : choosen_device = torch.device("cpu")
@@ -191,7 +194,7 @@ class TokenComparator :
 
     distance = torch.nn.PairwiseDistance(p=2)
     origin = self.data.vector.origin\
-    .to(device = choosen_device , dtype = torch.float32)
+    .to(device = choosen_device , dtype = datatype)
 
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)

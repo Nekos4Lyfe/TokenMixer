@@ -11,8 +11,11 @@ from safetensors import safe_open
 from safetensors.torch import save_file
 from library.data import dataStorage
 
+from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
+choosen_device = TENSOR_DEVICE_TYPE
+datatype = TENSOR_DATA_TYPE
+
 # Check that MPS is available (for MAC users)
-choosen_device = torch.device("cpu")
 #if torch.backends.mps.is_available(): 
 #  choosen_device = torch.device("mps")
 #else : choosen_device = torch.device("cpu")
@@ -146,9 +149,9 @@ class TokenMixer :
             #######
 
             #Send the vectors to the correct torch.device prior to saving
-            tot_vec = tot_vec.to(device = choosen_device , dtype = torch.float32)
+            tot_vec = tot_vec.to(device = choosen_device , dtype = datatype)
             if self.data.tools.is_sdxl: sdxl_tot_vec = \
-              sdxl_tot_vec.to(device = choosen_device , dtype = torch.float32)
+              sdxl_tot_vec.to(device = choosen_device , dtype = datatype)
             #######
 
            #Save the embedding           
