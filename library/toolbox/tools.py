@@ -1,22 +1,20 @@
+#TOOLS.PY
 import gradio as gr
-from modules import script_callbacks, shared, sd_hijack , sd_models , sd_hijack_open_clip , textual_inversion , xlmr
-
-
+from modules import script_callbacks, shared, \
+sd_hijack , sd_models , sd_hijack_open_clip , textual_inversion , xlmr
 from transformers import XLMRobertaModel,XLMRobertaTokenizer
-
 from modules.shared import cmd_opts
+#######
 from pandas import Index
 from pandas.core.groupby.groupby import OutputFrameOrSeries
 import torch, os
 from modules.textual_inversion.textual_inversion import Embedding
-from pprint import pprint
-
+#######
 import collections, math, random , numpy
 import copy
 from torch.nn.modules import ConstantPad1d, container
 from library.toolbox.constants import MAX_NUM_MIX 
-#-------------------------------------------------------------------------------
-
+#------------------------------------------------------------
 from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
 choosen_device = TENSOR_DEVICE_TYPE
 datatype = TENSOR_DATA_TYPE
@@ -41,80 +39,95 @@ class Tools :
       def get_diffusers(self):
         model = shared.sd_model
         tokenizer = model.tokenizer
-        sdxl_tokenizer = model.tokenizer_2
+        tokenizer1280 = model.tokenizer_2
         loaded_embs = collections.OrderedDict(
         sorted(sd_hijack.model_hijack.embedding_db.word_embeddings.items(),
             key=lambda x: str(x[0]).lower())) #doesn't actually work with diffusers
         internal_embs = model.text_encoder.get_input_embeddings().weight
-        print('test')
-        print(internal_embs.shape)
+        from pprint import pprint
+        pprint('test')
+        pprint(internal_embs.shape)
         is_sdxl = True
-        internal_sdxl_embs = model.text_encoder_2.get_input_embeddings().weight
-        return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_sdxl_embs , sdxl_tokenizer
+        internal_embs1280 = model.text_encoder_2.get_input_embeddings().weight
+        return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_embs1280 , tokenizer1280
 
-      def get(self):
-        #Check if a valid model is loaded
-        if not hasattr(shared, 'sd_model'):
-          return None , None , None , None , None , None
-        #######
+      #Check if a valid model is loaded
+      def model_is_loaded(self):
+        if not hasattr(shared, 'sd_model'): return False
+        else: return (shared.sd_model != None)
+      #### End of model_is_loaded()
+
+      # Get boolean flags for the sd_model
+      def get_flags(self):
+        assert self.model_is_loaded(), "Model is not loaded"
         model = shared.sd_model
-        if model == None : 
-          return None , None , None , None , None , None
-        #######
-        try:
-          is_sdxl = hasattr(model, 'conditioner')
-          is_sd2 = hasattr(model.cond_stage_model, 'model')
-          is_sd1 = not is_sd2 and not is_sdxl
-        except:
-          return self.get_diffusers()
-        ######
-        valid_model = is_sd2 or is_sd1 or is_sdxl
-        if not valid_model:
-          return None , None , None , None , None , None
-        ########
+        is_sdxl = hasattr(model, 'conditioner')
+        is_sd2 = hasattr(model.cond_stage_model, 'model') and not is_sdxl
+        is_sd1 = not is_sd2
+        return is_sdxl , is_sd2 , is_sd1
+      ### End of get_flags()
 
-        #Fetch the loaded embeddings
+      #Fetch the loaded embeddings
+      def get_loaded_embs(self):
+        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
         loaded_embs = collections.OrderedDict(
         sorted(sd_hijack.model_hijack.embedding_db.word_embeddings.items(),
             key=lambda x: str(x[0]).lower()))
-        ######
+        return loaded_embs
+      #### End of get_loaded_embs()
 
-        #Fetch the internal_embeddings
+      #Helper function
+      def _get_embedder(self):
+        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
+        model = shared.sd_model
         embedder = None
         if is_sdxl: embedder = model.cond_stage_model.embedders[0].wrapped
         else: embedder = model.cond_stage_model.wrapped
-        #####
+        return embedder
+      ## End of _get_embedder()
+
+      #Fetch the internal_embeddings
+      def get_internal_embs(self , use_sdxl_dim = False):
+        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
+        embedder = self._get_embedder()
+        model = shared.sd_model
         internal_emb_dir = None
         if is_sd2 : internal_emb_dir = internal_emb_dir = embedder.model
         else : internal_emb_dir = embedder.transformer.text_model.embeddings
-        ####
         internal_embs = internal_emb_dir.token_embedding.wrapped.weight 
-        #########
+        if use_sdxl_dim : 
+          FrozenOpenCLIPEmbedder2 = model.cond_stage_model.embedders[1].wrapped
+          internal_embs1280 = \
+          FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
+          return internal_embs.to(device=choosen_device , dtype = datatype) , \
+          internal_embs1280.to(device=choosen_device , dtype = datatype)
+        else : return internal_embs.to(device=choosen_device , dtype = datatype)
+      ########
 
-        #Fetch the tokenizer
+      def get_encoder(self):
+        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
+        embedder = self._get_embedder()
+        if is_sdxl : 
+          encoder =  embedder.transformer.text_model.encoder #CLIPEncoder
+        else :  encoder = None #Not implemented
+        return encoder
+      ##### End of get_encoder()
+
+      #Fetch the tokenizer
+      def get_tokenizer(self):
+        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
+        embedder = self._get_embedder()
+        model = shared.sd_model
         tokenizer = None
         if is_sd2 :
           from modules.sd_hijack_open_clip import tokenizer as open_clip_tokenizer
           tokenizer = open_clip_tokenizer
         else: tokenizer = embedder.tokenizer
-        ########
-
-        #fetch the internal sdxl embs
-        internal_sdxl_embs = None
-        sdxl_tokenizer = tokenizer 
-
-        if is_sdxl : 
-          FrozenOpenCLIPEmbedder2 = model.cond_stage_model.embedders[1].wrapped
-          internal_sdxl_embs = FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
-          tensor = internal_sdxl_embs[1337].to(device = choosen_device , dtype = datatype)
-          tensor2 = internal_embs[1337].to(device = choosen_device , dtype = datatype)
-
-        return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_sdxl_embs , sdxl_tokenizer
+        return tokenizer
+      ########
 
       def update_loaded_embs(self):
-        tokenizer , internal_embs ,  loaded_embs , is_sdxl , \
-        internal_sdxl_embs , sdxl_tokenizer = self.get()
-        Tools.loaded_embs = loaded_embs
+        Tools.loaded_embs = self.get_loaded_embs()
 
       def get_subname(self):
         self.count = copy.copy(self.count + 1)
@@ -148,81 +161,61 @@ class Tools :
         return  best_ids , sorted_scores
 
       def __init__(self , count=1):
-
-        #Fetch embeddings and tokenizer(s)
+        #Default values
         Tools.tokenizer = None
-        Tools.sdxl_tokenizer = None
         Tools.internal_embs = None
-        Tools.internal_sdxl_embs = None
+        Tools.internal_embs1280 = None
+        Tools.encode = None 
         Tools.loaded_embs = None
         Tools.no_of_internal_embs = 0
+        Tools.no_of_internal_embs1280 = 0
         Tools.is_sdxl = False
-        tokenizer , internal_embs ,  loaded_embs , is_sdxl , \
-        internal_sdxl_embs , sdxl_tokenizer = self.get()
-        #####
+        Tools.loaded = False
+        #######
+        is_sdxl = False
+        is_sd2 = False
+        is_sd1 = False 
+        model_is_loaded = self.model_is_loaded()
+        if model_is_loaded : 
+          is_sdxl , is_sd2 , is_sd1 = self.get_flags()
+          Tools.is_sdxl = is_sdxl
+          Tools.loaded = model_is_loaded
+        #######
+        Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
+        Tools.tokenizer = self.get_tokenizer()
+        Tools.encode = self.get_encoder()
+        Tools.internal_embs , \
+        Tools.internal_embs1280 = \
+        self.get_internal_embs(use_sdxl_dim = is_sdxl)
+        Tools.loaded_embs = self.get_loaded_embs()
+        if self.internal_embs != None:
+          Tools.no_of_internal_embs = len(self.internal_embs)
+        if self.internal_embs1280 != None:
+          Tools.no_of_internal_embs1280 = len(self.internal_embs)
+          #Quick fix
+          Tools.internal_sdxl_embs = self.internal_embs1280
+          Tools.no_of_sdxl_internal_embs = self.no_of_internal_embs1280
+        ########
 
-        #Check if embeddings and tokenizers were loaded properly
-        Tools.loaded = True
-        if tokenizer == None or internal_embs == None:
-          print("TokenMixer could not load model params")
-          self.loaded = False
-        #####
-
-        #Setup the Tools class for later use
+        #Do some checks
         if self.loaded:
-          Tools.tokenizer = tokenizer
-          Tools.internal_embs = internal_embs
-          Tools.internal_sdxl_embs = internal_sdxl_embs
-          Tools.loaded_embs = loaded_embs
-          Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
-          Tools.no_of_internal_embs = len(internal_embs)
-          #####
-          #Writing duplicates because I keep forgetting the name
-          Tools.no_of_sdxl_internal_embs = None
-          Tools.no_of_internal_sdxl_embs = None
-          if internal_sdxl_embs != None:
-            Tools.no_of_sdxl_internal_embs = len(internal_sdxl_embs)
-            Tools.no_of_internal_sdxl_embs = len(internal_sdxl_embs)
-          else: 
-            Tools.no_of_sdxl_internal_embs = 0
-            Tools.no_of_internal_sdxl_embs = 0
-        ######
-
-        self.is_sdxl = is_sdxl
-        self.sdxl_tokenizer = tokenizer #<<<<--- NOTE
+          assert self.tokenizer != None , \
+          "tokenizer is NoneType for this model!"
+          assert self.internal_embs != None , \
+          "internal_embs is NoneType for this model!"
+          if is_sdxl : 
+            assert self.internal_embs1280 != None , "internal_embs " + \
+            "dimension 1280 is NoneType in this SDXL model!"
+            assert self.no_of_internal_embs1280 == self.no_of_internal_embs , \
+            "SDXL model load error: " + \
+            "Size of 768 dimension internal embeds do not " + \
+            "match 1280 dimension internal_embs , len(embs768) = " + \
+            str(self.no_of_internal_embs)  + " and len(embs1280) = " + \
+            str(self.no_of_internal_embs1280)
+        #######
 
         Tools.count = count 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
         'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
         'v' , 'w' , 'x' , 'y' , 'z']
 #End of Tools class
-
-        ########
-        #Fetch the SDXL extra stuff (if SDXL model is loaded)
-        #sdxl_tokenizer = None
-        #pprint("internal_embs size : " + str(tensor2.shape))
-        #pprint("internal sdxl_embs sixe : " + str(tensor.shape))
-        #sdxl_internal_embs = None
-        #pprint("####model.cond_stage_model.embedders.wrapped[0]####")
-        #pprint(vars(model.cond_stage_model.embedders[0].wrapped))
-        #pprint("####model.cond_stage_model.embedders[1]####")
-        #pprint(vars(model.cond_stage_model.embedders[1]))
-        #sdxl_embedder = model.cond_stage_model.embedders[1].wrapped
-        ####
-        #if False:
-        #  sdxl_internal_emb_dir = sdxl_embedder.transformer.text_model.embeddings
-        #  sdxl_internal_embs = sdxl_internal_emb_dir.token_embedding.wrapped.weight
-        #  sdxl_tokenizer = sdxl_embedder.tokenizer
-        #######
-
-        #Quick Hack
-        #if self.loaded and is_sdxl: 
-          #self.internal_embs = internal_sdxl_embs
-          #self.no_of_internal_embs = self.no_of_sdxl_internal_embs
-          #pprint("#####  internal_embs ######")
-          #pprint(vars(self.internal_embs))
-          #pprint("##########")
-          #pprint("#####  internal_sdxl_embs ######")
-          #pprint(vars(self.internal_sdxl_embs))
-          #pprint("##########") 
-        ######
