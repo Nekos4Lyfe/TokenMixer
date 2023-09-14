@@ -10,6 +10,17 @@ datatype = TENSOR_DATA_TYPE
 # The Operations class is used to store 
 # helper functions to the Data.py class
 class Operations:
-  def __init__(self):
-    Operations.using_tensors = TensorFunctions()
-    Operations.using_text = TextFunctions()
+  def __init__(self , \
+    internal_embs , internal_embs1280 , \
+    no_of_internal_embs , no_of_internal_embs1280 , \
+    tokenizer , loaded_embs , \
+    is_sdxl ,is_sd2 ,  is_sd1):
+
+    self.using_tensors = TensorFunctions()
+    
+    self.using_text = \
+    TextFunctions(\
+    internal_embs , internal_embs1280 , \
+    no_of_internal_embs , no_of_internal_embs1280 , \
+    tokenizer , loaded_embs , \
+    is_sdxl ,is_sd2 ,  is_sd1)

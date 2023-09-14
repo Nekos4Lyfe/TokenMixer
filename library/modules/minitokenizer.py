@@ -24,14 +24,9 @@ class MiniTokenizer:
   def Reset (self , mini_input , tokenbox) : 
     return '' , ''
 
-  def place (self , \
-    index  , \
-    send_to_negatives , \
-    sendtomix , \
-    send_to_positives , \
-    send_to_temporary , 
-    emb_id 
-    ) :
+  def place (self , index ,\
+    send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
+    emb_id):
 
     is_sdxl = self.data.tools.is_sdxl
     #Do some checks
@@ -53,7 +48,7 @@ class MiniTokenizer:
         assert emb_vec != None ,"emb_vec is NoneType!"
 
         #Add to 768 dimension vectors
-        self.data.place(index , 
+        self.data.place(index ,\
             vector =  emb_vec.unsqueeze(0) ,
             ID =  emb_id ,
             name = emb_name , 
@@ -157,6 +152,7 @@ class MiniTokenizer:
     posbox = ''
     emb_name = None
     found_IDs = None
+    reading_word = False
     ID_index = None
     ##########
     start = 0
@@ -173,19 +169,18 @@ class MiniTokenizer:
 
     ## SDXL stuff
     is_sdxl = self.data.tools.is_sdxl
-    start_of_text_ID = 49406
-    end_of_text_ID = 49407
-    ######
-    
-    #Append start_of_text_ID to output before loop (SDXL only)
-    first_index = 0
-    if is_sdxl:
-      self.place (first_index  , \
-      send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
-      start_of_text_ID) 
     ######
 
-#use_1280_dim =
+    start_of_text_ID = 49406
+    end_of_text_ID = 49407
+    
+    #Append start_of_text_ID to output before loop
+    first_index = 0
+    self.place (first_index,\
+    send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
+    start_of_text_ID) 
+    ######
+
     ########## Start loop : 
     for index in range(MAX_NUM_MIX):
       if sendtomix and not self.data.vector.isEmpty.get(index): continue
@@ -261,7 +256,7 @@ class MiniTokenizer:
       ########## End of the '_' random token stuff
 
       #Place a start-of-text token if running SDXL
-      if word == "<" and is_sdxl :
+      if word == "<" :
         if word_index < no_of_words - 1 :
           self.place (index  , \
             send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
@@ -276,7 +271,7 @@ class MiniTokenizer:
       ####### End of the '<' start-of-text stuff
 
       #Place a end-of-text token if running SDXL
-      if word == ">" and is_sdxl:
+      if word == ">" :
         self.place (index  , \
           send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
           end_of_text_ID) 
@@ -420,22 +415,55 @@ class MiniTokenizer:
       ###########
       else:
         #If embedding is single token
-        if found_IDs == None:
-          found_IDs = self.data.text_to_emb_ids(word)
+        if not reading_word:
+          reading_word = True
+          found_IDs = self.data.tools.get_emb_ids_from(word).numpy()
+          found_vecs768 = None
+          found_vecs1280 = None
+          if is_sdxl : 
+            found_vecs768 = \
+            self.data.tools.get_emb_vecs_from(word)
+
+            #This one returns 768 dimension tensors 
+            #(cannot be used to get 1280 tensors , I think)
+            found_vecs1280 = \
+            self.data.tools.get_emb_vecs_from(word , use_1280_dim = True) 
+            #######
+
+          ##########
+          if len(found_IDs)<=0:
+            reading_word = False
+            word_index -=1 
+            continue
+          ###########
           no_of_IDs = len(found_IDs)
+          if is_sdxl: 
+            assert no_of_IDs == found_vecs768.shape[0] , \
+            "Size mismatch between found vecs and found IDs! , " + \
+            "found_vecs768.shape[0] = " + str(found_vecs768.shape[0]) + \
+            " and len(found_IDs) = " + str(no_of_IDs)
+          #######
           ID_index = 0
         #######
-        _ID = found_IDs[ID_index] 
+
+        _ID = int(found_IDs[ID_index])
+        if is_sdxl : 
+          emb_vec = found_vecs768[ID_index] #Good method (SDXL)
+        else : 
+          emb_vec = self.data.emb_id_to_vec(_ID)\
+          .to(device = choosen_device , dtype = datatype) # Bad method (SD1.5)
+
         emb_name = self.data.emb_id_to_name(_ID)
-        emb_vec = self.data.emb_id_to_vec(_ID).to(device = choosen_device , dtype = datatype)
+        assert _ID != None , "_ID is NoneType"
         assert emb_vec != None , "emb_vec is NoneType"
         ######
         if is_sdxl: 
           sdxl_emb_vec = self.data.emb_id_to_vec(_ID , use_1280_dim = True)\
-          .to(device = choosen_device , dtype = datatype)
+          .to(device= choosen_device , dtype = datatype) # Bad method? (SDXL)
+          #found_vecs1280[ID_index] # wrong dimension (768)
           assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
         #######
-        if not (is_sdxl and (_ID == 49406 or _ID == 49407)) :
+        if not (_ID == 49406 or _ID == 49407) :
           self.data.place(index , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  _ID ,
@@ -457,30 +485,31 @@ class MiniTokenizer:
               use_1280_dim =True)
         ###########
         ID_index+=1 
-        if ID_index+1> no_of_IDs : 
-            found_IDs = None
-            word_index -=1 
-        ##########
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
         tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
+        
+        if ID_index+1> no_of_IDs : 
+            reading_word = False
+            word_index -=1 
+            continue
+        ##########
       #### End of 'Normal operation'
     ####### End loop
 
-    #Try to append end_of_text_ID to output after loop (SDXL only)
+    #Try to append end_of_text_ID to output after loop
     last_index = None
     for index in range(MAX_NUM_MIX):
-      if not is_sdxl: break
       if trailing_end_of_text : break
       if sendtomix and not self.data.vector.isEmpty.get(index): continue
       last_index = copy.copy(index)
     ########
-    if is_sdxl and not trailing_end_of_text:
-      emb_name = "<|endoftext|>_#49407"
+
+    if not trailing_end_of_text:
       self.place (last_index  , \
       send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
       end_of_text_ID) 
       if (tokenbox != '') : tokenbox = tokenbox + ' , '
-      tokenbox =  tokenbox + emb_name
+      tokenbox =  tokenbox + "<|endoftext|>_#49407"
     ###### End of append end_of_text_ID to output
 
     #Filter stuff
@@ -492,7 +521,6 @@ class MiniTokenizer:
 
     return tokenmixer_vectors , tokenbox , splitbox , negbox , posbox , gr.Dropdown.update(choices = name_list)
     
-       
     
   def setupIO_with (self, module):
     #Tell the buttons in this class what to do when 

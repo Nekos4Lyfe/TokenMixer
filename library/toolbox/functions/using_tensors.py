@@ -9,6 +9,286 @@ datatype = TENSOR_DATA_TYPE
 # helper functions to the Data.py class
 class TensorFunctions:
 
+  # Randomize the order of the tensors in the 
+  #given field(s) of the Data class
+  @staticmethod
+  def _shuffle(\
+  vector , positive , negative , temporary , \
+  vector1280 , positive1280 , negative1280 , temporary1280 , \
+  to_negative , to_mixer,to_positive, to_temporary , use_1280_dim):
+
+    if to_negative == None and to_mixer == None \
+    and to_positive == None and to_temporary == None : 
+      if use_1280_dim : vector1280.shuffle()
+      vector.shuffle()
+
+    else:
+      if to_negative != None :
+        if to_negative : pass # Not implemented
+      #####
+      if to_mixer != None : 
+        if to_mixer : 
+          if use_1280_dim : vector1280.shuffle()
+          vector.shuffle()
+      #####
+      if to_temporary != None : 
+        if to_temporary : pass # Not implemented
+
+      if to_positive != None : 
+        if to_positive : pass # Not implemented
+  ######## End of shuffle function
+
+
+  # Perform torch.roll of each tensor
+  # within given field(s) in Data class
+  @staticmethod
+  def _roll (\
+  vector , positive , negative , temporary , \
+  vector1280 , positive1280 , negative1280 , temporary1280 , \
+  to_negative , to_mixer, to_positive , to_temporary , use_1280_dim):
+    message = ''
+    log = []
+    if to_negative == None and to_mixer == None \
+    and to_positive == None and to_temporary == None : 
+      if use_1280_dim :
+        log.append("Performing roll on 1280 dimension vectors : ") 
+        message = vector1280.roll()
+        log.append(message)
+      #######
+      log.append("Performing roll on 768 dimension vectors : ") 
+      message = vector.roll()
+      log.append(message)
+    else:
+      if to_negative != None :
+        if to_negative : pass # Not implemented
+      #####
+      if to_mixer != None : 
+        if to_mixer : 
+          if use_1280_dim : 
+            log.append("Performing roll on 1280 dimension vectors : ")
+            message = vector1280.roll()
+            log.append(message)
+          ######
+          log.append("Performing roll on 768 dimension vectors : ") 
+          message = vector.roll()
+          log.append(message)
+      #####
+      if to_temporary != None : 
+        if to_temporary : pass # Not implemented
+      ######
+      if to_positive != None : 
+        if to_positive : pass # Not implemented
+    #####
+    return '\n'.join(log)
+  ######## End of _roll function
+
+
+
+  # Replace a fraction of each tensor with a random vector 
+  # within given field(s) in Data class
+  @staticmethod
+  def _sample(\
+  vector , positive , negative , temporary ,\
+  vector1280 , positive1280 , negative1280 , temporary1280, \
+  internal_embs , internal_embs1280 ,
+  to_negative , to_mixer , to_positive , to_temporary , use_1280_dim):
+    message = ''
+    log = []
+    if to_negative == None and to_mixer == None \
+    and to_positive == None and to_temporary == None:
+      if use_1280_dim : 
+        log.append("Performing sample on 1280 dim vectors")
+        message = vector1280.sample(internal_embs1280)
+        log.append(message)
+      #######
+      log.append("Performing sample on 768 dim vectors")
+      message = vector.sample(internal_embs)
+      log.append(message)
+    else:
+      if to_negative != None :
+        if to_negative  : pass #Not implemented
+      #####
+      if to_mixer != None : 
+        if to_mixer : 
+          if use_1280_dim : 
+            log.append("Performing sample on 1280 dim vectors")
+            message = vector1280.sample(internal_embs1280)
+            log.append(message)
+          #######
+          log.append("Performing sample on 768 dim vectors")
+          message = vector.sample(internal_embs)
+          log.append(message)
+      #########
+      if to_temporary != None : 
+        if to_temporary : pass #Not implemented
+    #####
+      if to_positive != None : 
+        if to_positive : pass #Not implemented
+    return '\n'.join(log)
+  ### End of sample()
+
+  @staticmethod
+  def _clear (\
+  vector , positive , negative , temporary , 
+  vector1280 , positive1280 , negative1280 , temporary1280 , 
+  index , \
+  to_negative , to_mixer, to_positive, to_temporary , use_1280_dim) :
+
+    if to_negative == None and to_mixer == None \
+    and to_positive == None and to_temporary == None:
+
+      vector.clear(index)
+      negative.clear(index)
+      positive.clear(index)
+      temporary.clear(index)
+      vector1280.clear(index)
+      negative1280.clear(index)
+      positive1280.clear(index)
+      temporary1280.clear(index)
+
+    else:
+
+      if to_negative != None:
+        if to_negative: 
+          negative.clear(index)
+          negative1280.clear(index)
+
+      if to_mixer!= None:
+        if to_mixer: 
+          vector.clear(index)
+          vector1280.clear(index)
+
+      if to_temporary!= None:
+        if to_temporary: 
+          temporary.clear(index)
+          temporary1280.clear(index)
+
+      if to_positive!= None:
+        if to_positive: 
+          positive.clear(index)
+          positive1280.clear(index)
+  ########## End of clear()
+
+
+  # Place the input at assigned position(s) in the Dataclass
+  @staticmethod
+  def _place(\
+    vector , positive , negative , temporary ,  \
+    vector1280 , positive1280 , negative1280 , temporary1280 , \
+    index , tensor , ID ,  name , weight , \
+    to_negative , to_mixer,  to_positive ,  to_temporary , use_1280_dim ) :
+
+    # Helper function
+    def _place_values_in(target , tensor  , ID, name, weight , index) :
+      if tensor != None: target.place(tensor\
+      .to(device = choosen_device , dtype = datatype),index)
+      if ID != None: target.ID.place(ID, index)
+      if name != None: target.name.place(name, index)
+      if weight != None : target.weight.place(float(weight) , index)
+    ##### End of _place_values_in()
+
+    target = None
+    cond = \
+    (to_negative == None) and \
+    (to_mixer == None) and \
+    (to_temporary == None) and \
+    (to_positive == None)
+
+    # Default operation 
+    if cond:
+      target = vector
+      _place_values_in(target , tensor , ID, name, weight , index)
+    #######
+
+    # Write to the 'negative' field
+    if not cond and (to_negative != None) :
+      if use_1280_dim : target = negative1280
+      else: target = negative
+      if to_negative : _place_values_in\
+      (target , tensor , ID, name, weight , index)
+    #######
+
+    # Write to the 'vector' field
+    if not cond and (to_mixer != None) : 
+      if use_1280_dim : target = vector1280
+      else: target = vector
+      if to_mixer : _place_values_in\
+      (target , tensor , ID, name, weight , index)
+    #######
+
+    # Write to the 'temporary' field
+    if not cond and (to_temporary != None) :
+      if use_1280_dim : target = temporary1280
+      else: target = temporary
+      if to_temporary : _place_values_in\
+      (target , tensor , ID, name, weight , index)
+    #######
+
+    # Write to the 'positive' field
+    if not cond and (to_positive != None) : 
+      if use_1280_dim : target = positive1280
+      else: target = positive
+      if to_positive : _place_values_in\
+      (target , tensor , ID, name, weight , index)
+    #######
+  #### End of place()
+
+
+  # Move values from one field to another
+  # withing the Data class
+  @staticmethod
+  def _move(target , destination) : 
+    for index in range(MAX_NUM_MIX):
+      if target.isEmpty.get(index) : continue
+      tensor = target.get(index)\
+      .to(device = choosen_device , dtype = datatype)
+      ID = copy.copy(target.ID.get(index))
+      name = copy.copy(target.name.get(index))
+      weight = copy.copy(target.weight.get(index))
+      ########
+      destination.clear(index)
+      destination.place(tensor , index)
+      destination.ID.place(ID , index)
+      destination.name.place(name , index)
+      destination.weight.place(weight , index)
+      ########
+  ###### End of _move()
+
+
+  # Return a string of the distance from the 
+  # endpoints of tensor1 to the endpoint of tensor2
+  @staticmethod
+  def _distance (tensor1 , tensor2):
+        distance = torch.nn.PairwiseDistance(p=2)\
+        .to(device = choosen_device , dtype = datatype)
+        #######
+        current = tensor1.to(device = choosen_device , dtype = datatype)
+        ref = tensor2.to(device = choosen_device , dtype = datatype)
+        dist = distance(current, ref).numpy()[0]
+        return  str(round(dist , 2))
+  ###### End of distance()
+
+  # Return a string of the similary % between
+  # Tensor1 and Tensor2
+  @staticmethod
+  def _similarity (tensor1 , tensor2 , target):
+        distance = torch.nn.PairwiseDistance(p=2)\
+        .to(device = choosen_device , dtype = datatype)
+        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)\
+        .to(device = choosen_device , dtype = datatype)
+        origin = (target.origin)\
+        .to(device = choosen_device , dtype = datatype)
+        current = tensor1.to(device = choosen_device , dtype = datatype)
+        dist1 = distance(current, origin).numpy()[0]
+        current = current * (1/dist1)
+        ref = tensor2.to(device = choosen_device , dtype = datatype)
+        dist2 = distance(current, origin).numpy()[0]
+        ref = ref * (1/dist2)
+        sim = (100*cos(current , ref)).to(device = choosen_device , dtype = datatype)
+        if sim < 0 : sim = -sim
+        return  str(round(sim.numpy()[0] , 2))
+  ###### End of similarity()
+
   @staticmethod
   def _concat_all(vector , similar_mode , is_sdxl) :
 

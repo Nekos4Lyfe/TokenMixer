@@ -1,8 +1,8 @@
 #TOOLS.PY
+from types import NoneType
 import gradio as gr
 from modules import script_callbacks, shared, \
 sd_hijack , sd_models , sd_hijack_open_clip , textual_inversion , xlmr
-from transformers import XLMRobertaModel,XLMRobertaTokenizer
 from modules.shared import cmd_opts
 #######
 from pandas import Index
@@ -113,16 +113,6 @@ class Tools :
           return internal_embs.to(device=choosen_device , dtype = datatype) , None
       ##### End of get_internal_embs()
 
-      # Get the text encoder
-      def get_encoder(self):
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        embedder = self._get_embedder()
-        if is_sdxl : 
-          encoder =  embedder.transformer.text_model.encoder #CLIPEncoder
-        else :  encoder = None #Not implemented
-        return encoder
-      ##### End of get_encoder()
-
       #Fetch the tokenizer
       def get_tokenizer(self):
         is_sdxl , is_sd2 , is_sd1 = self.get_flags()
@@ -173,9 +163,44 @@ class Tools :
         return  best_ids , sorted_scores
       #### End of get_best_ids()
 
+      def get_CLIPTextModel(self):
+        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
+        embedder = self._get_embedder()
+        CLIPTextModel = embedder.transformer
+        return CLIPTextModel
+
+      def get_emb_ids_from(self, text):
+          assert type(text) == str , "input text is not string!"
+          tokenizer = self.tokenizer
+          text_input = tokenizer(text, truncation=False, return_tensors="pt")
+          emb_ids = text_input.input_ids.to(choosen_device)
+          return emb_ids[0]
+
+      def get_BaseModelOutputWithPooling_from(self, text , use_1280_dim = False):
+        assert type(text) == str , "input text is not string!"
+        tokenizer = self.tokenizer
+        text_input = tokenizer(text, truncation=False, return_tensors="pt")
+        emb_ids = text_input.input_ids.to(choosen_device)
+        BaseModelOutputWithPooling = None
+        with torch.no_grad():
+          if use_1280_dim: BaseModelOutputWithPooling = self.text_encoder1280(emb_ids)
+          else : BaseModelOutputWithPooling = self.text_encoder768(emb_ids)
+        return BaseModelOutputWithPooling
+
+      def get_emb_vecs_from(self, text , use_1280_dim = False):
+        BaseModelOutputWithPooling = \
+        self.get_BaseModelOutputWithPooling_from(text, use_1280_dim)
+        emb_vecs = BaseModelOutputWithPooling.last_hidden_state[0]
+
+        if use_1280_dim:
+          from pprint import pprint
+          pprint(BaseModelOutputWithPooling.last_hidden_state.shape)
+        return emb_vecs
+
 
       def __init__(self , count=1):
         #Default values
+        Tools.CLIPTextModel = None
         Tools.tokenizer = None
         Tools.internal_embs = None
         Tools.internal_embs1280 = None
@@ -192,9 +217,6 @@ class Tools :
 
         # Check if a valid SD model is loaded (SD 1.5 , SD2 or SDXL)
         model_is_loaded = self.model_is_loaded()
-        if not model_is_loaded:
-          from pprint import pprint
-          pprint("TokenMixer: Model was not loaded!")
         ######
 
         #Add values to Tools.py
@@ -206,11 +228,11 @@ class Tools :
           #######
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.tokenizer = self.get_tokenizer()
-          Tools.encode = self.get_encoder()
           Tools.internal_embs , \
           Tools.internal_embs1280 = \
           self.get_internal_embs(use_sdxl_dim = is_sdxl)
           Tools.loaded_embs = self.get_loaded_embs()
+          Tools.CLIPTextModel = self.get_CLIPTextModel()
         ########
 
         #Store the number of internal embeddings
@@ -228,6 +250,8 @@ class Tools :
           assert self.internal_embs != None , \
           "internal_embs is NoneType for this model!"
           if is_sdxl : 
+            assert self.CLIPTextModel != None ,\
+           "CLIPTextModel is NoneType!"
             assert self.internal_embs1280 != None , "internal_embs " + \
             "dimension 1280 is NoneType in this SDXL model!"
             assert self.no_of_internal_embs1280 == self.no_of_internal_embs , \
@@ -237,6 +261,22 @@ class Tools :
             str(self.no_of_internal_embs)  + " and len(embs1280) = " + \
             str(self.no_of_internal_embs1280)
         #######
+
+        # SDXL Text encoders
+        Tools.text_encoder768 = None
+        Tools.text_encoder1280 = None
+        if is_sdxl:
+          # Should return 768 dimension tensors and returns 768
+          # Works fine
+          Tools.text_encoder768 = self.CLIPTextModel.from_pretrained\
+            ("openai/clip-vit-large-patch14").to(choosen_device) 
+
+          # Returns 768 dimension tensors , cannot be used to get 1280 dimension
+          #tensors (alternative needed?)
+          from transformers import CLIPTextModelWithProjection
+          Tools.text_encoder1280 = CLIPTextModelWithProjection.from_pretrained\
+            ("openai/clip-vit-large-patch14").to(choosen_device) 
+        ###########
 
         Tools.count = count 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \

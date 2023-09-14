@@ -88,7 +88,6 @@ class Data :
         doping_value)
   ###### End of replace_with_similar()
 
-  #
   # Merge the tokens if they are similar enough
   # This mode is referred as "Interpolate Mode" in the TokenMixer
   def merge_if_similar(self , similar_mode , use_1280_dim = False):
@@ -111,156 +110,33 @@ class Data :
     return embedding , '\n'.join(log)
   ##### End of merge_if_similar()
 
-  def text_to_emb_ids(self, text):
-    is_sdxl , is_sd2 , is_sd1 = self.tools.get_flags()
-    tokenizer = self.tools.tokenizer
-    emb_ids = self.operations.using_text.\
-    _text_to_emb_ids(text , tokenizer , is_sdxl , is_sd2 , is_sd1)
-    assert emb_ids != None , "emb_ids are NoneType!"
-    return emb_ids
+  # Randomize the order of the tensors in the 
+  #given field(s) of the Data class
+  def shuffle(self, index , vector = None , ID = None ,  name = None , \
+    weight = None , to_negative = None , to_mixer = None ,  \
+    to_positive = None ,  to_temporary = None , use_1280_dim = False):
 
-  def emb_id_to_vec(self, emb_id , use_1280_dim = False) : 
-    target = None
-    index_max = None
-    if use_1280_dim: 
-      target = self.tools.internal_embs1280
-      index_max = self.tools.no_of_internal_embs1280
-    else : 
-      target = self.tools.internal_embs
-      index_max = self.tools.no_of_internal_embs
-    ########
-    # Do some checks
-    assert isinstance(emb_id, int) , "Embedding ID is not int!"
-    assert (emb_id < index_max), \
-    "emb_id with value " + str(emb_id) + " is out of bounds. Must not exceed " + \
-    "internal_embedding size of " + str(index_max)
-    assert emb_id >= 0 ,  \
-    "emb_id with value " + str(emb_id) + " is out of bounds. " + \
-    "Index be greater then 0."
-    #########
-    return target[emb_id].to(device= choosen_device , dtype = datatype)
-    
-  def emb_id_to_name(self, text):
-    emb_id = copy.copy(text)
-    emb_name_utf8 = self.tools.tokenizer.decoder.get(emb_id)
-    if emb_name_utf8 != None:
-        byte_array_utf8 = bytearray([self.tools.tokenizer.byte_decoder[c] for c in emb_name_utf8])
-        emb_name = byte_array_utf8.decode("utf-8", errors='backslashreplace')
-    else: emb_name = '!Unknown ID!'
-    if emb_name.find('</w>')>=0: 
-      emb_name = emb_name.split('</w>')[0]
-    return emb_name # return embedding name for embedding ID
+    self.operations.using_tensors._shuffle(\
+      self.vector , self.positive , self.negative , self.temporary ,  \
+      self.vector1280 , self.positive1280 , self.negative1280 , \
+      self.temporary1280 , \
+      to_negative , to_mixer,  to_positive ,  to_temporary , use_1280_dim)
+  ######### End of place()
 
-  def get_embedding_info(self, string , use_1280_dim = False):
-      emb_id = None
-      text = copy.copy(string.lower())
-      loaded_emb = self.tools.loaded_embs.get(text, None)
-      if loaded_emb == None:
-        for neg_index in self.tools.loaded_embs.keys():
-            if text == neg_index.lower():
-              loaded_emb = self.tools.loaded_embs.get(neg_index, None)
-              break
-              
-      if loaded_emb != None: 
-        emb_name = loaded_emb.name
-        if use_1280_dim : 
-          emb_id = 'unknown' #<<<< Will figure this out later
-          emb_vec = loaded_emb.vec.get("clip_l")\
-          .to(device = choosen_device , dtype = datatype)
-        else: 
-          emb_id = '['+ loaded_emb.checksum()+']' # emb_id is string for loaded embeddings
-          emb_vec = loaded_emb.vec\
-          .to(device = choosen_device , dtype = datatype)
-        return emb_name, emb_id, emb_vec, loaded_emb #also return loaded_emb reference
-
-      emb_ids = self.text_to_emb_ids(text)
-      if emb_ids == None : return None, None, None, None
-      
-      emb_names = []
-      emb_vecs = []
-      emb_name = None
-      emb_vec = None
-
-      for emb_id in emb_ids:
-        emb_name = self.emb_id_to_name(emb_id)
-        emb_names.append(emb_name)
-
-        if use_1280_dim : emb_vec = self.tools.internal_embs1280[emb_id].unsqueeze(0)
-        else : emb_vec = self.tools.internal_embs[emb_id].unsqueeze(0)
-        emb_vecs.append(emb_vec)
-      ##########
-    
-      #Might have to fix later , idk
-      if emb_name == None : return None, None, None, None
-      emb_ids = emb_ids[0]
-      emb_names = emb_names[0]
-      emb_vecs = emb_vecs[0]
-      ##########
-      return emb_names, emb_ids, emb_vecs, None # return embedding name, ID, vector
-
-  def shuffle(self , to_negative = None , to_mixer = None , \
-  to_positive = None , to_temporary = None , use_1280_dim = False):
-
-    if to_negative == None and to_mixer == None \
-    and to_positive == None and to_temporary == None : 
-      if use_1280_dim : self.vector1280.shuffle()
-      self.vector.shuffle()
-
-    else:
-      if to_negative != None :
-        if to_negative : pass # Not implemented
-      #####
-      if to_mixer != None : 
-        if to_mixer : 
-          if use_1280_dim : self.vector1280.shuffle()
-          self.vector.shuffle()
-      #####
-      if to_temporary != None : 
-        if to_temporary : pass # Not implemented
-
-      if to_positive != None : 
-        if to_positive : pass # Not implemented
-  ######## End of shuffle function
-
-
-
+  # Replace a fraction of each tensor with a random vector 
+  # within given field(s) in Data class
   def roll (self , to_negative = None , to_mixer = None , \
-  to_positive = None , to_temporary = None , use_1280_dim = False):
-    message = ''
+    to_positive = None, to_temporary = None, use_1280_dim = False):
     log = []
-    if to_negative == None and to_mixer == None \
-    and to_positive == None and to_temporary == None : 
-      if use_1280_dim :
-        log.append("Performing roll on 1280 dimension vectors : ") 
-        message = self.vector1280.roll()
-        log.append(message)
-      #######
-      log.append("Performing roll on 768 dimension vectors : ") 
-      message = self.vector.roll()
-      log.append(message)
-    else:
-      if to_negative != None :
-        if to_negative : pass # Not implemented
-      #####
-      if to_mixer != None : 
-        if to_mixer : 
-          if use_1280_dim : 
-            log.append("Performing roll on 1280 dimension vectors : ")
-            message = self.vector1280.roll()
-            log.append(message)
-          ######
-          log.append("Performing roll on 768 dimension vectors : ") 
-          message = self.vector.roll()
-          log.append(message)
-      #####
-      if to_temporary != None : 
-        if to_temporary : pass # Not implemented
-      ######
-      if to_positive != None : 
-        if to_positive : pass # Not implemented
-    #####
+    message = \
+    self.operations.using_tensors._roll(\
+      self.vector , self.positive , self.negative , self.temporary ,  \
+      self.vector1280 , self.positive1280 , self.negative1280 , \
+      self.temporary1280 , \
+      to_negative , to_mixer , to_positive , to_temporary , use_1280_dim)
+    log.append(message)
     return '\n'.join(log)
-  ######## End of roll function
+  ### End of sample()
 
   def random(self , use_1280_dim = False):
     if use_1280_dim : return self.vector1280.random(self.tools.internal_embs1280)
@@ -271,200 +147,70 @@ class Data :
     return self.vector.random_quick()
   ## End of random_quick()
 
-  def sample(self , to_negative = None , to_mixer = None , \
-    to_positive = None , to_temporary = None , use_1280_dim = False):
-    message = ''
+  # Replace a fraction of each tensor with a random vector 
+  # within given field(s) in Data class
+  def sample (self , to_negative = None , to_mixer = None , \
+    to_positive = None, to_temporary = None, use_1280_dim = False):
     log = []
-    if to_negative == None and to_mixer == None \
-    and to_positive == None and to_temporary == None:
-      if use_1280_dim : 
-        log.append("Performing sample on 1280 dim vectors")
-        message = self.vector1280.sample(self.tools.internal_embs1280)
-        log.append(message)
-      #######
-      log.append("Performing sample on 768 dim vectors")
-      message = self.vector.sample(self.tools.internal_embs)
-      log.append(message)
-    else:
-      if to_negative != None :
-        if to_negative  : pass #Not implemented
-      #####
-      if to_mixer != None : 
-        if to_mixer : 
-          if use_1280_dim : 
-            log.append("Performing sample on 1280 dim vectors")
-            message = self.vector1280.sample(self.tools.internal_embs1280)
-            log.append(message)
-          #######
-          log.append("Performing sample on 768 dim vectors")
-          message = self.vector.sample(self.tools.internal_embs)
-          log.append(message)
-      #########
-      if to_temporary != None : 
-        if to_temporary : pass #Not implemented
-    #####
-      if to_positive != None : 
-        if to_positive : pass #Not implemented
+    message = \
+    self.operations.using_tensors._sample(\
+      self.vector , self.positive , self.negative , self.temporary ,  \
+      self.vector1280 , self.positive1280 , self.negative1280 , \
+      self.temporary1280 , \
+      self.internal_embs , self.internal_embs1280 , \
+      to_negative , to_mixer , to_positive , to_temporary , use_1280_dim)
+    log.append(message)
     return '\n'.join(log)
   ### End of sample()
 
-
-  # Helper function
-  def _place_values_in(self, target , vector , ID, name, weight , index) :
-      if vector != None: target.place(vector\
-      .to(device = choosen_device , dtype = datatype),index)
-      if ID != None: target.ID.place(ID, index)
-      if name != None: target.name.place(name, index)
-      if weight != None : target.weight.place(float(weight) , index)
-  ##### End of _place_values_in()
-
-
-  # Place the input somewhere in the Dataclass
+  # Place the input at assigned position(s) in the Data class
   def place(self, index , vector = None , ID = None ,  name = None , \
     weight = None , to_negative = None , to_mixer = None ,  \
     to_positive = None ,  to_temporary = None , use_1280_dim = False):
 
-    target = None
-    cond = \
-    (to_negative == None) and \
-    (to_mixer == None) and \
-    (to_temporary == None) and \
-    (to_positive == None)
+    self.operations.using_tensors._place(\
+      self.vector , self.positive , self.negative , self.temporary ,  \
+      self.vector1280 , self.positive1280 , self.negative1280 , \
+      self.temporary1280 , \
+      index , vector , ID , name , weight , \
+      to_negative , to_mixer,  to_positive ,  to_temporary , use_1280_dim)
+  ######### End of place()
 
-    # Default operation 
-    if cond:
-      target = self.vector
-      self._place_values_in(target , vector , ID, name, weight , index)
-    #######
+  def memorize(self):
+    target = self.vector
+    destination = self.temporary
+    self.operations.using_tensors._move(\
+    target , destination)
+    ########
+    if self.tools.is_sdxl:
+      target = self.vector1280
+      destination = self.temporary1280
+      self.operations.using_tensors._move(\
+      target , destination)
+  #### End of memorize()
 
-    # Write to the 'negative' field
-    if not cond and (to_negative != None) :
-      if use_1280_dim : target = self.negative1280
-      else: target = self.negative
-      if to_negative : self._place_values_in\
-      (target , vector , ID, name, weight , index)
-    #######
+  def recall(self):
+    target = self.temporary
+    destination = self.vector
+    self.operations.using_tensors._move(\
+    target , destination)
+    ######
+    if self.tools.is_sdxl:
+      target = self.temporary1280
+      destination = self.vector1280
+      self.operations.using_tensors._move(\
+      target , destination)
+  #### End of recall()
 
-    # Write to the 'vector' field
-    if not cond and (to_mixer != None) : 
-      if use_1280_dim : target = self.vector1280
-      else: target = self.vector
-      if to_mixer : self._place_values_in\
-      (target , vector , ID, name, weight , index)
-    #######
-
-    # Write to the 'temporary' field
-    if not cond and (to_temporary != None) :
-      if use_1280_dim : target = self.temporary1280
-      else: target = self.temporary
-      if to_temporary : self._place_values_in\
-      (target , vector , ID, name, weight , index)
-    #######
-
-    # Write to the 'positive' field
-    if not cond and (to_positive != None) : 
-      if use_1280_dim : target = self.positive1280
-      else: target = self.positive
-      if to_positive : self._place_values_in\
-      (target , vector , ID, name, weight , index)
-    #######
-  #### End of place()
-
-
-  # Overwrite the contents of temporary() with the contents
-  # of vector() in the Data class
-  def memorize(self) : 
-    #######
-    for index in range(MAX_NUM_MIX):
-      if self.vector.isEmpty.get(index) : continue
-      self.vec = self.vector.get(index)\
-      .to(device = choosen_device , dtype = datatype)
-      self.ID = copy.copy(self.vector.ID.get(index))
-      self.name = copy.copy(self.vector.name.get(index))
-      self.weight = copy.copy(self.vector.weight.get(index))
-      ########
-      self.temporary.clear(index)
-      self.temporary.place(self.vec , index)
-      self.temporary.ID.place(self.ID , index)
-      self.temporary.name.place(self.name , index)
-      self.temporary.weight.place(self.weight , index)
-      ########
-      if self.vector1280.isEmpty.get(index) : continue
-      self.vec = self.vector1280.get(index)\
-      .to(device = choosen_device , dtype = datatype)
-      self.ID = copy.copy(self.vector1280.ID.get(index))
-      self.name = copy.copy(self.vector1280.name.get(index))
-      self.weight = copy.copy(self.vector1280.weight.get(index))
-      ########
-      self.temporary1280.clear(index)
-      self.temporary1280.place(self.vec , index)
-      self.temporary1280.ID.place(self.ID , index)
-      self.temporary1280.name.place(self.name , index)
-      self.temporary1280.weight.place(self.weight , index)
-  ###### End of memorize()
-
-  # Overwrite the contents of vector() with the contents
-  # of temporary() in the Data class
-  def recall(self) :
-    for index in range(MAX_NUM_MIX):
-      if self.temporary.isEmpty.get(index) : continue
-      self.vec = self.temporary.get(index)\
-      .to(device = choosen_device , dtype = datatype)
-      self.ID = copy.copy(self.temporary.ID.get(index))
-      self.name = copy.copy(self.temporary.name.get(index))
-      self.weight = copy.copy(self.temporary.weight.get(index))
-      #######
-      self.vector.clear(index)
-      self.vector.place(self.vec , index)
-      self.vector.ID.place(self.ID , index)
-      self.vector.name.place(self.name, index)
-      self.vector.weight.place(self.weight , index)
-      ########
-      if self.temporary1280.isEmpty.get(index) : continue
-      self.vec = self.temporary1280.get(index)\
-      .to(device = choosen_device , dtype = datatype)
-      self.ID = copy.copy(self.temporary1280.ID.get(index))
-      self.name = copy.copy(self.temporary1280.name.get(index))
-      self.weight = copy.copy(self.temporary1280.weight.get(index))
-      #######
-      self.vector1280.clear(index)
-      self.vector1280.place(self.vec , index)
-      self.vector1280.ID.place(self.ID , index)
-      self.vector1280.name.place(self.name, index)
-      self.vector1280.weight.place(self.weight , index)
-  ###### End of recall()
-
-  # Return a string of the distance from the 
-  # endpoints of tensor1 to the endpoint of tensor2
   def distance (self, tensor1 , tensor2):
-        distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = choosen_device , dtype = datatype)
-        #######
-        current = tensor1.to(device = choosen_device , dtype = datatype)
-        ref = tensor2.to(device = choosen_device , dtype = datatype)
-        dist = distance(current, ref).numpy()[0]
-        return  str(round(dist , 2))
-  ###### End of distance()
+    return self.operations.using_tensors._distance(\
+    tensor1 , tensor2)
+  ### End of distance()
 
-  # Return a string of the similary % between
-  # Tensor1 and Tensor2
-  def similarity (self , tensor1 , tensor2):
-        distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = choosen_device , dtype = datatype)
-        cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)\
-        .to(device = choosen_device , dtype = datatype)
-        origin = (self.vector.origin)\
-        .to(device = choosen_device , dtype = datatype)
-        current = tensor1.to(device = choosen_device , dtype = datatype)
-        dist1 = distance(current, origin).numpy()[0]
-        current = current * (1/dist1)
-        ref = tensor2.to(device = choosen_device , dtype = datatype)
-        dist2 = distance(current, origin).numpy()[0]
-        ref = ref * (1/dist2)
-        sim = (100*cos(current , ref)).to(device = choosen_device , dtype = datatype)
-        if sim < 0 : sim = -sim
-        return  str(round(sim.numpy()[0] , 2))
-  ###### End of similarity()
+  def similarity(self , tensor1 , tensor2):
+    return self.operations.using_tensors._similarity(\
+    tensor1 , tensor2 , self.vector)
+  #### End of similarity()
 
   # Get tensor from Data class at given index
   def get_vector(self , index , use_1280_dim = False):
@@ -490,7 +236,6 @@ class Data :
     return target.name.get(index)
   #######
 
-  #sample
   def update_loaded_embs(self):
     self.refresh()
 
@@ -511,44 +256,17 @@ class Data :
     return '\n'.join(log)
   ######### End of refresh()
 
-  def clear (self, index , to_negative = None , to_mixer = None , \
-  to_positive = None , to_temporary = None , use_1280_dim = False):
+  # Place the input at assigned position(s) in the Dataclass
+  def clear(self, index , vector = None , ID = None ,  name = None , \
+    weight = None , to_negative = None , to_mixer = None ,  \
+    to_positive = None ,  to_temporary = None , use_1280_dim = False):
 
-    if to_negative == None and to_mixer == None \
-    and to_positive == None and to_temporary == None:
-
-      self.vector.clear(index)
-      self.negative.clear(index)
-      self.positive.clear(index)
-      self.temporary.clear(index)
-
-      self.vector1280.clear(index)
-      self.negative1280.clear(index)
-      self.positive1280.clear(index)
-      self.temporary1280.clear(index)
-
-    else:
-
-      if to_negative != None:
-        if to_negative: 
-          self.negative.clear(index)
-          self.negative1280.clear(index)
-
-      if to_mixer!= None:
-        if to_mixer: 
-          self.vector.clear(index)
-          self.vector1280.clear(index)
-
-      if to_temporary!= None:
-        if to_temporary: 
-          self.temporary.clear(index)
-          self.temporary1280.clear(index)
-
-      if to_positive!= None:
-        if to_positive: 
-          self.positive.clear(index)
-          self.positive1280.clear(index)
-  ########## End of clear()
+    self.operations.using_tensors._clear(\
+      self.vector , self.positive , self.negative , self.temporary ,  \
+      self.vector1280 , self.positive1280 , self.negative1280 , self.temporary1280 , \
+      index ,\
+      to_negative , to_mixer,  to_positive ,  to_temporary , use_1280_dim)    
+  #########
 
   def set_unfiltered_indices(self, unfiltered_indices):
     self.vector.unfiltered_indices = copy.deepcopy(unfiltered_indices)
@@ -559,7 +277,6 @@ class Data :
   ###### End of set_filter_by_name()
 
   def __init__(self):
-
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
     except: 
@@ -584,7 +301,18 @@ class Data :
     Data.temporary1280 = None
     Data.pursuit_strength = 0
     Data.doping_strength = 0
-    Data.operations = Operations()
+    ######
+    Data.operations = Operations(
+    self.tools.internal_embs , self.tools.internal_embs1280 , \
+    self.tools.no_of_internal_embs , self.tools.no_of_internal_embs1280 , \
+    self.tools.tokenizer , self.tools.loaded_embs , \
+    is_sdxl ,is_sd2 ,  is_sd1)
+    #####
+    #These will be deleted 
+    Data.text_to_emb_ids = self.operations.using_text.text_to_emb_ids
+    Data.emb_id_to_vec = self.operations.using_text.emb_id_to_vec 
+    Data.emb_id_to_name = self.operations.using_text.emb_id_to_name
+    Data.get_embedding_info = self.operations.using_text.get_embedding_info
     ########
     #Default initial values
     Data.vector = Vector(3)
@@ -614,7 +342,6 @@ class Data :
       self.negative = Negative(size)
       self.positive = Positive(size)
       self.temporary = Temporary(size)
-    #####
-    
+
 #End of Data class
 dataStorage = Data() #Create data
