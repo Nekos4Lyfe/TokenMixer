@@ -9,7 +9,6 @@ datatype = TENSOR_DATA_TYPE
 # helper functions to the Data.py class
 class TensorOperations:
 
-
   @staticmethod
   def _concat_all(vector , similar_mode , is_sdxl) :
 
@@ -51,7 +50,337 @@ class TensorOperations:
     log.append('New embedding has '+ str(no_of_tokens) + ' tokens')
     log.append('-------------------------------------------')
     return output , '\n'.join(log)
-  #############
+  #### End of _concat_all()
+
+
+  @staticmethod
+  def _merge_all (vector , positive , negative):
+    log = []
+    log.append('Merge mode :')
+    current = None
+    output = None
+    vsum = None
+    dsum = 0
+    no_of_tokens = 0
+
+    cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
+    distance = torch.nn.PairwiseDistance(p=2)
+    #shuffle
+    #Count the negatives
+    no_of_negatives = 0
+    for neg_index in range(MAX_NUM_MIX):
+      if negative.isEmpty.get(neg_index): continue
+      no_of_negatives += 1
+    #####
+
+    dist = None
+    candidate_vec = None
+    tmp = None
+    origin = vector.origin.to(device = choosen_device , dtype = datatype)
+
+    for index in range (MAX_NUM_MIX):
+      if (vector.isEmpty.get(index)): continue
+      if (vector.isFiltered(index)): continue 
+      no_of_tokens += 1
+
+      current_weight = 1
+      #self.vector.weight.get(index)
+      current = current*current_weight
+
+      dist = distance(current, origin).numpy()[0]
+      dsum = dsum + dist
+
+      if vsum == None : vsum = current
+      else : vsum = vsum + current
+
+    if vsum == None : 
+      log.append('No vectors to merge!')
+      return output , '\n'.join(log)
+
+    tensor = vsum/no_of_tokens #Expected average of vector
+    dist_of_mean = distance(tensor, origin).numpy()[0]
+    norm_expected = tensor * (1/dist_of_mean) #Normalized expected average of vectors
+    dist_expected = dsum/no_of_tokens # average length on inputs
+
+    radialGain = 0.001 #deprecated
+    randomGain = vector.randomization/100  
+    size = vector.size
+    gain = vector.gain
+    N = vector.itermax
+    T = 1/N  
+
+    radialRandom = 1
+
+    similarity_score = 0 #similarity index from 0 to 1, where 0 is no similarity at all
+    similarity_minimum = None #similarity between output and the least similar input token
+    similarity_maximum = None #similarity between output and the most similar input token
+    mintoken = None #Token with least similarity
+    maxtoken = None #Token with most similarity
+
+    for step in range (N):
+      rand_vec  = ((2*torch.rand(size) - torch.ones(size))\
+      .to(device = choosen_device , dtype = datatype)).unsqueeze(0)
+      rdist = distance(rand_vec, origin).numpy()[0]
+      rando = (1/rdist) * rand_vec #Create random unit vector
+
+      candidate_vec = norm_expected * (1 - randomGain)  + rando*randomGain
+
+      minimum = 20000 #set initial minimum at impossible 200% similarity 
+      maximum = -10000 #Set initial maximum at impossible -100% similarity
+      similarity_sum = 0
+      for index in range (MAX_NUM_MIX):
+        if (vector.isEmpty.get(index)): continue
+        if (vector.isFiltered(index)): continue
+
+        #Get current token
+        tmp = vector.get(index).to(device = choosen_device , dtype = datatype)
+        dist = distance(tmp, origin).numpy()[0]
+        current = (1/dist) * tmp 
+
+        #Compute similarity of current token to 
+        #candidate_vec
+        similarity = 100*cos(current, candidate_vec).numpy()[0]
+        worst_nsim = None
+        worst_neg_index = None
+        nsim = None
+        neg_vec = None
+        strength = negative.strength/100
+        negative_similarity = None
+        #######
+        #Check negatives
+        if no_of_negatives > 0: 
+          tmp = None
+          for neg_index in range(MAX_NUM_MIX) :
+            if negative.isEmpty.get(neg_index): continue
+            neg_vec = negative.get(neg_index)
+            tmp = math.floor((100*100*cos(neg_vec, candidate_vec)).numpy()[0])
+            if tmp<0 : tmp = -tmp
+            nsim = tmp/100
+            #######
+            if worst_nsim == None : 
+              worst_nsim = nsim
+              worst_neg_index = neg_index
+            #######
+            if nsim > worst_nsim : 
+              worst_nsim = nsim
+              worst_neg_index = neg_index
+          ########
+          negative_similarity = 100 - worst_nsim
+        ########### #Done checking negatives
+        
+
+        if similarity == None : similarity = 0
+        if negative_similarity != None : 
+          similarity_sum += similarity * (1 - strength) + negative_similarity*strength
+        else: similarity_sum += similarity
+        
+        if similarity == min(minimum , similarity) :
+          minimum = similarity
+          mintoken = index
+
+        if similarity == max(maximum , similarity) :
+          maximum = similarity
+          maxtoken = index
+   
+      #Check if this candidate vector is better then
+      #the ones before it
+      if similarity_sum>similarity_score : 
+        similarity_score = similarity_sum
+        similarity_minimum = minimum
+        similarity_maximum = maximum
+        output = candidate_vec
+
+    #length of candidate vector
+    cdist = distance(candidate_vec , origin).numpy()[0]
+
+    #length of output vector
+    output_length = gain * dist_expected * radialRandom 
+
+    #Cap the length of the output vector according to radialGain slider setting 
+    if output_length>dist_expected: output_length = min(output_length , dist_expected/radialGain)
+    else: output_length = max(output_length  , dist_expected*radialGain)
+
+    #Normalize candidate vector and multiply with output vector length
+    output = candidate_vec *(output_length/cdist)
+    output_length = round(output_length, 2)
+
+    #round the values before printing them
+    similarity_minimum = round(similarity_minimum,1)
+    similarity_maximum = round(similarity_maximum,1)
+    dist_expected = round(dist_expected, 2)
+    dist_of_mean = round(dist_of_mean , 2)
+
+    negsim = None
+    if negative_similarity != None :
+      negsim = round(100-negative_similarity , 3) #Invert the value
+    
+    log.append ('Merged ' + str(no_of_tokens) + ' tokens into single token')
+    log.append('Lowest similarity : ' + str(similarity_minimum)+' % to token #' + str(mintoken) + \
+      '( ' + vector.name.get(mintoken) + ')')
+
+    log.append('Highest similarity : ' + str(similarity_maximum)+' % to token #' + str(maxtoken) + \
+      '( ' + vector.name.get(maxtoken) + ')')
+
+    if negsim != None :
+      name = negative.name.get(worst_neg_index)
+      log.append('Max similarity to negative tokens : ' + str(negsim) + ' %' + \
+      "to token '" + name + "'")
+
+    log.append('Average length of the input tokens : ' + str(dist_expected) )
+    log.append('Length of the token average : ' + str(dist_of_mean) )
+    log.append('Length of generated merged token : ' + str (output_length))
+    log.append('New embedding has 1 token')
+    log.append('-------------------------------------------')
+  
+    return output , '\n'.join(log)
+  #####End of _merge_all()
+
+
+  @staticmethod
+  def _merge_if_similar(vector , positive , negative):
+    log = []
+    log.append('Interpolate Mode :')
+    no_of_tokens = 0
+
+    for index in range (MAX_NUM_MIX):
+      if (vector.isEmpty.get(index)): continue
+      if (vector.isFiltered(index)): continue
+      no_of_tokens +=1
+      continue
+
+    if no_of_tokens <= 0: 
+      log.append('No inputs in mixer')
+      return None , '\n'.join(log) 
+
+    cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
+    distance = torch.nn.PairwiseDistance(p=2)
+
+    radialGain = 0.001 #deprecated
+    randomGain = vector.randomization/100 
+    lowerBound = vector.interpolation 
+    origin = vector.origin.to(device= choosen_device , dtype = datatype)
+    size = vector.size
+    gain = vector.gain
+    N = vector.itermax
+    current_dist = None
+    current_norm = None
+    similarity = None
+    merge_norm = None
+    prev_dist = None
+    prev_norm = None
+    current = None
+    avg_dist=None
+    output = None
+    prev = None
+    tmp = None
+    T = 1/N  
+    iters = 0
+    found = False 
+    tensor = None
+    message = None
+    output_length = None
+    current_weight = None
+
+    for index in range (MAX_NUM_MIX):
+      if (vector.isEmpty.get(index)): continue
+      if (vector.isFiltered(index)): continue
+
+      current_weight = 1
+      #self.vector.weight.get(index)
+      current = current*current_weight
+
+      if prev == None : 
+        prev = current
+        continue
+
+      assert not current == None , "current tensor is None!"
+      assert not prev == None , "prev tensor is None!"
+
+      tmp = ((current + prev) * 0.5).to(device = choosen_device , dtype = datatype) #Expected merge vector
+      avg_dist = distance(tmp, origin).numpy()[0]
+      merge_norm = ((1/avg_dist)*tmp).to(device = choosen_device , dtype = datatype)
+
+      current_dist = distance(current, origin).numpy()[0]
+      current_norm = ((1/current_dist)*current).to(device = choosen_device , dtype = datatype) 
+
+      prev_dist = distance(prev, origin).numpy()[0]
+      prev_norm = ((1/prev_dist)*prev).to(device = choosen_device , dtype = datatype)
+
+      assert not ( 
+        merge_norm == None or
+        current_norm==None or
+        prev_norm == None ) , "norm tensor is None!"
+
+      #Randomization parameters: 
+      radialRandom = (1 - randomGain) + randomGain*(2*random.random() - 1)
+
+      if not (vector.allow_negative_gain): 
+        if radialRandom<0: radialRandom = -radialRandom
+
+      found = False 
+      for step in range (N):
+        iters+=1
+
+        tmp  = ((torch.rand(size) - 0.5* torch.ones(size))\
+        .to(device = choosen_device , dtype = datatype)).unsqueeze(0)
+        rdist = distance(tmp, origin).numpy()[0]
+        rand_norm = (1/rdist) * tmp  #Create random unit vector
+
+        cand = (step * merge_norm + (N - step)* rand_norm) * T 
+        cdist = distance(cand, origin).numpy()[0]
+        candidate_norm = (1/cdist)*cand #Calculate candidate vector
+
+        sim1 =  (cos(current_norm, candidate_norm)).numpy()[0]
+        sim2 =  (cos(prev, candidate_norm)).numpy()[0]
+        dist_expected = sim1*current_dist + sim2*prev_dist
+
+        similarity = min(sim1, sim2) #Get lowest similarity
+        if (100*similarity > lowerBound) : 
+          found = True 
+          prev = None
+          break
+   
+      #round the values before printing them
+      similarity = round(100*similarity, 1)
+      lowerBound = round(lowerBound, 1)
+
+      if(found):
+
+        #length of output vector
+        output_length = gain * dist_expected * radialRandom 
+
+        #Cap the length of the output vector according to radialGain slider setting 
+        if output_length>dist_expected: output_length = min(output_length , dist_expected/radialGain)
+        else: output_length = max(output_length  , dist_expected*radialGain)
+
+        #Set the length of found similar vector
+        similar_token = output_length*candidate_norm
+
+        #round the values before printing them
+        output_length = round(output_length, 2)
+        dist_expected = round(dist_expected , 2)
+
+        log.append('Token ' + str(index-1) + ' and '+str(index)+ \
+        ' with expected length '+ str(dist_expected) + ' merged into 1 token with ' + \
+         str(similarity)+ '% similarity and ' + str(output_length) + ' length after ' + \
+        str(iters) + ' steps)')
+        no_of_tokens = no_of_tokens - 1
+
+        if output == None : output = similar_token
+        else :  output = torch.cat([output,similar_token], dim=0)\
+        .to(device = choosen_device , dtype = datatype)
+        log.append('Placed token with length '+ str(output_length)  +' in new embedding ')
+
+      else:
+        log.append('Skipping merge between token ' + str(index-1)+ \
+        ' and '+str(index))
+        log.append('Token similarity ' + str(similarity) + \
+        '% is less then req. similarity' + str(lowerBound) + '%')
+
+    log.append('New embedding now has ' + str(no_of_tokens) + ' tokens')
+    log.append('-------------------------------------------')
+    return output , '\n'.join(log)
+  ### End of _merge_if_similar()
   
   @staticmethod
   def _replace_with_similar(index , \

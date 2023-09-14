@@ -26,200 +26,41 @@ class Data :
   #The Data class consists of all the shared resources between the modules
   #This includes the vector class and the tools class
 
-  def merge_all (self, similar_mode):
+
+  # Merge all tokens into single token
+  def merge_all(self , similar_mode , is_sdxl = False):
     log = []
-    log.append('Merge mode :')
-    current = None
-    output = None
-    vsum = None
-    dsum = 0
-    no_of_tokens = 0
-
-    cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
-    distance = torch.nn.PairwiseDistance(p=2)
-    #shuffle
-    #Count the negatives
-    no_of_negatives = 0
-    for neg_index in range(MAX_NUM_MIX):
-      if self.negative.isEmpty.get(neg_index): continue
-      no_of_negatives += 1
+    target = None
+    if is_sdxl : target = self.vector1280
+    else : target = self.vector
     #####
-
-    dist = None
-    candidate_vec = None
-    tmp = None
-    origin = self.vector.origin
-
-    for index in range (MAX_NUM_MIX):
-      if (self.vector.isEmpty.get(index)): continue
-      if (self.vector.isFiltered(index)): continue 
-      no_of_tokens += 1
-
-      if similar_mode : 
-        current , message = self.replace_with_similar(index)
+    if similar_mode : 
+      for index in range(MAX_NUM_MIX):
+        current , message = self.replace_with_similar(index , is_sdxl)
+        target.place(current , index)
         log.append(message)
-      else : current = self.vector.get(index).to(device = choosen_device , dtype = torch.float32)
-
-      current_weight = 1
-      #self.vector.weight.get(index)
-      current = current*current_weight
-
-      dist = distance(current, origin).numpy()[0]
-      dsum = dsum + dist
-
-      if vsum == None : vsum = current
-      else : vsum = vsum + current
-
-    if vsum == None : 
-      log.append('No vectors to merge!')
-      return output , '\n'.join(log)
-
-    tensor = vsum/no_of_tokens #Expected average of vector
-    dist_of_mean = distance(tensor, origin).numpy()[0]
-    norm_expected = tensor * (1/dist_of_mean) #Normalized expected average of vectors
-    dist_expected = dsum/no_of_tokens # average length on inputs
-
-    radialGain = 0.001 #deprecated
-    randomGain = self.vector.randomization/100  
-    size = self.vector.size
-    gain = self.vector.gain
-    N = self.vector.itermax
-    T = 1/N  
-
-    radialRandom = 1
-
-    similarity_score = 0 #similarity index from 0 to 1, where 0 is no similarity at all
-    similarity_minimum = None #similarity between output and the least similar input token
-    similarity_maximum = None #similarity between output and the most similar input token
-    mintoken = None #Token with least similarity
-    maxtoken = None #Token with most similarity
-
-    for step in range (N):
-      rand_vec  = ((2*torch.rand(size) - torch.ones(size))\
-      .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0)
-      rdist = distance(rand_vec, origin).numpy()[0]
-      rando = (1/rdist) * rand_vec #Create random unit vector
-
-      candidate_vec = norm_expected * (1 - randomGain)  + rando*randomGain
-
-      minimum = 20000 #set initial minimum at impossible 200% similarity 
-      maximum = -10000 #Set initial maximum at impossible -100% similarity
-      similarity_sum = 0
-      for index in range (MAX_NUM_MIX):
-        if (self.vector.isEmpty.get(index)): continue
-        if (self.vector.isFiltered(index)): continue
-
-        #Get current token
-        tmp = self.vector.get(index).to(device = choosen_device , dtype = torch.float32)
-        dist = distance(tmp, origin).numpy()[0]
-        current = (1/dist) * tmp 
-
-        #Compute similarity of current token to 
-        #candidate_vec
-        similarity = 100*cos(current, candidate_vec).numpy()[0]
-        worst_nsim = None
-        worst_neg_index = None
-        nsim = None
-        neg_vec = None
-        strength = self.negative.strength/100
-        negative_similarity = None
-        #######
-        #Check negatives
-        if no_of_negatives > 0: 
-          tmp = None
-          for neg_index in range(MAX_NUM_MIX) :
-            if self.negative.isEmpty.get(neg_index): continue
-            neg_vec = self.negative.get(neg_index)
-            tmp = math.floor((100*100*cos(neg_vec, candidate_vec)).numpy()[0])
-            if tmp<0 : tmp = -tmp
-            nsim = tmp/100
-            #######
-            if worst_nsim == None : 
-              worst_nsim = nsim
-              worst_neg_index = neg_index
-            #######
-            if nsim > worst_nsim : 
-              worst_nsim = nsim
-              worst_neg_index = neg_index
-          ########
-          negative_similarity = 100 - worst_nsim
-        ########### #Done checking negatives
-        
-
-        if similarity == None : similarity = 0
-        if negative_similarity != None : 
-          similarity_sum += similarity * (1 - strength) + negative_similarity*strength
-        else: similarity_sum += similarity
-        
-        if similarity == min(minimum , similarity) :
-          minimum = similarity
-          mintoken = index
-
-        if similarity == max(maximum , similarity) :
-          maximum = similarity
-          maxtoken = index
-   
-      #Check if this candidate vector is better then
-      #the ones before it
-      if similarity_sum>similarity_score : 
-        similarity_score = similarity_sum
-        similarity_minimum = minimum
-        similarity_maximum = maximum
-        output = candidate_vec
-
-    #length of candidate vector
-    cdist = distance(candidate_vec , origin).numpy()[0]
-
-    #length of output vector
-    output_length = gain * dist_expected * radialRandom 
-
-    #Cap the length of the output vector according to radialGain slider setting 
-    if output_length>dist_expected: output_length = min(output_length , dist_expected/radialGain)
-    else: output_length = max(output_length  , dist_expected*radialGain)
-
-    #Normalize candidate vector and multiply with output vector length
-    output = candidate_vec *(output_length/cdist)
-    output_length = round(output_length, 2)
-
-    #round the values before printing them
-    similarity_minimum = round(similarity_minimum,1)
-    similarity_maximum = round(similarity_maximum,1)
-    dist_expected = round(dist_expected, 2)
-    dist_of_mean = round(dist_of_mean , 2)
-
-    negsim = None
-    if negative_similarity != None :
-      negsim = round(100-negative_similarity , 3) #Invert the value
-    
-    log.append ('Merged ' + str(no_of_tokens) + ' tokens into single token')
-    log.append('Lowest similarity : ' + str(similarity_minimum)+' % to token #' + str(mintoken) + \
-      '( ' + self.vector.name.get(mintoken) + ')')
-
-    log.append('Highest similarity : ' + str(similarity_maximum)+' % to token #' + str(maxtoken) + \
-      '( ' + self.vector.name.get(maxtoken) + ')')
-
-    if negsim != None :
-      name = self.negative.name.get(worst_neg_index)
-      log.append('Max similarity to negative tokens : ' + str(negsim) + ' %' + \
-      "to token '" + name + "'")
-
-    log.append('Average length of the input tokens : ' + str(dist_expected) )
-    log.append('Length of the token average : ' + str(dist_of_mean) )
-    log.append('Length of generated merged token : ' + str (output_length))
-    log.append('New embedding has 1 token')
-    log.append('-------------------------------------------')
-  
+    #####
+    output , message = \
+    self.operations._merge_all (target , self.positive , self.negative)
+    log.append(message)
+    #######
     return output , '\n'.join(log)
-  #End of merge-all function
+  #### End of merge_all()
 
+
+  # Concactinate all tokens into embedding 
+  # (this is the default operation of TokenMixer)
   def concat_all(self , similar_mode , is_sdxl = False):
     target = None
     if is_sdxl : target = self.vector1280
     else : target = self.vector
     assert target != None , "Fetched vector is NoneType!"
     return self.operations._concat_all(target , similar_mode, is_sdxl)
-  ######
+  ##### End of concat_all()
 
+
+  # Replace token at index with similar token
+  # using randomization parameterns stored with the 'vector' class
   def replace_with_similar(self , index , is_sdxl = False):
 
     pursuit_value = self.pursuit_strength/100
@@ -243,158 +84,31 @@ class Data :
         self.negative , 
         pursuit_value , 
         doping_value)
-  ###### End of replace_with_similar
+  ###### End of replace_with_similar()
 
-  
 
-  def merge_if_similar(self, similar_mode):
+  # Merge the tokens if they are similar enough
+  # This mode is referred as "Interpolate Mode" in the TokenMixer
+  def merge_if_similar(self , similar_mode , is_sdxl = False):
     log = []
-    log.append('Interpolate Mode :')
-    no_of_tokens = 0
-
-    for index in range (MAX_NUM_MIX):
-      if (self.vector.isEmpty.get(index)): continue
-      if (self.vector.isFiltered(index)): continue
-      no_of_tokens +=1
-      continue
-
-    if no_of_tokens <= 0: 
-      log.append('No inputs in mixer')
-      return None , '\n'.join(log) 
-
-    cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
-    distance = torch.nn.PairwiseDistance(p=2)
-
-    radialGain = 0.001 #deprecated
-    randomGain = self.vector.randomization/100 
-    lowerBound = self.vector.interpolation 
-    origin = self.vector.origin.to(device="cpu" , dtype = torch.float32)
-    size = self.vector.size
-    gain = self.vector.gain
-    N = self.vector.itermax
-    current_dist = None
-    current_norm = None
-    similarity = None
-    merge_norm = None
-    prev_dist = None
-    prev_norm = None
-    current = None
-    avg_dist=None
-    output = None
-    prev = None
-    tmp = None
-    T = 1/N  
-    iters = 0
-    found = False 
-    tensor = None
-    message = None
-    output_length = None
-    current_weight = None
-
-    for index in range (MAX_NUM_MIX):
-      if (self.vector.isEmpty.get(index)): continue
-      if (self.vector.isFiltered(index)): continue
-
-      if similar_mode : 
-        current , message = self.replace_with_similar(index)
+    target = None
+    if is_sdxl : target = self.vector1280
+    else : target = self.vector
+    #####
+    if similar_mode : 
+      for index in range(MAX_NUM_MIX):
+        current , message = self.replace_with_similar(index , is_sdxl)
+        target.place(current , index)
         log.append(message)
-      else : current = self.vector.get(index).to(device = choosen_device , dtype = torch.float32)
-
-      current_weight = 1
-      #self.vector.weight.get(index)
-      current = current*current_weight
-
-      if prev == None : 
-        prev = current
-        continue
-
-      assert not current == None , "current tensor is None!"
-      assert not prev == None , "prev tensor is None!"
-
-      tmp = ((current + prev) * 0.5).to(device = choosen_device , dtype = torch.float32) #Expected merge vector
-      avg_dist = distance(tmp, origin).numpy()[0]
-      merge_norm = ((1/avg_dist)*tmp).to(device = choosen_device , dtype = torch.float32)
-
-      current_dist = distance(current, origin).numpy()[0]
-      current_norm = ((1/current_dist)*current).to(device = choosen_device , dtype = torch.float32) 
-
-      prev_dist = distance(prev, origin).numpy()[0]
-      prev_norm = ((1/prev_dist)*prev).to(device = choosen_device , dtype = torch.float32)
-
-      assert not ( 
-        merge_norm == None or
-        current_norm==None or
-        prev_norm == None ) , "norm tensor is None!"
-
-      #Randomization parameters: 
-      radialRandom = (1 - randomGain) + randomGain*(2*random.random() - 1)
-
-      if not (self.vector.allow_negative_gain): 
-        if radialRandom<0: radialRandom = -radialRandom
-
-      found = False 
-      for step in range (N):
-        iters+=1
-
-        tmp  = ((torch.rand(size) - 0.5* torch.ones(size))\
-        .to(device = choosen_device , dtype = torch.float32)).unsqueeze(0)
-        rdist = distance(tmp, origin).numpy()[0]
-        rand_norm = (1/rdist) * tmp  #Create random unit vector
-
-        cand = (step * merge_norm + (N - step)* rand_norm) * T 
-        cdist = distance(cand, origin).numpy()[0]
-        candidate_norm = (1/cdist)*cand #Calculate candidate vector
-
-        sim1 =  (cos(current_norm, candidate_norm)).numpy()[0]
-        sim2 =  (cos(prev, candidate_norm)).numpy()[0]
-        dist_expected = sim1*current_dist + sim2*prev_dist
-
-        similarity = min(sim1, sim2) #Get lowest similarity
-        if (100*similarity > lowerBound) : 
-          found = True 
-          prev = None
-          break
-   
-      #round the values before printing them
-      similarity = round(100*similarity, 1)
-      lowerBound = round(lowerBound, 1)
-
-      if(found):
-
-        #length of output vector
-        output_length = gain * dist_expected * radialRandom 
-
-        #Cap the length of the output vector according to radialGain slider setting 
-        if output_length>dist_expected: output_length = min(output_length , dist_expected/radialGain)
-        else: output_length = max(output_length  , dist_expected*radialGain)
-
-        #Set the length of found similar vector
-        similar_token = output_length*candidate_norm
-
-        #round the values before printing them
-        output_length = round(output_length, 2)
-        dist_expected = round(dist_expected , 2)
-
-        log.append('Token ' + str(index-1) + ' and '+str(index)+ \
-        ' with expected length '+ str(dist_expected) + ' merged into 1 token with ' + \
-         str(similarity)+ '% similarity and ' + str(output_length) + ' length after ' + \
-        str(iters) + ' steps)')
-        no_of_tokens = no_of_tokens - 1
-
-        if output == None : output = similar_token
-        else :  output = torch.cat([output,similar_token], dim=0)\
-        .to(device = choosen_device , dtype = torch.float32)
-        log.append('Placed token with length '+ str(output_length)  +' in new embedding ')
-
-      else:
-        log.append('Skipping merge between token ' + str(index-1)+ \
-        ' and '+str(index))
-        log.append('Token similarity ' + str(similarity) + \
-        '% is less then req. similarity' + str(lowerBound) + '%')
-
-    log.append('New embedding now has ' + str(no_of_tokens) + ' tokens')
-    log.append('-------------------------------------------')
+    #######
+    output , message = \
+    self.operations._merge_if_similar(target , self.positive , self.negative)
+    log.append(message)
+    #######
     return output , '\n'.join(log)
+  ##### End of merge_if_similar()
+
+
 
   def text_to_emb_ids(self, text):
     text = copy.copy(text.lower())
@@ -416,8 +130,8 @@ class Data :
       return None
     if emb_id < 0 :
       return None
-    if is_sdxl: return self.tools.internal_embs1280[emb_id].to(device="cpu" , dtype = torch.float32)
-    else : return self.tools.internal_embs[emb_id].to(device="cpu" , dtype = torch.float32)
+    if is_sdxl: return self.tools.internal_embs1280[emb_id].to(device= choosen_device , dtype = datatype)
+    else : return self.tools.internal_embs[emb_id].to(device= choosen_device , dtype = datatype)
 
   def emb_id_to_name(self, text):
     emb_id = copy.copy(text)
@@ -449,11 +163,11 @@ class Data :
         if is_sdxl : 
           emb_id = 'unknown' #<<<< Will figure this out later
           emb_vec = loaded_emb.vec.get("clip_l")\
-          .to(device = choosen_device , dtype = torch.float32)
+          .to(device = choosen_device , dtype = datatype)
         else: 
           emb_id = '['+ loaded_emb.checksum()+']' # emb_id is string for loaded embeddings
           emb_vec = loaded_emb.vec\
-          .to(device = choosen_device , dtype = torch.float32)
+          .to(device = choosen_device , dtype = datatype)
         return emb_name, emb_id, emb_vec, loaded_emb #also return loaded_emb reference
 
       emb_ids = self.text_to_emb_ids(text)
@@ -505,6 +219,8 @@ class Data :
       if to_positive != None : 
         if to_positive : pass # Not implemented
   ######## End of shuffle function
+
+
 
   def roll (self , to_negative = None , to_mixer = None , \
   to_positive = None , to_temporary = None , is_sdxl = False):
@@ -597,7 +313,7 @@ class Data :
     #Helper function
     def _place_values_in(target) :
       if vector != None: target.place(vector\
-      .to(device = choosen_device , dtype = torch.float32),index)
+      .to(device = choosen_device , dtype = datatype),index)
       if ID != None: target.ID.place(ID, index)
       if name != None: target.name.place(name, index)
       if weight != None : target.weight.place(float(weight) , index)
@@ -634,7 +350,7 @@ class Data :
     for index in range(MAX_NUM_MIX):
       if self.vector.isEmpty.get(index) : continue
       self.vec = self.vector.get(index)\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       self.ID = copy.copy(self.vector.ID.get(index))
       self.name = copy.copy(self.vector.name.get(index))
       self.weight = copy.copy(self.vector.weight.get(index))
@@ -647,7 +363,7 @@ class Data :
       ########
       if self.vector1280.isEmpty.get(index) : continue
       self.vec = self.vector1280.get(index)\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       self.ID = copy.copy(self.vector1280.ID.get(index))
       self.name = copy.copy(self.vector1280.name.get(index))
       self.weight = copy.copy(self.vector1280.weight.get(index))
@@ -663,7 +379,7 @@ class Data :
     for index in range(MAX_NUM_MIX):
       if self.temporary.isEmpty.get(index) : continue
       self.vec = self.temporary.get(index)\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       self.ID = copy.copy(self.temporary.ID.get(index))
       self.name = copy.copy(self.temporary.name.get(index))
       self.weight = copy.copy(self.temporary.weight.get(index))
@@ -676,7 +392,7 @@ class Data :
       ########
       if self.temporary1280.isEmpty.get(index) : continue
       self.vec = self.temporary1280.get(index)\
-      .to(device = choosen_device , dtype = torch.float32)
+      .to(device = choosen_device , dtype = datatype)
       self.ID = copy.copy(self.temporary1280.ID.get(index))
       self.name = copy.copy(self.temporary1280.name.get(index))
       self.weight = copy.copy(self.temporary1280.weight.get(index))
@@ -689,39 +405,41 @@ class Data :
   ###### End of recall()
 
   def norm (self, tensor , origin_input , distance_fcn):
-        current = tensor.to(device = choosen_device , dtype = torch.float32)
-        origin = origin_input.to(device = choosen_device , dtype = torch.float32)
+        current = tensor.to(device = choosen_device , dtype = datatype)
+        origin = origin_input.to(device = choosen_device , dtype = datatype)
         return current
 
   def distance (self, tensor1 , tensor2):
         distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         #######
-        current = tensor1.to(device = choosen_device , dtype = torch.float32)
-        ref = tensor2.to(device = choosen_device , dtype = torch.float32)
+        current = tensor1.to(device = choosen_device , dtype = datatype)
+        ref = tensor2.to(device = choosen_device , dtype = datatype)
         dist = distance(current, ref).numpy()[0]
         return  str(round(dist , 2))
 
   def similarity (self , tensor1 , tensor2):
         distance = torch.nn.PairwiseDistance(p=2)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         origin = (self.vector.origin)\
-        .to(device = choosen_device , dtype = torch.float32)
+        .to(device = choosen_device , dtype = datatype)
         #######
 
-        current = tensor1.to(device = choosen_device , dtype = torch.float32)
+
+
+        current = tensor1.to(device = choosen_device , dtype = datatype)
         dist1 = distance(current, origin).numpy()[0]
         current = current * (1/dist1)
 
         ####
-        ref = tensor2.to(device = choosen_device , dtype = torch.float32)
+        ref = tensor2.to(device = choosen_device , dtype = datatype)
         dist2 = distance(current, origin).numpy()[0]
         ref = ref * (1/dist2)
 
         ########
-        sim = (100*cos(current , ref)).to(device = choosen_device , dtype = torch.float32)
+        sim = (100*cos(current , ref)).to(device = choosen_device , dtype = datatype)
         if sim < 0 : sim = -sim
         return  str(round(sim.numpy()[0] , 2))
 
@@ -732,11 +450,11 @@ class Data :
     name = None
 
     if is_sdxl:
-      vector = self.vector1280.get(index).to(device = choosen_device , dtype = torch.float32)
+      vector = self.vector1280.get(index).to(device = choosen_device , dtype = datatype)
       ID = self.vector1280.ID.get(index)
       name = self.vector1280.name.get(index)
     else:
-      vector = self.vector.get(index).to(device = choosen_device , dtype = torch.float32)
+      vector = self.vector.get(index).to(device = choosen_device , dtype = datatype)
       ID = self.vector.ID.get(index)
       name = self.vector.name.get(index)
     return vector , ID ,  name
