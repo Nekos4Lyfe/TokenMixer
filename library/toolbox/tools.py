@@ -28,6 +28,9 @@ datatype = TENSOR_DATA_TYPE
 class Tools :
   #The class tools contain built in functions for handling 
   #tokens and embeddings
+
+      # Create a folder in the UI to store 
+      # embeddings created by the TokenMixer extension
       def make_emb_folder(self , name):
         savepath = os.path.join(cmd_opts.embeddings_dir, name)
         try: os.makedirs(savepath)
@@ -35,7 +38,9 @@ class Tools :
         try: modules.sd_hijack.model_hijack.embedding_db.add_embedding_dir(savepath)
         except: pass
         return savepath
+      #### End of make_emb_folder()
 
+      # SD-Next compatibility (work in progress)
       def get_diffusers(self):
         model = shared.sd_model
         tokenizer = model.tokenizer
@@ -50,6 +55,7 @@ class Tools :
         is_sdxl = True
         internal_embs1280 = model.text_encoder_2.get_input_embeddings().weight
         return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_embs1280 , tokenizer1280
+      #### End of get_diffusers()
 
       #Check if a valid model is loaded
       def model_is_loaded(self):
@@ -102,8 +108,9 @@ class Tools :
           return internal_embs.to(device=choosen_device , dtype = datatype) , \
           internal_embs1280.to(device=choosen_device , dtype = datatype)
         else : return internal_embs.to(device=choosen_device , dtype = datatype)
-      ########
+      ##### End of get_internal_embs()
 
+      # Get the text encoder
       def get_encoder(self):
         is_sdxl , is_sd2 , is_sd1 = self.get_flags()
         embedder = self._get_embedder()
@@ -126,32 +133,34 @@ class Tools :
         return tokenizer
       ########
 
+      # Fetch the loaded embeddings again
       def update_loaded_embs(self):
         Tools.loaded_embs = self.get_loaded_embs()
+      #### End of update_loaded_embs()
 
+      # Get a letter from the list and 
+      # return it (for use in a embedding savename)
       def get_subname(self):
         self.count = copy.copy(self.count + 1)
         if self.count >= len(self.letter):
           self.count = 1
         return self.letter[self.count]
+      ### End of get_subname()
 
+      # Get the IDs of the tokens with greatest similarity 
+      # to the input token (for use in the Embedding inspector module)
       def get_best_ids (self , emb_id , similarity , max_similar_embs , emb_vec = None) :
         max_sim = copy.copy(max_similar_embs)
         simil = copy.copy(similarity)
         ID = copy.copy(emb_id)
         internal_embs = self.internal_embs.to(device = choosen_device , dtype = datatype)
         cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
-        all_sim = None
-        scores = None
-        sorted_scores = None
-        sorted_ids = None
-        best_ids = None
-        vector = None
 
+        vector = None
         if emb_vec != None:
           vector = emb_vec.to(device = choosen_device , dtype = datatype)
         elif isinstance(ID, int):
-          vector = internal_embs[ID]
+          vector = internal_embs[ID].to(device = choosen_device , dtype = datatype)
         else: return None , None
 
         all_sim = cos(internal_embs , vector)
@@ -159,6 +168,8 @@ class Tools :
         sorted_scores, sorted_ids = torch.sort(scores, descending=True)
         best_ids = sorted_ids[0:max_sim].detach().numpy()
         return  best_ids , sorted_scores
+      #### End of get_best_ids()
+
 
       def __init__(self , count=1):
         #Default values
@@ -171,34 +182,41 @@ class Tools :
         Tools.no_of_internal_embs1280 = 0
         Tools.is_sdxl = False
         Tools.loaded = False
-        #######
         is_sdxl = False
         is_sd2 = False
-        is_sd1 = False 
+        is_sd1 = False
+        #######
+
+        # Check if a valid SD model is loaded (SD 1.5 , SD2 or SDXL)
         model_is_loaded = self.model_is_loaded()
+        ######
+
+        #Add values to Tools.py
+        #if a valid sd-model is loaded
         if model_is_loaded : 
           is_sdxl , is_sd2 , is_sd1 = self.get_flags()
           Tools.is_sdxl = is_sdxl
           Tools.loaded = model_is_loaded
-        #######
-        Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
-        Tools.tokenizer = self.get_tokenizer()
-        Tools.encode = self.get_encoder()
-        Tools.internal_embs , \
-        Tools.internal_embs1280 = \
-        self.get_internal_embs(use_sdxl_dim = is_sdxl)
-        Tools.loaded_embs = self.get_loaded_embs()
+          #######
+          Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
+          Tools.tokenizer = self.get_tokenizer()
+          Tools.encode = self.get_encoder()
+          Tools.internal_embs , \
+          Tools.internal_embs1280 = \
+          self.get_internal_embs(use_sdxl_dim = is_sdxl)
+          Tools.loaded_embs = self.get_loaded_embs()
+        ########
+
+        #Store the number of internal embeddings
+        # in the SD-model (if internal embs are defined)
         if self.internal_embs != None:
           Tools.no_of_internal_embs = len(self.internal_embs)
         if self.internal_embs1280 != None:
           Tools.no_of_internal_embs1280 = len(self.internal_embs)
-          #Quick fix
-          Tools.internal_sdxl_embs = self.internal_embs1280
-          Tools.no_of_sdxl_internal_embs = self.no_of_internal_embs1280
-        ########
+        #######
 
         #Do some checks
-        if self.loaded:
+        if model_is_loaded:
           assert self.tokenizer != None , \
           "tokenizer is NoneType for this model!"
           assert self.internal_embs != None , \

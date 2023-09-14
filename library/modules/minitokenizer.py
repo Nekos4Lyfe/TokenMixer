@@ -34,13 +34,12 @@ class MiniTokenizer:
     ) :
 
     is_sdxl = self.data.tools.is_sdxl
-
     #Do some checks
     valid_ID = (emb_id < self.data.tools.no_of_internal_embs) and emb_id>=0
     assert isinstance(emb_id , int) , \
     "Error: emb id is not an integer , it is a " + str(type(emb_id)) + " !" 
     if is_sdxl : valid_ID = valid_ID and \
-    (emb_id < self.data.tools.no_of_sdxl_internal_embs)
+    (emb_id < self.data.tools.no_of_internal_embs1280)
     assert valid_ID , "Error: ID with value " + str(emb_id) + \
     " is outside the range of permissable values from 0 to " + \
     str(self.data.tools.no_of_internal_embs)
@@ -64,7 +63,7 @@ class MiniTokenizer:
             to_temporary = send_to_temporary)
 
         if is_sdxl:
-          sdxl_emb_vec = self.data.tools.internal_sdxl_embs[emb_id]\
+          sdxl_emb_vec = self.data.tools.internal_embs1280[emb_id]\
           .to(device = choosen_device , dtype = datatype)
           assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
 
@@ -296,7 +295,7 @@ class MiniTokenizer:
         if emb_id >= no_of_internal_embs: continue
         emb_vec = self.data.tools.internal_embs[emb_id]\
         .to(device = choosen_device , dtype = datatype)
-        if is_sdxl: sdxl_emb_vec = self.data.tools.internal_sdxl_embs[emb_id]\
+        if is_sdxl: sdxl_emb_vec = self.data.tools.internal_embs1280[emb_id]\
         .to(device = choosen_device , dtype = datatype)
         emb_name = self.data.emb_id_to_name(emb_id)
         ######
