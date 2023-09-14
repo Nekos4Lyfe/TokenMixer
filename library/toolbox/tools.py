@@ -189,6 +189,9 @@ class Tools :
 
         # Check if a valid SD model is loaded (SD 1.5 , SD2 or SDXL)
         model_is_loaded = self.model_is_loaded()
+        if not model_is_loaded:
+          from pprint import pprint
+          pprint("TokenMixer: Model was not loaded!")
         ######
 
         #Add values to Tools.py
@@ -196,7 +199,7 @@ class Tools :
         if model_is_loaded : 
           is_sdxl , is_sd2 , is_sd1 = self.get_flags()
           Tools.is_sdxl = is_sdxl
-          Tools.loaded = model_is_loaded
+          Tools.loaded = True
           #######
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.tokenizer = self.get_tokenizer()

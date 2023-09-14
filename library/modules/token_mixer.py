@@ -111,7 +111,7 @@ class TokenMixer :
       else : 
         sdxl_tot_vec , message = \
         self.data.concat_all(self.local.similar_mode , \
-        is_sdxl = self.data.tools.is_sdxl)
+        use_1280_dim = self.data.tools.is_sdxl)
       log.append(message)
     ########
 

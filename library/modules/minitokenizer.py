@@ -76,7 +76,7 @@ class MiniTokenizer:
               to_mixer = sendtomix , 
               to_positive = send_to_positives ,
               to_temporary = send_to_temporary , 
-              is_sdxl = True)
+              use_1280_dim =True)
     ###############
     return valid_ID
 
@@ -185,6 +185,7 @@ class MiniTokenizer:
       start_of_text_ID) 
     ######
 
+#use_1280_dim =
     ########## Start loop : 
     for index in range(MAX_NUM_MIX):
       if sendtomix and not self.data.vector.isEmpty.get(index): continue
@@ -251,7 +252,7 @@ class MiniTokenizer:
               to_mixer = sendtomix , 
               to_positive = send_to_positives ,
               to_temporary = send_to_temporary , 
-              is_sdxl = True)
+              use_1280_dim =True)
         ##########
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
         tokenbox =  tokenbox + emb_name + '_#' + str(emb_id)
@@ -318,7 +319,7 @@ class MiniTokenizer:
               to_mixer = sendtomix , 
               to_positive = send_to_positives ,
               to_temporary = send_to_temporary , 
-              is_sdxl = True)
+              use_1280_dim =True)
         ###########
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
         tokenbox =  tokenbox + emb_name + '_#' + str(emb_id)
@@ -341,6 +342,8 @@ class MiniTokenizer:
             start = numbers[0]
             end = numbers[1]
       ##########
+      #self.data.get
+      #####
       emb_name, emb_ids, emb_vecs , loaded_emb  = self.data.get_embedding_info(tmp)
       ###
       sdxl_emb_name = None
@@ -349,7 +352,7 @@ class MiniTokenizer:
       sdxl_loaded_emb = None
       if is_sdxl:
         sdxl_emb_name, sdxl_emb_ids, sdxl_emb_vecs , sdxl_loaded_emb  = \
-        self.data.get_embedding_info(tmp , is_sdxl = True)
+        self.data.get_embedding_info(tmp , use_1280_dim =True)
       ######## End of the [n:m] in mini_input stuff
 
       no_of_tokens = emb_vecs.shape[0]
@@ -366,7 +369,7 @@ class MiniTokenizer:
           emb_vec = self.data.emb_id_to_vec(emb_id)\
           .to(device = choosen_device , dtype = datatype)
           if is_sdxl: sdxl_emb_vec = \
-          self.data.emb_id_to_vec(emb_id , is_sdxl = True)\
+          self.data.emb_id_to_vec(emb_id , use_1280_dim =True)\
           .to(device = choosen_device , dtype = datatype)
           no_of_tokens +=1
           break
@@ -409,7 +412,7 @@ class MiniTokenizer:
               to_mixer = sendtomix , 
               to_positive = send_to_positives ,
               to_temporary = send_to_temporary , 
-              is_sdxl = True)
+              use_1280_dim =True)
           #######
           if (splitbox != '') : splitbox = splitbox + ' , '    
           splitbox =  splitbox + emb_name + '_' + str(token_num)
@@ -428,7 +431,7 @@ class MiniTokenizer:
         assert emb_vec != None , "emb_vec is NoneType"
         ######
         if is_sdxl: 
-          sdxl_emb_vec = self.data.emb_id_to_vec(_ID , is_sdxl = True)\
+          sdxl_emb_vec = self.data.emb_id_to_vec(_ID , use_1280_dim = True)\
           .to(device = choosen_device , dtype = datatype)
           assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
         #######
@@ -451,7 +454,7 @@ class MiniTokenizer:
               to_mixer = sendtomix , 
               to_positive = send_to_positives ,
               to_temporary = send_to_temporary , 
-              is_sdxl = True)
+              use_1280_dim =True)
         ###########
         ID_index+=1 
         if ID_index+1> no_of_IDs : 
