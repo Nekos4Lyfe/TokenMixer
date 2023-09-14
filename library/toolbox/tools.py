@@ -191,10 +191,9 @@ class Tools :
         BaseModelOutputWithPooling = \
         self.get_BaseModelOutputWithPooling_from(text, use_1280_dim)
         emb_vecs = BaseModelOutputWithPooling.last_hidden_state[0]
-
-        if use_1280_dim:
-          from pprint import pprint
-          pprint(BaseModelOutputWithPooling.last_hidden_state.shape)
+        #if use_1280_dim:
+         # from pprint import pprint
+         # pprint(BaseModelOutputWithPooling.last_hidden_state.shape)
         return emb_vecs
 
 
