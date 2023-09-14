@@ -124,7 +124,7 @@ class EmbeddingInspector :
     else:
       emb_name, emb_id, emb_vec, loaded_emb = \
       self.data.get_embedding_info(text , \
-      is_sdxl = self.data.tools.is_sdxl)
+      use_1280_dim = self.data.tools.is_sdxl)
 
       if self.data.tools.is_sdxl :
         results.append("Tokenize : Found SDXL vector '" + \
