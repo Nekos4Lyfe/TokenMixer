@@ -18,21 +18,14 @@ This extension is published under a MIT License.
 
 TokenMixer is now SDXL compatible for the Minitokenizer module and the Embedding Generator.
 
-You can now use the "<" and ">" to append the cutoff tokens |start-of-text| and |end-of-text| to the embeddings
+You can now use the "<" and ">" to append the cutoff tokens |start-of-text| and |end-of-text| to the embeddings. 
+
+This feature works for both SDXL and SD 1.5
 
 ![cutoff1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/21cba74a-c269-4da7-a154-e7e0096cc4c9)
 
 ![cutoff2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/da541adf-d92a-4480-884e-7d10e0743719)
 
-
-You can use  "_" feature on the Minitokenizer with SDXL
-
-![rand2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f0fe03f9-4187-4794-ac08-36df1cc1ef10)
-
-![rand 1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/b771edf3-d164-4c1e-9114-2b21ef9bde18)
-
-
-More features for SDXL are soon to follow
 
 ## Usage 
 Stable Diffusion interprets our prompts as vectors (tokens). The user creates these vectors by writing text ("the prompt"). Often the limitation of our generations are written English Language , rather then the model .
@@ -166,6 +159,12 @@ This is what the UI looks like. You are now ready to use the TokenMixer.
 
 You can input any prompt you like to the Minitokenizer on the left. Press the orange button. 
 The Tokens will now be sent to the embedding generator on the right
+
+You can use  "_" feature on the Minitokenizer to generate a random token
+
+![rand2](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/f0fe03f9-4187-4794-ac08-36df1cc1ef10)
+
+![rand 1](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/b771edf3-d164-4c1e-9114-2b21ef9bde18)
 
 ![Step_9](https://github.com/Nekos4Lyfe/TokenMixer/assets/130230016/1195debc-a4da-434f-92d3-b24862afe610)
 
