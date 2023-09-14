@@ -98,6 +98,8 @@ class Tools :
         embedder = self._get_embedder()
         model = shared.sd_model
         internal_emb_dir = None
+        internal_embs = None
+        internal_embs1280 = None
         if is_sd2 : internal_emb_dir = internal_emb_dir = embedder.model
         else : internal_emb_dir = embedder.transformer.text_model.embeddings
         internal_embs = internal_emb_dir.token_embedding.wrapped.weight 
@@ -107,7 +109,8 @@ class Tools :
           FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
           return internal_embs.to(device=choosen_device , dtype = datatype) , \
           internal_embs1280.to(device=choosen_device , dtype = datatype)
-        else : return internal_embs.to(device=choosen_device , dtype = datatype)
+        else:
+          return internal_embs.to(device=choosen_device , dtype = datatype) , None
       ##### End of get_internal_embs()
 
       # Get the text encoder

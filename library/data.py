@@ -127,7 +127,7 @@ class Data :
       index_max = self.tools.no_of_internal_embs1280
     else : 
       target = self.tools.internal_embs
-      index_max = self.tools.no_of_internal_embs1280
+      index_max = self.tools.no_of_internal_embs
     ########
     # Do some checks
     assert isinstance(emb_id, int) , "Embedding ID is not int!"
