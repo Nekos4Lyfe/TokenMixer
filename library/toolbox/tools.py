@@ -100,7 +100,7 @@ class Tools :
         internal_emb_dir = None
         internal_embs = None
         internal_embs1280 = None
-        if is_sd2 : internal_emb_dir = internal_emb_dir = embedder.model
+        if is_sd2 : internal_emb_dir = embedder.model
         else : internal_emb_dir = embedder.transformer.text_model.embeddings
         internal_embs = internal_emb_dir.token_embedding.wrapped.weight 
         if use_sdxl_dim : 
@@ -169,38 +169,60 @@ class Tools :
         CLIPTextModel = embedder.transformer
         return CLIPTextModel
 
-      def get_emb_ids_from(self, text):
-          assert type(text) == str , "input text is not string!"
-          tokenizer = self.tokenizer
-          text_input = tokenizer(text, truncation=False, return_tensors="pt")
-          emb_ids = text_input.input_ids.to(choosen_device)
-          return emb_ids[0]
+      #Helper function
+      def _get_emb_ids_from(self, text , use_1280_dim = False):
+        text_input = None
+        tokenizer = self.tokenizer768 # Use the same tokenizer
+        if use_1280_dim: 
+          text_input = \
+          tokenizer(text , truncation=False, padding="max_length", \
+          max_length=tokenizer.model_max_length , return_tensors="pt")
+        else: 
+          text_input = \
+          tokenizer(text , truncation=False, return_tensors="pt")
+        ########
+        emb_ids = text_input.input_ids.to(device = choosen_device)
+        return emb_ids
+      ###### End of helper function _get_emb_ids_from()
 
-      def get_BaseModelOutputWithPooling_from(self, text , use_1280_dim = False):
-        assert type(text) == str , "input text is not string!"
-        tokenizer = self.tokenizer
-        text_input = tokenizer(text, truncation=False, return_tensors="pt")
-        emb_ids = text_input.input_ids.to(choosen_device)
-        BaseModelOutputWithPooling = None
-        with torch.no_grad():
-          if use_1280_dim: BaseModelOutputWithPooling = self.text_encoder1280(emb_ids)
-          else : BaseModelOutputWithPooling = self.text_encoder768(emb_ids)
-        return BaseModelOutputWithPooling
+      # Get embedding IDs from text
+      def get_emb_ids_from(self, text , use_1280_dim = False):
+        emb_ids = self._get_emb_ids_from(text , use_1280_dim)
+        return emb_ids[0].to(device = choosen_device)
+      #### End of get_emb_ids_from()
 
+      # Get embedding vectors from text
       def get_emb_vecs_from(self, text , use_1280_dim = False):
-        BaseModelOutputWithPooling = \
-        self.get_BaseModelOutputWithPooling_from(text, use_1280_dim)
-        emb_vecs = BaseModelOutputWithPooling.last_hidden_state[0]
-        #if use_1280_dim:
-         # from pprint import pprint
-         # pprint(BaseModelOutputWithPooling.last_hidden_state.shape)
-        return emb_vecs
-
+        assert type(text) == str , "input text is not string!"
+        #######
+        emb_vecs = None
+        BaseModelOutputWithPooling = None
+        ########
+        if use_1280_dim: 
+          emb_ids = self._get_emb_ids_from(text , use_1280_dim).to("cuda")
+          model = self.FrozenOpenCLIPEmbedder2WithCustomWords.to("cuda")
+          with torch.no_grad():
+            emb_vecs = torch.tensor(\
+            model.encode_with_transformers(emb_ids)[0] , \
+            device = choosen_device , dtype = datatype)
+        else: 
+          emb_ids = self._get_emb_ids_from(text).to(device = choosen_device)
+          with torch.no_grad():
+            BaseModelOutputWithPooling = self.text_encoder768(emb_ids)
+            emb_vecs = torch.tensor(\
+            BaseModelOutputWithPooling.last_hidden_state[0] , \
+            device = choosen_device , dtype = datatype)
+        ######
+        output = emb_vecs.to(choosen_device , dtype = datatype)
+        return output
+      ##### End of get_emb_vecs_from()
 
       def __init__(self , count=1):
         #Default values
         Tools.CLIPTextModel = None
         Tools.tokenizer = None
+        Tools.tokenizer768 = None
+        Tools.tokenizer1280 = None
         Tools.internal_embs = None
         Tools.internal_embs1280 = None
         Tools.encode = None 
@@ -239,7 +261,7 @@ class Tools :
         if self.internal_embs != None:
           Tools.no_of_internal_embs = len(self.internal_embs)
         if self.internal_embs1280 != None:
-          Tools.no_of_internal_embs1280 = len(self.internal_embs)
+          Tools.no_of_internal_embs1280 = len(self.internal_embs1280)
         #######
 
         #Do some checks
@@ -264,17 +286,23 @@ class Tools :
         # SDXL Text encoders
         Tools.text_encoder768 = None
         Tools.text_encoder1280 = None
-        if is_sdxl:
-          # Should return 768 dimension tensors and returns 768
-          # Works fine
-          Tools.text_encoder768 = self.CLIPTextModel.from_pretrained\
-            ("openai/clip-vit-large-patch14").to(choosen_device) 
+        Tools.tokenize1280 = None
 
-          # Returns 768 dimension tensors , cannot be used to get 1280 dimension
-          #tensors (alternative needed?)
-          from transformers import CLIPTextModelWithProjection
-          Tools.text_encoder1280 = CLIPTextModelWithProjection.from_pretrained\
-            ("openai/clip-vit-large-patch14").to(choosen_device) 
+        if is_sdxl:
+          Tools.text_encoder768 = self.CLIPTextModel.from_pretrained\
+            ("openai/clip-vit-large-patch14").to(device = choosen_device)
+          Tools.FrozenOpenCLIPEmbedder2WithCustomWords = \
+          shared.sd_model.cond_stage_model.embedders[1].to(device = choosen_device)
+          #Tools.text_encoder1280 = FrozenOpenCLIPEmbedder2WithCustomWords.encode_with_transformers
+          #Tools.tokenizer1280 = self.FrozenOpenCLIPEmbedder2WithCustomWords.tokenize
+          Tools.tokenizer768 = self.get_tokenizer()
+          assert self.text_encoder768 != None , "encoder768 is NoneType!" 
+          assert self.tokenizer768 != None , "tokenizer768 is NoneType!"
+
+          #from transformers import CLIPTextModelWithProjection
+          #Tools.text_encoder1280 = \
+          #CLIPTransformer.from_pretrained("openai/clip-vit-large-patch14").to(device = choosen_device) 
+          #assert Tools.text_encoder1280 != None , "encoder1280 is NoneType!"
         ###########
 
         Tools.count = count 

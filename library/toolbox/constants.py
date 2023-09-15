@@ -13,3 +13,6 @@ EMB_SAVE_EXT = '.pt' #'.bin'
 import torch
 TENSOR_DEVICE_TYPE = "cpu"
 TENSOR_DATA_TYPE = torch.float32
+
+START_OF_TEXT_ID = 49406
+END_OF_TEXT_ID = 49407

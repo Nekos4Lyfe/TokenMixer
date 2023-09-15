@@ -13,6 +13,10 @@ from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
 choosen_device = TENSOR_DEVICE_TYPE
 datatype = TENSOR_DATA_TYPE
 
+from library.toolbox.constants import START_OF_TEXT_ID , END_OF_TEXT_ID
+start_of_text_ID = START_OF_TEXT_ID
+end_of_text_ID = END_OF_TEXT_ID
+
 # Check that MPS is available (for MAC users)
 #if torch.backends.mps.is_available(): 
 #  choosen_device = torch.device("mps")
@@ -20,6 +24,9 @@ datatype = TENSOR_DATA_TYPE
 #######
 
 class MiniTokenizer:
+
+  def isCutoffToken(_ID):
+    return _ID == start_of_text_ID or _ID == end_of_text_ID
 
   def Reset (self , mini_input , tokenbox) : 
     return '' , ''
@@ -169,10 +176,7 @@ class MiniTokenizer:
 
     ## SDXL stuff
     is_sdxl = self.data.tools.is_sdxl
-    ######
-
-    start_of_text_ID = 49406
-    end_of_text_ID = 49407
+    ####
     
     #Append start_of_text_ID to output before loop
     first_index = 0
@@ -423,9 +427,7 @@ class MiniTokenizer:
           if is_sdxl : 
             found_vecs768 = \
             self.data.tools.get_emb_vecs_from(word)
-
-            #This one returns 768 dimension tensors 
-            #(cannot be used to get 1280 tensors , I think)
+            ######
             found_vecs1280 = \
             self.data.tools.get_emb_vecs_from(word , use_1280_dim = True) 
             #######
@@ -445,25 +447,28 @@ class MiniTokenizer:
           #######
           ID_index = 0
         #######
-
         _ID = int(found_IDs[ID_index])
+        #######
+
         if is_sdxl : 
-          emb_vec = found_vecs768[ID_index] #Good method (SDXL)
+          emb_vec = found_vecs768[ID_index]\
+          .to(device = choosen_device) #Good method (SDXL)
+          sdxl_emb_vec = found_vecs1280[ID_index]\
+          .to(device = choosen_device)  # Good method(SDXL)
+          assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
         else : 
           emb_vec = self.data.emb_id_to_vec(_ID)\
           .to(device = choosen_device , dtype = datatype) # Bad method (SD1.5)
-
+        #########
         emb_name = self.data.emb_id_to_name(_ID)
         assert _ID != None , "_ID is NoneType"
         assert emb_vec != None , "emb_vec is NoneType"
         ######
-        if is_sdxl: 
-          sdxl_emb_vec = self.data.emb_id_to_vec(_ID , use_1280_dim = True)\
-          .to(device= choosen_device , dtype = datatype) # Bad method? (SDXL)
-          #found_vecs1280[ID_index] # wrong dimension (768)
-          assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
+        #if is_sdxl: 
+          #sdxl_emb_vec = self.data.emb_id_to_vec(_ID , use_1280_dim = True)\
+          #.to(device= choosen_device , dtype = datatype) # Bad method (SDXL)
         #######
-        if not (_ID == 49406 or _ID == 49407) :
+        if (_ID != start_of_text_ID) and (_ID != end_of_text_ID):
           self.data.place(index , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  _ID ,
@@ -483,11 +488,10 @@ class MiniTokenizer:
               to_positive = send_to_positives ,
               to_temporary = send_to_temporary , 
               use_1280_dim =True)
-        ###########
-        ID_index+=1 
+        ########### 
         if (tokenbox != '') : tokenbox = tokenbox + ' , '
         tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
-        
+        ID_index+=1
         if ID_index+1> no_of_IDs : 
             reading_word = False
             word_index -=1 

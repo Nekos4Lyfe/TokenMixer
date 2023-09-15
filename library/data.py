@@ -343,5 +343,8 @@ class Data :
       self.positive = Positive(size)
       self.temporary = Temporary(size)
 
+      found_vecs1280 = \
+      self.tools.get_emb_vecs_from("apple" , use_1280_dim = True)
+
 #End of Data class
 dataStorage = Data() #Create data
