@@ -83,7 +83,7 @@ class TensorFunctions:
   ######## End of _roll function
 
 
-
+  #_concat
   # Replace a fraction of each tensor with a random vector 
   # within given field(s) in Data class
   @staticmethod

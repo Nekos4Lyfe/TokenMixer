@@ -186,9 +186,10 @@ class MiniTokenizer:
     ######
 
     placed = False
-    index = 0
+    offset = 1
     ########## Start loop : 
-    for index in range(MAX_NUM_MIX):
+    for k in range(MAX_NUM_MIX):
+      index = k + offset
       if not index < MAX_NUM_MIX : break
       ######
       if placed : #Store the values from the previous iteration
@@ -207,9 +208,9 @@ class MiniTokenizer:
           if tokenmixer_vectors != '': tokenmixer_vectors = tokenmixer_vectors + ' , '
           tokenmixer_vectors = tokenmixer_vectors + name
         ######
-        #index = index + 1
         placed = False
-      ######
+      #########
+
       if sendtomix and not self.data.vector.isEmpty.get(index): continue
       #Go word-for-word through the list of words
       if not word_index>0: break
@@ -432,96 +433,119 @@ class MiniTokenizer:
       ###########
       else:
         #If embedding is single token
-        if not reading_word:
-          reading_word = True
+
+        if True : 
+          #DIMENSION 768 INIT
           found_IDs = self.data.tools.get_emb_ids_from(word).numpy()
-          found_IDs1280 = self.data.tools.get_emb_ids_from(word , use_1280_dim = True).numpy()
-
-          found_vecs768 = None
-          found_vecs1280 = None
-          no_of_vecs768 = 0
-          no_of_vecs1280 = 0
-
-          if is_sdxl : 
-            found_vecs768 = \
-            self.data.tools.get_emb_vecs_from(word)
-
-            ######
-            found_vecs1280 = \
-            self.data.tools.get_emb_vecs_from(word , use_1280_dim = True) 
-            #######
-
-          ##########
+          found_vecs768 = \
+          self.data.tools.get_emb_vecs_from(word)
           if len(found_IDs)<=0:
             reading_word = False
             word_index -=1 
             continue
-          ###########
           no_of_IDs = len(found_IDs)
-          if is_sdxl: 
-            assert no_of_IDs == found_vecs768.shape[0] , \
-            "Size mismatch between found vecs and found IDs! , " + \
-            "found_vecs768.shape[0] = " + str(found_vecs768.shape[0]) + \
-            " and len(found_IDs) = " + str(no_of_IDs)
-          #######
-          ID_index = 0
-        #######
-        _ID = int(found_IDs[ID_index])
-        #######
-
-        if is_sdxl : 
-          emb_vec = found_vecs768[ID_index]\
-          .to(device = choosen_device) #Good method (SDXL)
-          sdxl_emb_vec = found_vecs1280[ID_index]\
-          .to(device = choosen_device)  # Good method(SDXL)
-          assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
-        else : 
-          emb_vec = self.data.emb_id_to_vec(_ID)\
-          .to(device = choosen_device , dtype = datatype) # Bad method (SD1.5)
-        #########
-        emb_name = self.data.emb_id_to_name(_ID)
-        assert _ID != None , "_ID is NoneType"
-        assert emb_vec != None , "emb_vec is NoneType"
-        ######
-        #if is_sdxl: 
-          #sdxl_emb_vec = self.data.emb_id_to_vec(_ID , use_1280_dim = True)\
-          #.to(device= choosen_device , dtype = datatype) # Bad method (SDXL)
-        #######
-        if not self.isCutoff(_ID):
-          assert not placed , "Overwrite error!"
-          placed = True 
-          self.data.place(index , 
-            vector =  emb_vec.unsqueeze(0) ,
+          assert no_of_IDs == found_vecs768.shape[0] , \
+          "Size mismatch between found vecs and found IDs! , " + \
+          "found_vecs768.shape[0] = " + str(found_vecs768.shape[0]) + \
+          " and len(found_IDs) = " + str(no_of_IDs)
+          
+           #DIMENSION 768 LOOP
+          tensor_index = 0
+          emb_vec768 = None
+          for _ID in found_IDs:
+            if self.isCutoff(_ID): continue
+            emb_vec768 = found_vecs768[tensor_index]\
+            .to(device = choosen_device) 
+            emb_name = self.data.emb_id_to_name(_ID)
+            emb_id = _ID
+            #######
+            self.data.place(index , 
+            vector =  emb_vec768.unsqueeze(0) ,
             ID =  _ID ,
             name = emb_name ,
             to_negative = send_to_negatives ,
             to_mixer = sendtomix , 
             to_positive = send_to_positives , 
             to_temporary = send_to_temporary)
-          ########
-          if is_sdxl:
-            self.data.place(index , 
-              vector = sdxl_emb_vec.unsqueeze(0) ,
-              ID = 0 ,
-              name = emb_name + '_' + str(token_num) , 
-              to_negative = send_to_negatives , 
-              to_mixer = sendtomix , 
-              to_positive = send_to_positives ,
-              to_temporary = send_to_temporary , 
-              use_1280_dim =True)
-        ########### 
-        if (tokenbox != '') : tokenbox = tokenbox + ' , '
-        tokenbox =  tokenbox + emb_name + '_#' + str(_ID)
-        ID_index+=1
-        if ID_index+1> no_of_IDs : 
-            reading_word = False
-            word_index -=1 
-            continue
-        ##########
-      #### End of 'Normal operation'
-    ####### End loop
+            #######
+            name = self.data.vector.name.get(index)
+            if (tokenbox != '') : tokenbox = tokenbox + ' , '
+            tokenbox =  tokenbox + name + '_#' + str(_ID)
+            #######
+            tensor_index = tensor_index + 1
+            offset = offset + 1
+            index = k + offset
+            if (tensor_index >= no_of_IDs-1) : continue
+            #######
+            neg_name = self.data.negative.name.get(index-1)
+            if neg_name != None :
+              if (negbox != '') : negbox = negbox + ' , ' 
+              negbox = negbox + neg_name
+            #####
+            pos_name = self.data.positive.name.get(index-1)
+            if pos_name != None :
+              if (posbox != '') : posbox = posbox + ' , ' 
+              posbox = posbox + pos_name
+            ######
+            name = self.data.vector.name.get(index-1)
+            if name != None and sendtomix:
+              if tokenmixer_vectors != '': tokenmixer_vectors = tokenmixer_vectors + ' , '
+              tokenmixer_vectors = tokenmixer_vectors + name
+            placed = True
+          ####### End of Loop
+        ###### End 768 Dimension stuff
 
-    #Try to append end_of_text_ID to output after loop
+        if is_sdxl:
+          #SDXL DIMENSION 1280 INIT
+          found_vecs1280 = None
+          found_IDs1280 = None
+          no_of_IDs1280 = None
+          found_IDs1280 = self.data.tools.\
+          get_emb_ids_from(word , use_1280_dim = True).numpy()
+          found_vecs1280 = \
+          self.data.tools.get_emb_vecs_from(word , use_1280_dim = True) 
+          no_of_IDs1280 = len(found_IDs1280)
+          assert no_of_IDs1280 == found_vecs1280.shape[0] , \
+          "Size mismatch between found vecs1280 and found IDs! , " + \
+          "found_vecs1280.shape[0] = " + str(found_vecs1280.shape[0]) + \
+          " and len(found_IDs1280) = " + str(no_of_IDs1280)
+          
+          #SDXL DIMENSION 1280 LOOP
+          tensor_index = 0
+          emb_vec1280 = None
+          from pprint import pprint
+          pprint ("<<<<<STARTING SDXL LOOP>>>>>")
+          for _ID in found_IDs1280:
+            if self.isCutoff(_ID): continue
+            emb_vec1280 = found_vecs1280[tensor_index]\
+            .to(device = choosen_device) 
+            pprint(emb_vec1280)
+            emb_name = self.data.emb_id_to_name(_ID)
+            emb_id = _ID
+            ########
+            self.data.place(index , 
+            vector =  emb_vec1280.unsqueeze(0) ,
+            ID =  _ID ,
+            name = emb_name ,
+            to_negative = send_to_negatives ,
+            to_mixer = sendtomix , 
+            to_positive = send_to_positives , 
+            to_temporary = send_to_temporary , 
+            use_1280_dim = True)
+            #######
+            tensor_index = tensor_index + 1
+            offset = offset + 1
+            index = k + offset
+          ##### End of 1280 Dimension Loop
+        ####### End of SDXL Stuff
+        word_index -=1 
+        continue
+      #### End of 'Normal operation'
+    ####### End main loop
+
+    
+    # Find the first empty slot in the list
+    # after the loop (the last index to fill)
     last_index = None
     for index in range(MAX_NUM_MIX):
       if trailing_end_of_text : break
@@ -529,6 +553,8 @@ class MiniTokenizer:
       last_index = copy.copy(index)
     ########
 
+    # Append end_of_text_ID token to output after loop
+    # if none were placed at the end
     if not trailing_end_of_text:
       self.place (last_index  , \
       send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
