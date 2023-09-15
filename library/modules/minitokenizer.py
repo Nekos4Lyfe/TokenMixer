@@ -25,11 +25,11 @@ end_of_text_ID = END_OF_TEXT_ID
 
 class MiniTokenizer:
 
-  def isCutoffToken(_ID):
-    return _ID == start_of_text_ID or _ID == end_of_text_ID
-
   def Reset (self , mini_input , tokenbox) : 
     return '' , ''
+
+  def isCutoff(self, ID):
+    return ((ID == start_of_text_ID) or (ID == end_of_text_ID))
 
   def place (self , index ,\
     send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
@@ -185,29 +185,34 @@ class MiniTokenizer:
     start_of_text_ID) 
     ######
 
+    placed = False
+    index = 0
     ########## Start loop : 
     for index in range(MAX_NUM_MIX):
-      if sendtomix and not self.data.vector.isEmpty.get(index): continue
+      if not index < MAX_NUM_MIX : break
       ######
-      if index>0: #Store the values from the previous iteration
-        neg_name = self.data.negative.name.get(index - 1)
+      if placed : #Store the values from the previous iteration
+        neg_name = self.data.negative.name.get(index-1)
         if neg_name != None :
           if (negbox != '') : negbox = negbox + ' , ' 
           negbox = negbox + neg_name
         #####
-        pos_name = self.data.positive.name.get(index - 1)
+        pos_name = self.data.positive.name.get(index-1)
         if pos_name != None :
           if (posbox != '') : posbox = posbox + ' , ' 
           posbox = posbox + pos_name
         ######
-        name = self.data.vector.name.get(index - 1)
+        name = self.data.vector.name.get(index-1)
         if name != None and sendtomix:
           if tokenmixer_vectors != '': tokenmixer_vectors = tokenmixer_vectors + ' , '
           tokenmixer_vectors = tokenmixer_vectors + name
+        ######
+        #index = index + 1
+        placed = False
       ######
-
+      if sendtomix and not self.data.vector.isEmpty.get(index): continue
       #Go word-for-word through the list of words
-      if not word_index>0: continue
+      if not word_index>0: break
       word = sentence[no_of_words-word_index]
       if word == "," :  
         word_index -=1 
@@ -233,6 +238,7 @@ class MiniTokenizer:
         emb_id = 0
         emb_name = "random_" + str(index)
       ###########
+        placed = True
         self.data.place(index , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  emb_id ,
@@ -243,6 +249,7 @@ class MiniTokenizer:
             to_temporary = send_to_temporary)
 
         if is_sdxl:
+            placed = True
             self.data.place(index , 
               vector = sdxl_emb_vec.unsqueeze(0) ,
               ID = 0 ,
@@ -300,6 +307,8 @@ class MiniTokenizer:
         emb_name = self.data.emb_id_to_name(emb_id)
         ######
         assert emb_vec != None , "emb_vec is NoneType"
+        assert not placed , "Overwrite error!"
+        placed = True
         self.data.place(index , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  emb_id  ,
@@ -310,6 +319,7 @@ class MiniTokenizer:
             to_temporary = send_to_temporary)
         ######
         if is_sdxl:
+            placed = True
             self.data.place(index , 
               vector = sdxl_emb_vec.unsqueeze(0) ,
               ID = 0 ,
@@ -393,6 +403,8 @@ class MiniTokenizer:
             .to(device = choosen_device , dtype = datatype)
             assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
           ######
+          assert not placed , "Overwrite error!"
+          placed = True
           self.data.place(index , 
               vector = emb_vec.unsqueeze(0) ,
               ID = 0 ,
@@ -403,6 +415,7 @@ class MiniTokenizer:
               to_temporary = send_to_temporary)
           ######
           if is_sdxl:
+            placed = True
             self.data.place(index , 
               vector = sdxl_emb_vec.unsqueeze(0) ,
               ID = 0 ,
@@ -422,11 +435,17 @@ class MiniTokenizer:
         if not reading_word:
           reading_word = True
           found_IDs = self.data.tools.get_emb_ids_from(word).numpy()
+          found_IDs1280 = self.data.tools.get_emb_ids_from(word , use_1280_dim = True).numpy()
+
           found_vecs768 = None
           found_vecs1280 = None
+          no_of_vecs768 = 0
+          no_of_vecs1280 = 0
+
           if is_sdxl : 
             found_vecs768 = \
             self.data.tools.get_emb_vecs_from(word)
+
             ######
             found_vecs1280 = \
             self.data.tools.get_emb_vecs_from(word , use_1280_dim = True) 
@@ -468,7 +487,9 @@ class MiniTokenizer:
           #sdxl_emb_vec = self.data.emb_id_to_vec(_ID , use_1280_dim = True)\
           #.to(device= choosen_device , dtype = datatype) # Bad method (SDXL)
         #######
-        if (_ID != start_of_text_ID) and (_ID != end_of_text_ID):
+        if not self.isCutoff(_ID):
+          assert not placed , "Overwrite error!"
+          placed = True 
           self.data.place(index , 
             vector =  emb_vec.unsqueeze(0) ,
             ID =  _ID ,

@@ -19,6 +19,10 @@ from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
 choosen_device = TENSOR_DEVICE_TYPE
 datatype = TENSOR_DATA_TYPE
 
+from library.toolbox.constants import START_OF_TEXT_ID , END_OF_TEXT_ID
+start_of_text_ID = START_OF_TEXT_ID
+end_of_text_ID = END_OF_TEXT_ID
+
 # Check that MPS is available (for MAC users)
 #if torch.backends.mps.is_available(): 
 #  choosen_device = torch.device("mps")
@@ -28,6 +32,9 @@ datatype = TENSOR_DATA_TYPE
 class Tools :
   #The class tools contain built in functions for handling 
   #tokens and embeddings
+
+      def isCutoff(self, ID):
+        return ((ID == start_of_text_ID) or (ID == end_of_text_ID))    
 
       # Create a folder in the UI to store 
       # embeddings created by the TokenMixer extension
@@ -199,11 +206,11 @@ class Tools :
         BaseModelOutputWithPooling = None
         ########
         if use_1280_dim: 
-          emb_ids = self._get_emb_ids_from(text , use_1280_dim).to("cuda")
-          model = self.FrozenOpenCLIPEmbedder2WithCustomWords.to("cuda")
+          emb_ids = self._get_emb_ids_from(text , use_1280_dim)
+          model = self.FrozenOpenCLIPEmbedder2WithCustomWords
           with torch.no_grad():
             emb_vecs = torch.tensor(\
-            model.encode_with_transformers(emb_ids)[0] , \
+            model.encode_with_transformers(emb_ids.to("cuda"))[0] , \
             device = choosen_device , dtype = datatype)
         else: 
           emb_ids = self._get_emb_ids_from(text).to(device = choosen_device)
@@ -292,7 +299,7 @@ class Tools :
           Tools.text_encoder768 = self.CLIPTextModel.from_pretrained\
             ("openai/clip-vit-large-patch14").to(device = choosen_device)
           Tools.FrozenOpenCLIPEmbedder2WithCustomWords = \
-          shared.sd_model.cond_stage_model.embedders[1].to(device = choosen_device)
+          shared.sd_model.cond_stage_model.embedders[1]
           #Tools.text_encoder1280 = FrozenOpenCLIPEmbedder2WithCustomWords.encode_with_transformers
           #Tools.tokenizer1280 = self.FrozenOpenCLIPEmbedder2WithCustomWords.tokenize
           Tools.tokenizer768 = self.get_tokenizer()
