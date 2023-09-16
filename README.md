@@ -2,11 +2,7 @@
 
 The TokenMixer is an StableDiffusion extension for Automatic1111 and SD-Next for modifying embedding vectors and/or tokens. The TokenMixer consists of several modules in an integrated and adjustable interface.
 
-Disclaimer: 
-
-- This extension is not compatible with ComfyUI yet (still need to write the UI for the custom_nodes) 
-
-This extension is still an early-access version. Bug reports are welcome. 
+This extension is still an early-access version. Bug reports are welcome. Right now the main focus is on SDXL compatibility.
 
 If you have ideas/suggestions/questions about the user interface , please make a post under the "Issues" tab. 
 
