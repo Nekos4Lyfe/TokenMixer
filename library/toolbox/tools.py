@@ -1,37 +1,70 @@
 #TOOLS.PY
-from types import NoneType
-import gradio as gr
-from modules import script_callbacks, shared, \
-sd_hijack , sd_models , sd_hijack_open_clip , textual_inversion , xlmr
-from modules.shared import cmd_opts
-#######
-from pandas import Index
-from pandas.core.groupby.groupby import OutputFrameOrSeries
 import torch, os
-from modules.textual_inversion.textual_inversion import Embedding
-#######
-import collections, math, random , numpy
 import copy
-from torch.nn.modules import ConstantPad1d, container
+from types import NoneType
+import collections
+import gradio as gr
+from modules import shared
+from modules import sd_hijack , sd_hijack_open_clip
+from modules.shared import cmd_opts
+from modules.textual_inversion.textual_inversion import Embedding
+######
 from library.toolbox.constants import MAX_NUM_MIX 
-#------------------------------------------------------------
 from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
 choosen_device = TENSOR_DEVICE_TYPE
 datatype = TENSOR_DATA_TYPE
-
+#------------------------------------------------------------
 from library.toolbox.constants import START_OF_TEXT_ID , END_OF_TEXT_ID
 start_of_text_ID = START_OF_TEXT_ID
 end_of_text_ID = END_OF_TEXT_ID
+#------------------------------------------------------------
 
-# Check that MPS is available (for MAC users)
-#if torch.backends.mps.is_available(): 
-#  choosen_device = torch.device("mps")
-#else : choosen_device = torch.device("cpu")
-######
+from modules import devices, sd_hijack_optimizations, shared, script_callbacks, errors, sd_unet
+from modules.hypernetworks import hypernetwork
+from modules.shared import cmd_opts
+from modules import sd_hijack_clip, sd_hijack_open_clip, sd_hijack_unet, sd_hijack_xlmr, xlmr
+import ldm.modules.encoders.modules
 
 class Tools :
   #The class tools contain built in functions for handling 
   #tokens and embeddings
+
+      def get_cond_stage_model_from (self, model):
+        conditioner = getattr(model, 'conditioner', None)
+        if conditioner:
+            text_cond_models = []
+
+            for i in range(len(conditioner.embedders)):
+                embedder = conditioner.embedders[i]
+                typename = type(embedder).__name__
+                if typename == 'FrozenOpenCLIPEmbedder':
+                    conditioner.embedders[i] = sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords(embedder, self)
+                    text_cond_models.append(conditioner.embedders[i])
+                if typename == 'FrozenCLIPEmbedder':
+                    model_embeddings = embedder.transformer.text_model.embeddings
+                    conditioner.embedders[i] = sd_hijack_clip.FrozenCLIPEmbedderForSDXLWithCustomWords(embedder, self)
+                    text_cond_models.append(conditioner.embedders[i])
+                if typename == 'FrozenOpenCLIPEmbedder2':
+                    conditioner.embedders[i] = sd_hijack_open_clip.FrozenOpenCLIPEmbedder2WithCustomWords(embedder, self)
+                    text_cond_models.append(conditioner.embedders[i])
+
+            if len(text_cond_models) == 1:
+                cond_stage_model = text_cond_models[0]
+            else:
+                cond_stage_model = conditioner
+
+        if type(cond_stage_model) == xlmr.BertSeriesModelWithTransformation:
+            cond_stage_model = sd_hijack_xlmr.FrozenXLMREmbedderWithCustomWords(cond_stage_model, self)
+
+        elif type(cond_stage_model) == ldm.modules.encoders.modules.FrozenCLIPEmbedder:
+            cond_stage_model = sd_hijack_clip.FrozenCLIPEmbedderWithCustomWords(cond_stage_model, self)
+
+        elif type(cond_stage_model) == ldm.modules.encoders.modules.FrozenOpenCLIPEmbedder:
+            cond_stage_model = sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords(cond_stage_model, self)
+
+        return cond_stage_model 
+
+
 
       def isCutoff(self, ID):
         return ((ID == start_of_text_ID) or (ID == end_of_text_ID))    
@@ -56,9 +89,6 @@ class Tools :
         sorted(sd_hijack.model_hijack.embedding_db.word_embeddings.items(),
             key=lambda x: str(x[0]).lower())) #doesn't actually work with diffusers
         internal_embs = model.text_encoder.get_input_embeddings().weight
-        from pprint import pprint
-        pprint('test')
-        pprint(internal_embs.shape)
         is_sdxl = True
         internal_embs1280 = model.text_encoder_2.get_input_embeddings().weight
         return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_embs1280 , tokenizer1280
@@ -136,24 +166,6 @@ class Tools :
         return internal_emb_dir
       ###########
 
-      #Fetch text_encoder for dimension 768
-      # Works for all models (SDXL , SD2 , SD1.5)
-      def get_text_encoder(self):
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        internal_emb_dir = self._get_internal_emb_dir()
-        text_encoder768 = internal_emb_dir.token_embedding.wrapped
-        return text_encoder768
-      #######
-
-      #Fetch text_encoder for dimension 768
-      # Works for all models (SDXL , SD2 , SD1.5)
-      def get_text_encoder768(self):
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        internal_emb_dir = self._get_internal_emb_dir()
-        text_encoder768 = internal_emb_dir.token_embedding.wrapped
-        return text_encoder768
-      #######
-
       # Fetch internal_embs for dimension 768
       # Works for all models (SDXL , SD2 , SD1.5)
       def get_internal_embs(self):
@@ -180,10 +192,11 @@ class Tools :
         FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
         return internal_embs1280
 
-      #Fetch the tokenizer
+     #Fetch the tokenizer
       def get_tokenizer(self):
         is_sdxl , is_sd2 , is_sd1 = self.get_flags()
         embedder = self._get_embedder()
+        model = shared.sd_model
         tokenizer = None
         if is_sd2 :
           from modules.sd_hijack_open_clip import tokenizer as open_clip_tokenizer
@@ -235,53 +248,55 @@ class Tools :
         CLIPTextModel = embedder.transformer
         return CLIPTextModel
 
-
-        #text_input = tokenizer(text , \
-        #truncation=False, padding="max_length", \
-        #max_length=tokenizer.model_max_length , return_tensors="pt")
-
-
-
       # Get embedding IDs from text
-      def get_emb_ids_from(self, text , use_1280_dim = False):
+      def get_emb_ids_from(self, text , use_1280_dim = False , use_raw_output = False):
+
         text_input = None
-        tokenizer = self.tokenizer768 # Use the same tokenizer
-        text_input = tokenizer(text ,truncation=False , return_tensors="pt")
-        emb_ids = text_input.input_ids[0].to(device = choosen_device)
-        return emb_ids
+        if use_1280_dim: 
+          text_input = self.tokenizer(\
+          text , truncation=False , \
+          padding="max_length", \
+          max_length=self.tokenizer.model_max_length , \
+           return_tensors="pt")
+        else:
+          text_input = self.tokenizer(text , \
+          truncation=False , return_tensors="pt")
+          
+        emb_ids = text_input.input_ids
+        if not use_raw_output: emb_ids = emb_ids[0]
+        return emb_ids.to(device = choosen_device , dtype = torch.int)
       #### End of get_emb_ids_from()
 
+      def _get_emb_vecs768_from(self , text):
+        nvpt = self.tokenizer.model_max_length 
+        embedded768 = self.FrozenCLIPEmbedderForSDXLWithCustomWords\
+        .encode_embedding_init_text(text , nvpt).to(choosen_device)
+        return embedded768
 
-            #emb_vecs = self.text_encoder768(\
-            #torch.asarray(emb_ids, device="cuda")\
-            #).to(device=choosen_device , dtype = datatype).squeeze(0)
+      def _get_emb_vecs1280_from(self , text):
+        nvpt = self.tokenizer.model_max_length
+        embedded1280 = self.FrozenCLIPEmbedderForSDXLWithCustomWords\
+        .encode_embedding_init_text(text , nvpt).to(choosen_device) 
+        return embedded1280
 
       # Get embedding vectors from text
       def get_emb_vecs_from(self, text , use_1280_dim = False):
         assert type(text) == str , "input text is not string!"
-        emb_ids_list = self.get_emb_ids_from(text , use_1280_dim).numpy()
-        #######
-        text_encoder = None
-        if use_1280_dim : text_encoder = self.text_encoder1280
-        else: text_encoder = self.text_encoder768
-        
-        emb_vecs = text_encoder(\
-        torch.asarray(emb_ids_list, device="cuda" , dtype = torch.int)\
-        ).to(device=choosen_device , dtype = datatype).squeeze(0)
-
-        return emb_vecs
+        embedded = None
+        ########
+        if use_1280_dim:  embedded = self._get_emb_vecs1280_from(text)
+        else: embedded = self._get_emb_vecs768_from(text)
+        return embedded.to(choosen_device)
       ##### End of get_emb_vecs_from()
 
       def __init__(self , count=1):
         #Default values if no model is loaded
-        Tools.CLIPTextModel = None
         Tools.tokenizer = None
         Tools.tokenizer768 = None
         Tools.tokenizer1280 = None
         Tools.internal_embs = None
         Tools.internal_embs768 = None
         Tools.internal_embs1280 = None
-        Tools.FrozenOpenCLIPEmbedder2 = None
         Tools.loaded_embs = None
         Tools.no_of_internal_embs = 0
         Tools.no_of_internal_embs768 = 0
@@ -289,11 +304,11 @@ class Tools :
         Tools.is_sdxl = False
         Tools.loaded = False
         Tools.text_encoder = None
-        Tools.text_encoder768 = None
-        Tools.text_encoder1280 = None
         is_sdxl = False
         is_sd2 = False
         is_sd1 = False
+        Tools.FrozenCLIPEmbedderForSDXLWithCustomWords = None #0 for SDXL (768)
+        Tools.FrozenOpenCLIPEmbedder2WithCustomWords = None   #1 for SDXL (1280)
         #######
 
         # Check if a valid SD model is loaded (SD 1.5 , SD2 or SDXL)
@@ -304,17 +319,31 @@ class Tools :
         #Add values to Tools.py
         #if a valid sd-model is loaded
         if model_is_loaded : 
+          cond_stage_model = self.get_cond_stage_model_from(shared.sd_model)
+          #from pprint import pprint
+          #pprint(cond_stage_model)
           Tools.is_sdxl = is_sdxl
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.tokenizer = self.get_tokenizer()
           Tools.loaded_embs = self.get_loaded_embs()
-          Tools.text_encoder = self.get_text_encoder()
           Tools.internal_embs = self.get_internal_embs()
           Tools.no_of_internal_embs = len(self.internal_embs)
           assert self.tokenizer != None , "tokenizer is NoneType!"
-          assert self.text_encoder != None , "text_encoder is NoneType!"
           Tools.loaded = True
         ########
+
+        # SDXL Text encoders resources
+        if model_is_loaded and is_sdxl:
+          Tools.FrozenCLIPEmbedderForSDXLWithCustomWords = cond_stage_model.embedders[0]
+          Tools.FrozenOpenCLIPEmbedder2WithCustomWords = cond_stage_model.embedders[1]
+          
+          # Configure to output last hidden layer
+          # (i.e the embedding)
+          Tools.FrozenOpenCLIPEmbedder2WithCustomWords\
+          .wrapped.layer = 'last'
+          Tools.FrozenCLIPEmbedderForSDXLWithCustomWords\
+          .wrapped.layer = 'last' 
+          ########
 
         # SDXL Internal embeddings
         if model_is_loaded and is_sdxl:
@@ -324,24 +353,19 @@ class Tools :
           Tools.no_of_internal_embs1280 = len(self.internal_embs1280)
         #######
 
-        # SDXL Text encoders
-        if model_is_loaded and is_sdxl:
-          self.text_encoder768 = self.get_text_encoder768()
-          self.text_encoder1280 = self.get_text_encoder1280()
-          assert self.text_encoder768 != None , "encoder768 is NoneType!"
-          assert self.text_encoder1280 != None , "encoder1280 is NoneType!"
-        ################
-
-        # SDXL Tokenizers (same for both)
-        if model_is_loaded and is_sdxl:
-          Tools.tokenizer768 = self.get_tokenizer()
-          Tools.tokenizer1280 = self.get_tokenizer()
-          assert self.tokenizer768 != None , "tokenizer768 is NoneType!"
-          assert self.tokenizer1280 != None , "tokenizer1280 is NoneType!"
-        ##########
-
         Tools.count = count 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
         'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
         'v' , 'w' , 'x' , 'y' , 'z']
 #End of Tools class
+
+
+        #BaseModelOutputWithPooling
+        #from pprint import pprint
+        #print(type(emb_vecs768))
+
+
+
+
+
+

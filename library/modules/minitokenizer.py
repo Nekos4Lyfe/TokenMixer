@@ -1,3 +1,4 @@
+#MINIT
 import gradio as gr
 from modules import sd_hijack
 import torch, os
@@ -27,6 +28,38 @@ class MiniTokenizer:
 
   def Reset (self , mini_input , tokenbox) : 
     return '' , ''
+
+  # If the approximate distance if equal
+  # to the distance of either of the cutoff tokens
+  # then return True
+  def isCutoffVec(self , emb_vec):
+    size = emb_vec.shape[1]
+    size1280 =  self.data.vector1280.size
+    use_1280_dim = (size ==  size1280) 
+    #######
+    origin = None
+    if use_1280_dim: origin = self.data.vector1280.origin
+    else : origin = self.data.vector.origin
+    ########
+    dist = self.data.distance(emb_vec , origin)
+    #######
+    sot_dist = None
+    if use_1280_dim : sot_dist = self.start_of_text_dist1280
+    else: sot_dist = self.start_of_text_dist768
+    if dist == sot_dist : return True
+    #######
+    eot_dist = None
+    if use_1280_dim : sot_dist = self.end_of_text_dist1280
+    else: sot_dist = self.end_of_text_dist768
+    if dist == eot_dist : return True
+    #######
+    return False
+  #############
+
+
+
+
+    return (dist == sot_dist or dist == eot_dist)
 
   def isCutoff(self, ID):
     return ((ID == start_of_text_ID) or (ID == end_of_text_ID))
@@ -451,9 +484,11 @@ class MiniTokenizer:
           
            #DIMENSION 768 LOOP
           tensor_index = 0
+          placed_vecs768 = 0
           emb_vec768 = None
           for _ID in found_IDs:
             if self.isCutoff(_ID): continue
+            placed_vecs768 = placed_vecs768 + 1
             emb_vec768 = found_vecs768[tensor_index]\
             .to(device = choosen_device) 
             emb_name = self.data.emb_id_to_name(_ID)
@@ -512,11 +547,14 @@ class MiniTokenizer:
           
           #SDXL DIMENSION 1280 LOOP
           tensor_index = 0
+          placed_vecs1280 = 0
           emb_vec1280 = None
           from pprint import pprint
           pprint ("<<<<<STARTING SDXL LOOP>>>>>")
           for _ID in found_IDs1280:
             if self.isCutoff(_ID): continue
+            if placed_vecs1280 == placed_vecs768 : break
+            placed_vecs1280 = placed_vecs1280 + 1
             emb_vec1280 = found_vecs1280[tensor_index]\
             .to(device = choosen_device) 
             pprint(emb_vec1280)
@@ -616,6 +654,22 @@ class MiniTokenizer:
     #Pass reference to global object "dataStorage" to class
     self.data = dataStorage 
 
+    origin768 = self.data.vector.origin
+    origin1280 = self.data.vector1280.origin
+    start_of_text_vec768 = self.data.emb_id_to_vec(start_of_text_ID)
+    end_of_text_vec768 = self.data.emb_id_to_vec(end_of_text_ID)
+    start_of_text_vec1280 = self.data.emb_id_to_vec(start_of_text_ID , use_1280_dim = True)
+    end_of_text_vec1280 = self.data.emb_id_to_vec(end_of_text_ID , use_1280_dim = True)
+
+    #These are distance of the cutoff tokens 
+    #rounded to 2 decimals convertet to a string
+    self.start_of_text_dist768 = self.data.distance(start_of_text_vec768 , origin768)
+    self.end_of_text_dist768 = self.data.distance(end_of_text_vec768 , origin768)  
+    self.start_of_text_dist1280 = self.data.distance(start_of_text_vec1280 , origin1280)
+    self.end_of_text_dist1280 = self.data.distance(end_of_text_vec1280 , origin1280) 
+    #######
+    
+
     class Outputs :
       def __init__(self):
         Outputs.tokenbox = []
@@ -694,3 +748,4 @@ class MiniTokenizer:
 
     if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class MiniTokenizer--------------------------------------------------#
+

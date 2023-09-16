@@ -21,7 +21,6 @@ class TensorFunctions:
     and to_positive == None and to_temporary == None : 
       if use_1280_dim : vector1280.shuffle()
       vector.shuffle()
-
     else:
       if to_negative != None :
         if to_negative : pass # Not implemented
@@ -265,7 +264,7 @@ class TensorFunctions:
         current = tensor1.to(device = choosen_device , dtype = datatype)
         ref = tensor2.to(device = choosen_device , dtype = datatype)
         dist = distance(current, ref).numpy()[0]
-        return  str(round(dist , 2))
+        return  str(round(dist , 4))
   ###### End of distance()
 
   # Return a string of the similary % between
