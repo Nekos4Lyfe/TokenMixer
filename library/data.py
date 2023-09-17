@@ -46,7 +46,7 @@ class Data :
     #######
     return output , '\n'.join(log)
   #### End of merge_all()
-
+#self.internal
 
   # Concactinate all tokens into embedding 
   # (this is the default operation of TokenMixer)
@@ -157,7 +157,7 @@ class Data :
       self.vector , self.positive , self.negative , self.temporary ,  \
       self.vector1280 , self.positive1280 , self.negative1280 , \
       self.temporary1280 , \
-      self.internal_embs , self.internal_embs1280 , \
+      self.tools.internal_embs , self.tools.internal_embs1280 , \
       to_negative , to_mixer , to_positive , to_temporary , use_1280_dim)
     log.append(message)
     return '\n'.join(log)

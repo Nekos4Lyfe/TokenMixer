@@ -1,3 +1,4 @@
+#TOKENMIXER.PY
 import gradio as gr
 import torch, os
 from modules.textual_inversion.textual_inversion import Embedding
@@ -82,14 +83,14 @@ class TokenMixer :
 
     self.data.memorize() #Store all initial vector values in a temporary list
     message = ''
-    if (self.local.order_randomize_mode): self.data.shuffle(is_sdxl = self.data.tools.is_sdxl)
+    if (self.local.order_randomize_mode): self.data.shuffle(use_1280_dim = self.data.tools.is_sdxl)
 
     if (self.local.roll_mode): 
-      message = self.data.roll(is_sdxl = self.data.tools.is_sdxl)
+      message = self.data.roll(use_1280_dim = self.data.tools.is_sdxl)
       log.append(message)
 
     if (self.local.sample_mode) and not (self.local.similar_mode): 
-      message = self.data.sample(is_sdxl = self.data.tools.is_sdxl)
+      message = self.data.sample(use_1280_dim = self.data.tools.is_sdxl)
       log.append(message)
 
     ###########
@@ -908,3 +909,4 @@ class TokenMixer :
           if self.data.tools.loaded : self.setupIO_with(self)
           
 ## end  of class TokenMixer 
+
