@@ -18,12 +18,14 @@ from library.toolbox.constants import START_OF_TEXT_ID , END_OF_TEXT_ID
 start_of_text_ID = START_OF_TEXT_ID
 end_of_text_ID = END_OF_TEXT_ID
 
+
 class MiniTokenizer:
 
   def Reset (self , mini_input , tokenbox) : 
     return '' , ''
 
-  def check_ID(self, emb_id):
+  # Checks if an ID is valid
+  def assert_ID(self, emb_id):
     assert isinstance(emb_id , int) , \
     "Error: emb id is not an integer , it is a " + str(type(emb_id)) + " !" 
     if self.data.tools.is_sdxl : 
@@ -35,155 +37,68 @@ class MiniTokenizer:
     assert (emb_id < self.data.tools.no_of_internal_embs) and emb_id>=0 , \
     "Error: ID with value " + str(emb_id)  + " is outside the range of " + \
     "permissable values from 0 to "  + str(self.data.tools.no_of_internal_embs)
+  ###### End of assert_ID()
 
+  #Places token with given _ID at index
+  # in the given fields of the dataclass 
+  #(vector , positive , negative , temporary)
+  def place(self , _ID , index ,\
+    send_to_vector , send_to_positives  , send_to_negatives , send_to_temporary):
 
-  def place (self , index ,\
-    send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
-    emb_id):
+    self.assert_ID(_ID)
+    model_is_sdxl , is_sd2 , is_sd1 = self.data.tools.get_flags()
 
+    emb_vec768 = self.data.tools.internal_embs768[_ID]\
+    .to(device = choosen_device , dtype = datatype)
+    assert emb_vec768 != None ,"emb_vec768 is NoneType!"
+    emb_name = self.data.emb_id_to_name(_ID)
+  
+    #Add to 768 dimension vectors
+    self.data.place(index ,\
+      vector =  emb_vec768.unsqueeze(0) ,
+      ID =  _ID ,
+      name = emb_name , 
+      to_negative = send_to_negatives ,
+      to_mixer = send_to_vector , 
+      to_positive = send_to_positives , 
+      to_temporary = send_to_temporary)
 
+    #Add to 1280 dimension vectors (if model is SDXL)
+    if model_is_sdxl:
+      sdxl_emb_vec = self.data.tools.internal_embs1280[_ID]\
+      .to(device = choosen_device , dtype = datatype)
+      assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
+      ######
+      self.data.place(index , 
+        vector = sdxl_emb_vec.unsqueeze(0) ,
+        ID = _ID ,
+        name = emb_name , 
+        to_negative = send_to_negatives , 
+        to_mixer = send_to_vector , 
+        to_positive = send_to_positives ,
+        to_temporary = send_to_temporary , 
+        use_1280_dim =True)
+  ######## End of place()
 
-    #### Append start-of-text token (if model is SDXL)
-    if valid_ID :
-        emb_vec = self.data.tools.internal_embs[emb_id]\
-        .to(device = choosen_device , dtype = datatype)
-        emb_name = self.data.emb_id_to_name(emb_id)
-        assert emb_vec != None ,"emb_vec is NoneType!"
+  def random(self , use_1280_dim = False):
+    target = None
+    if use_1280_dim : target = self.data.vector1280
+    else : target = self.data.vector768
+    distance = torch.nn.PairwiseDistance(p=2)
+    size = target.size 
+    origin = target.origin
+    random_token_length = self.random_token_length
+    random_token_length_randomization = self.random_token_length_randomization
+    #########
+    emb_vec = torch.rand(size).to(device = choosen_device , dtype = datatype)
+    dist = distance(emb_vec , origin).numpy()[0]
+    rdist = random_token_length * \
+    (1 - random_token_length_randomization*random.random())
+    emb_vec = (rdist/dist)*emb_vec
+    #######
+    return emb_vec.to(device = choosen_device , dtype = datatype)
 
-        #Add to 768 dimension vectors
-        self.data.place(index ,\
-            vector =  emb_vec.unsqueeze(0) ,
-            ID =  emb_id ,
-            name = emb_name , 
-            to_negative = send_to_negatives ,
-            to_mixer = sendtomix , 
-            to_positive = send_to_positives , 
-            to_temporary = send_to_temporary)
-
-        if is_sdxl:
-          sdxl_emb_vec = self.data.tools.internal_embs1280[emb_id]\
-          .to(device = choosen_device , dtype = datatype)
-          assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
-
-          #Add to 1280 dimension vectors
-          self.data.place(index , 
-              vector = sdxl_emb_vec.unsqueeze(0) ,
-              ID = emb_id ,
-              name = emb_name , 
-              to_negative = send_to_negatives , 
-              to_mixer = sendtomix , 
-              to_positive = send_to_positives ,
-              to_temporary = send_to_temporary , 
-              use_1280_dim =True)
-    ###############
-    return valid_ID
-
-  def process (self , text_literal , k_value , offset_input , \
-  sendtomix , send_to_positives , send_to_negatives , send_to_temporary):
-
-      k = k_value
-      offset = offset_input
-      tokenbox = ''
-      index = k + offset
-      is_sdxl = self.data.tools.is_sdxl
-      
-      #DIMENSION 768 INIT
-      found_IDs = self.data.tools.get_emb_ids_from(text_literal).numpy()
-      found_vecs768 = self.data.tools.get_emb_vecs_from(text_literal)
-      no_of_IDs = len(found_IDs)
-      assert no_of_IDs - 2 == found_vecs768.shape[0] , \
-      "Size mismatch between found vecs and found IDs! , " + \
-      "found_vecs768.shape[0] = " + str(found_vecs768.shape[0]) + \
-      " and len(found_IDs) minus 2 cutoff tokens = " + str(no_of_IDs - 2)
-      tensor_index = 0
-      placed_vecs768 = 0
-      emb_vec768 = None
-
-      #DIMENSION 768 LOOP
-      for _ID in found_IDs:
-            if no_of_IDs <= 2 : break
-            emb_vec768 = found_vecs768[tensor_index].to(device = choosen_device) 
-            tensor_index = tensor_index + 1
-            if self.isCutoff(emb_vec768): continue
-            emb_name = self.data.emb_id_to_name(_ID)
-            emb_id = _ID
-            #######
-            self.data.place(index , 
-            vector =  emb_vec768.unsqueeze(0) ,
-            ID =  _ID ,
-            name = emb_name ,
-            to_negative = send_to_negatives ,
-            to_mixer = sendtomix , 
-            to_positive = send_to_positives , 
-            to_temporary = send_to_temporary)
-            #######
-            offset = offset + 1
-            index = k + offset
-            placed_vecs768 = placed_vecs768 + 1
-            ######
-            name = self.data.vector.name.get(index)
-            if (tokenbox != '') : tokenbox = tokenbox + ' , '
-            tokenbox =  tokenbox + name + '_#' + str(_ID)
-            #######
-            neg_name = self.data.negative.name.get(index)
-            if neg_name != None :
-              if (negbox != '') : negbox = negbox + ' , ' 
-              negbox = negbox + neg_name
-            #####
-            pos_name = self.data.positive.name.get(index)
-            if pos_name != None :
-              if (posbox != '') : posbox = posbox + ' , ' 
-              posbox = posbox + pos_name
-          ####### End of Loop
-        ###### End 768 Dimension stuff
-
-      if is_sdxl :
-          #SDXL DIMENSION 1280 INIT
-          found_vecs1280 = None
-          found_IDs1280 = None
-          no_of_IDs1280 = None
-          found_IDs1280 = self.data.tools.\
-          get_emb_ids_from(text_literal , use_1280_dim = True).numpy()
-          found_vecs1280 = self.data.tools\
-          .get_emb_vecs_from(text_literal , use_1280_dim = True) 
-          no_of_IDs1280 = len(found_IDs1280)
-          assert no_of_IDs1280 -2 == found_vecs1280.shape[0] , \
-          "Size mismatch between found vecs1280 and found IDs! , " + \
-          "found_vecs1280.shape[0] = " + str(found_vecs1280.shape[0]) + \
-          " and len(found_IDs1280) minus 2 cutoff tokens = " + str(no_of_IDs1280 - 2)
-          tensor_index = 0
-          placed_vecs1280 = 0
-          emb_vec1280 = None
-
-          #SDXL DIMENSION 1280 LOOP
-          from pprint import pprint
-          for _ID in found_IDs1280:
-            if no_of_IDs1280 <= 2 : break
-            if placed_vecs1280 == placed_vecs768 : break
-            emb_vec1280 = found_vecs1280[tensor_index].to(device = choosen_device) 
-            tensor_index = tensor_index + 1
-            if self.isCutoff(emb_vec1280): continue
-            emb_name = self.data.emb_id_to_name(_ID)
-            ########
-            self.data.place(index , 
-            vector =  emb_vec1280.unsqueeze(0) ,
-            ID =  _ID ,
-            name = emb_name ,
-            to_negative = send_to_negatives ,
-            to_mixer = sendtomix , 
-            to_positive = send_to_positives , 
-            to_temporary = send_to_temporary , 
-            use_1280_dim = True)
-            #######
-            placed_vecs1280 = placed_vecs1280 + 1
-            offset = offset + 1
-            index = k + offset
-          ##### End of 1280 Dimension Loop
-      ######## End of SDXL Stuff
-      return offset , tokenbox
-  ##### End of process()
-
-  def Tokenize (self  , *args) :
+  def Process (self  , *args) :
 
     #Get the inputs
     mini_input = args[0]
@@ -197,8 +112,12 @@ class MiniTokenizer:
     literal_mode = args[8]
     random_token_length_randomization = (1/100) * args[9]
     name_list = []
-    
-    # Do some checks
+
+    self.random_token_length = random_token_length
+    self.random_token_length_randomization = random_token_length_randomization
+    is_sdxl , is_sd2 , is_sd1 = self.data.tools.get_flags()
+
+    # Do some checks prior to running
     if mini_input == None : 
       for index in range(MAX_NUM_MIX):
         if self.data.vector.isEmpty.get(index): continue
@@ -212,18 +131,6 @@ class MiniTokenizer:
           literal_mode == None
           ) , "NoneType in Tokenizer input!"
     ###########
-
-    send_to_temporary = False
-    tokenmixer_vectors = ''
-    if not sendtomix : tokenmixer_vectors= mix_input
-
-    # Vector length stuff
-    distance = torch.nn.PairwiseDistance(p=2)
-    origin = self.data.vector.origin\
-    .to(device = choosen_device , dtype = datatype)
-    origin1280 = self.data.vector1280.origin\
-    .to(device = choosen_device , dtype = datatype)
-    #######
 
     #Check if new embeddings have been added 
     try: sd_hijack.model_hijack.embedding_db.load_textual_inversion_embeddings(force_reload=True)
@@ -242,15 +149,56 @@ class MiniTokenizer:
           to_temporary = send_to_temporary)
     ######
 
-
     #Convert text input to list of 'words'
-    sentence = mini_input.strip().split()
+    words = mini_input.strip().lower().split()
     word_index = 0
-    for splits in sentence :
+    words = []
+    for word in words :
       word_index += 1
     no_of_words = word_index 
-    no_of_internal_embs = self.data.tools.no_of_internal_embs
+    replacements768 = [None]*no_of_words
+    replacements1280 = [None]*no_of_words
     ########
+
+    # Check which words have special symbols in them
+    symbols = ("_" , "<" , ">" , "[" , "]" , "," , "#")
+    for index in range(no_of_words):
+      word = words[index]
+      for symbol in symbols:
+        if word.find(symbol)>=0 : 
+          if symbol == "_":
+            replacements768[index] = self.random()
+            replacements1280[index] = self.random(use_1280_dim = is_sdxl)
+          elif symbol == ""
+
+
+
+
+
+
+
+
+
+
+
+    send_to_temporary = False
+    tokenmixer_vectors = ''
+    if not sendtomix : tokenmixer_vectors= mix_input
+
+    # Vector length stuff
+    distance = torch.nn.PairwiseDistance(p=2)
+    origin = self.data.vector.origin\
+    .to(device = choosen_device , dtype = datatype)
+    origin1280 = self.data.vector1280.origin\
+    .to(device = choosen_device , dtype = datatype)
+    #######
+
+
+
+
+
+
+
 
     #Parameters
     section = None
@@ -626,7 +574,7 @@ class MiniTokenizer:
       output_list.append(module.inputs.posbox)    #4
       output_list.append(module.inputs.unfiltered_names)  #5
       #######
-      self.buttons.tokenize.click(fn=self.Tokenize , inputs = input_list , outputs = output_list)
+      self.buttons.tokenize.click(fn=self.Process , inputs = input_list , outputs = output_list)
 
   #End of setupIO_with()
 
@@ -635,6 +583,11 @@ class MiniTokenizer:
 
     #Pass reference to global object "dataStorage" to class
     self.data = dataStorage 
+
+    # Random vector generation from "_" symbol
+    self.random_token_length = 0
+    self.random_token_length_randomization = 0
+    ########
 
     class Outputs :
       def __init__(self):
@@ -666,7 +619,7 @@ class MiniTokenizer:
     #
     with gr.Accordion(label , open=True , visible = vis) as show :
       with gr.Row() :  
-          self.buttons.tokenize = gr.Button(value="Tokenize", variant="primary", size="sm")
+          self.buttons.tokenize = gr.Button(value="Process", variant="primary", size="sm")
           self.buttons.reset = gr.Button(value="Reset", variant = "secondary", size="sm")
       with gr.Row() : 
         self.inputs.mini_input = gr.Textbox(label='', lines=2, \
@@ -714,5 +667,6 @@ class MiniTokenizer:
 
     if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class MiniTokenizer--------------------------------------------------#
+
 
 

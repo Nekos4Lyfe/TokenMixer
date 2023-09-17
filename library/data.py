@@ -269,6 +269,36 @@ class Data :
       to_negative , to_mixer,  to_positive ,  to_temporary , use_1280_dim)    
   #########
 
+  # If the approximate distance if equal
+  # to the distance of either of the cutoff tokens
+  # then return True
+  def isCutoff(self , emb_vec):
+    size = emb_vec.shape[1]
+    size1280 =  self.vector1280.size
+    use_1280_dim = (size ==  size1280) 
+    #######
+    origin = None
+    if use_1280_dim: origin = self.data.vector1280.origin
+    else : origin = self.data.vector.origin
+    ########
+    dist = self.data.distance(emb_vec , origin)
+    #######
+    sot_dist = None
+    if use_1280_dim : sot_dist = self.start_of_text_dist1280
+    else: sot_dist = self.start_of_text_dist768
+    if dist == sot_dist : return True
+    #######
+    eot_dist = None
+    if use_1280_dim : sot_dist = self.end_of_text_dist1280
+    else: sot_dist = self.end_of_text_dist768
+    if dist == eot_dist : return True
+    #######
+    return False
+  #############
+
+  
+    return (dist == sot_dist or dist == eot_dist)
+
   def set_unfiltered_indices(self, unfiltered_indices):
     self.vector.unfiltered_indices = copy.deepcopy(unfiltered_indices)
   ##### End of set_filtered_names()
