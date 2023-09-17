@@ -1,4 +1,4 @@
-#MINIT
+#MINITOKENIZER.PY
 import gradio as gr
 from modules import sd_hijack
 import torch, os
@@ -18,62 +18,30 @@ from library.toolbox.constants import START_OF_TEXT_ID , END_OF_TEXT_ID
 start_of_text_ID = START_OF_TEXT_ID
 end_of_text_ID = END_OF_TEXT_ID
 
-# Check that MPS is available (for MAC users)
-#if torch.backends.mps.is_available(): 
-#  choosen_device = torch.device("mps")
-#else : choosen_device = torch.device("cpu")
-#######
-
 class MiniTokenizer:
 
   def Reset (self , mini_input , tokenbox) : 
     return '' , ''
 
-  # If the approximate distance if equal
-  # to the distance of either of the cutoff tokens
-  # then return True
-  def isCutoff(self , emb_vec):
-    size = emb_vec.shape[1]
-    size1280 =  self.data.vector1280.size
-    use_1280_dim = (size ==  size1280) 
-    #######
-    origin = None
-    if use_1280_dim: origin = self.data.vector1280.origin
-    else : origin = self.data.vector.origin
+  def check_ID(self, emb_id):
+    assert isinstance(emb_id , int) , \
+    "Error: emb id is not an integer , it is a " + str(type(emb_id)) + " !" 
+    if self.data.tools.is_sdxl : 
+      assert self.data.tools.no_of_internal_embs1280 == \
+      self.data.tools.no_of_internal_embs , \
+      "Mismatch between no. of IDs in no_of_internal_embs1280 " + \
+      "and no_of_internal_embs for loaded SDXL model!"
     ########
-    dist = self.data.distance(emb_vec , origin)
-    #######
-    sot_dist = None
-    if use_1280_dim : sot_dist = self.start_of_text_dist1280
-    else: sot_dist = self.start_of_text_dist768
-    if dist == sot_dist : return True
-    #######
-    eot_dist = None
-    if use_1280_dim : sot_dist = self.end_of_text_dist1280
-    else: sot_dist = self.end_of_text_dist768
-    if dist == eot_dist : return True
-    #######
-    return False
-  #############
-    return (dist == sot_dist or dist == eot_dist)
-
+    assert (emb_id < self.data.tools.no_of_internal_embs) and emb_id>=0 , \
+    "Error: ID with value " + str(emb_id)  + " is outside the range of " + \
+    "permissable values from 0 to "  + str(self.data.tools.no_of_internal_embs)
 
 
   def place (self , index ,\
     send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
     emb_id):
 
-    is_sdxl = self.data.tools.is_sdxl
-    #Do some checks
-    valid_ID = (emb_id < self.data.tools.no_of_internal_embs) and emb_id>=0
-    assert isinstance(emb_id , int) , \
-    "Error: emb id is not an integer , it is a " + str(type(emb_id)) + " !" 
-    if is_sdxl : valid_ID = valid_ID and \
-    (emb_id < self.data.tools.no_of_internal_embs1280)
-    assert valid_ID , "Error: ID with value " + str(emb_id) + \
-    " is outside the range of permissable values from 0 to " + \
-    str(self.data.tools.no_of_internal_embs)
-    ####
+
 
     #### Append start-of-text token (if model is SDXL)
     if valid_ID :
@@ -668,22 +636,6 @@ class MiniTokenizer:
     #Pass reference to global object "dataStorage" to class
     self.data = dataStorage 
 
-    origin768 = self.data.vector.origin
-    origin1280 = self.data.vector1280.origin
-    start_of_text_vec768 = self.data.emb_id_to_vec(start_of_text_ID)
-    end_of_text_vec768 = self.data.emb_id_to_vec(end_of_text_ID)
-    start_of_text_vec1280 = self.data.emb_id_to_vec(start_of_text_ID , use_1280_dim = True)
-    end_of_text_vec1280 = self.data.emb_id_to_vec(end_of_text_ID , use_1280_dim = True)
-
-    #These are distance of the cutoff tokens 
-    #rounded to 2 decimals convertet to a string
-    self.start_of_text_dist768 = self.data.distance(start_of_text_vec768 , origin768)
-    self.end_of_text_dist768 = self.data.distance(end_of_text_vec768 , origin768)  
-    self.start_of_text_dist1280 = self.data.distance(start_of_text_vec1280 , origin1280)
-    self.end_of_text_dist1280 = self.data.distance(end_of_text_vec1280 , origin1280) 
-    #######
-    
-
     class Outputs :
       def __init__(self):
         Outputs.tokenbox = []
@@ -762,4 +714,5 @@ class MiniTokenizer:
 
     if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class MiniTokenizer--------------------------------------------------#
+
 

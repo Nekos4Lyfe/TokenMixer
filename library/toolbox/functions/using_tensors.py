@@ -4,9 +4,13 @@ from library.toolbox.constants import TENSOR_DEVICE_TYPE , TENSOR_DATA_TYPE
 choosen_device = TENSOR_DEVICE_TYPE
 datatype = TENSOR_DATA_TYPE
 
+from library.toolbox.constants import START_OF_TEXT_ID , END_OF_TEXT_ID
+start_of_text_ID = START_OF_TEXT_ID
+end_of_text_ID = END_OF_TEXT_ID
 
 # The Operations class is used to store 
 # helper functions to the Data.py class
+# Or unused/experimental stuff
 class TensorFunctions:
 
   # Randomize the order of the tensors in the 

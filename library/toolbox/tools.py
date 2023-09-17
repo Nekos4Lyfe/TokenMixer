@@ -38,20 +38,22 @@ class Tools :
                 embedder = conditioner.embedders[i]
                 typename = type(embedder).__name__
                 if typename == 'FrozenOpenCLIPEmbedder':
-                    conditioner.embedders[i] = sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords(embedder, self)
+                    conditioner.embedders[i] = sd_hijack_open_clip.\
+                    FrozenOpenCLIPEmbedderWithCustomWords(embedder, self)
                     text_cond_models.append(conditioner.embedders[i])
                 if typename == 'FrozenCLIPEmbedder':
                     model_embeddings = embedder.transformer.text_model.embeddings
-                    conditioner.embedders[i] = sd_hijack_clip.FrozenCLIPEmbedderForSDXLWithCustomWords(embedder, self)
+                    conditioner.embedders[i] = sd_hijack_clip.\
+                    FrozenCLIPEmbedderForSDXLWithCustomWords(embedder, self)
                     text_cond_models.append(conditioner.embedders[i])
                 if typename == 'FrozenOpenCLIPEmbedder2':
-                    conditioner.embedders[i] = sd_hijack_open_clip.FrozenOpenCLIPEmbedder2WithCustomWords(embedder, self)
+                    conditioner.embedders[i] = sd_hijack_open_clip.\
+                    FrozenOpenCLIPEmbedder2WithCustomWords(embedder, self)
                     text_cond_models.append(conditioner.embedders[i])
 
-            if len(text_cond_models) == 1:
-                cond_stage_model = text_cond_models[0]
-            else:
-                cond_stage_model = conditioner
+            if len(text_cond_models) == 1: 
+              cond_stage_model = text_cond_models[0]
+            else: cond_stage_model = conditioner
 
         if type(cond_stage_model) == xlmr.BertSeriesModelWithTransformation:
             cond_stage_model = sd_hijack_xlmr.FrozenXLMREmbedderWithCustomWords(cond_stage_model, self)
@@ -62,12 +64,8 @@ class Tools :
         elif type(cond_stage_model) == ldm.modules.encoders.modules.FrozenOpenCLIPEmbedder:
             cond_stage_model = sd_hijack_open_clip.FrozenOpenCLIPEmbedderWithCustomWords(cond_stage_model, self)
 
-        return cond_stage_model 
-
-
-
-      def isCutoff(self, ID):
-        return ((ID == start_of_text_ID) or (ID == end_of_text_ID))    
+        return cond_stage_model   
+      ###### End of get_cond_stage_model_from() 
 
       # Create a folder in the UI to store 
       # embeddings created by the TokenMixer extension
@@ -119,91 +117,37 @@ class Tools :
         return loaded_embs
       #### End of get_loaded_embs()
 
-      #Helper function
-      def _get_embedder(self):
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        model = shared.sd_model
-        embedder = None
-        if is_sdxl: embedder = model.cond_stage_model.embedders[0].wrapped
-        else: embedder = model.cond_stage_model.wrapped
-        return embedder
-      ## End of _get_embedder()
-
-      def get_FrozenOpenCLIPEmbedder2WithCustomWords(self):
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        model = shared.sd_model
-        FrozenOpenCLIPEmbedder2WithCustomWords = None
-        if is_sdxl : FrozenOpenCLIPEmbedder2WithCustomWords = \
-        model.cond_stage_model.embedders[1]
-        return FrozenOpenCLIPEmbedder2WithCustomWords
-
-      def get_FrozenOpenCLIPEmbedder2(self):
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        model = shared.sd_model
-        FrozenOpenCLIPEmbedder2 = None
-        if is_sdxl : FrozenOpenCLIPEmbedder2 = \
-        model.cond_stage_model.embedders[1].wrapped
-        return FrozenOpenCLIPEmbedder2
-
-      def get_text_encoder1280(self):
-        FrozenOpenCLIPEmbedder2 = self.get_FrozenOpenCLIPEmbedder2()
-        text_encoder1280 = None
-        if FrozenOpenCLIPEmbedder2 != None: text_encoder1280 = \
-        FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped
-        return text_encoder1280
-
-      # Helper function
-      def _get_internal_emb_dir(self):
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        embedder = self._get_embedder()
-        model = shared.sd_model
-        ########
-        internal_emb_dir = None
-        internal_embs = None
-        internal_embs1280 = None
-        if is_sd2 : internal_emb_dir = embedder.model
-        else : internal_emb_dir = embedder.transformer.text_model.embeddings
-        return internal_emb_dir
-      ###########
-
-      # Fetch internal_embs for dimension 768
-      # Works for all models (SDXL , SD2 , SD1.5)
+      # Fetch internal_embs for use in SD 1.5
       def get_internal_embs(self):
         is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        internal_emb_dir = self._get_internal_emb_dir()
+        #######
+        embedder = None
+        if is_sdxl : embedder = self.cond_stage_model.embedders[0].wrapped
+        else : embedder = self.cond_stage_model.embedders.wrapped
+        ######
+        internal_emb_dir = None
+        if is_sd2 : internal_emb_dir = embedder.model
+        else : internal_emb_dir = embedder.transformer.text_model.embeddings
+        ######
         internal_embs = internal_emb_dir.token_embedding.wrapped.weight 
         return internal_embs
-      ##########
-
-      # Fetch internal_embs for dimension 768
-      # Works for all models (SDXL , SD2 , SD1.5)
-      def get_internal_embs768(self):
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        internal_emb_dir = self._get_internal_emb_dir()
-        internal_embs768 = internal_emb_dir.token_embedding.wrapped.weight 
-        return internal_embs768
-      ##########
-
-      # Fetch internal_embs for dimension 1280
-      # (SDXL only)
-      def get_internal_embs1280(self):
-        FrozenOpenCLIPEmbedder2 = self.get_FrozenOpenCLIPEmbedder2()
-        if FrozenOpenCLIPEmbedder2 != None : internal_embs1280 = \
-        FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
-        return internal_embs1280
+      ########## End of get_internal_embs()
 
      #Fetch the tokenizer
       def get_tokenizer(self):
         is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        embedder = self._get_embedder()
-        model = shared.sd_model
+
+        embedder = None
+        if is_sdxl : embedder = self.cond_stage_model.embedders[0].wrapped
+        else : embedder = self.cond_stage_model.embedders.wrapped
+
         tokenizer = None
         if is_sd2 :
           from modules.sd_hijack_open_clip import tokenizer as open_clip_tokenizer
           tokenizer = open_clip_tokenizer
         else: tokenizer = embedder.tokenizer
         return tokenizer
-      ########
+      ######## End of get_tokenizer()
 
       # Fetch the loaded embeddings again
       def update_loaded_embs(self):
@@ -221,35 +165,19 @@ class Tools :
 
       # Get the IDs of the tokens with greatest similarity 
       # to the input token (for use in the Embedding inspector module)
-      def get_best_ids (self , emb_id , similarity , max_similar_embs , emb_vec = None) :
-        max_sim = copy.copy(max_similar_embs)
-        simil = copy.copy(similarity)
-        ID = copy.copy(emb_id)
+      def get_best_ids (self , emb_id , similarity , max_similar_embs , vector) :
         internal_embs = self.internal_embs.to(device = choosen_device , dtype = datatype)
         cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
-
-        vector = None
-        if emb_vec != None:
-          vector = emb_vec.to(device = choosen_device , dtype = datatype)
-        elif isinstance(ID, int):
-          vector = internal_embs[ID].to(device = choosen_device , dtype = datatype)
-        else: return None , None
-
         all_sim = cos(internal_embs , vector)
-        scores = torch.mul(all_sim , torch.ge(simil * torch.ones(all_sim.shape) , 100*all_sim))
+        scores = torch.mul(all_sim , \
+        torch.ge(similarity * torch.ones(all_sim.shape) , 100*all_sim))
         sorted_scores, sorted_ids = torch.sort(scores, descending=True)
-        best_ids = sorted_ids[0:max_sim].detach().numpy()
+        best_ids = sorted_ids[0:max_similar_embs].detach().numpy()
         return  best_ids , sorted_scores
       #### End of get_best_ids()
 
-      def get_CLIPTextModel(self):
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        embedder = self._get_embedder()
-        CLIPTextModel = embedder.transformer
-        return CLIPTextModel
-
       # Get embedding IDs from text
-      def get_emb_ids_from(self, text , use_1280_dim = False , use_raw_output = False):
+      def get_emb_ids_from(self, text , use_1280_dim = False):
 
         text_input = None
         if use_1280_dim: 
@@ -261,23 +189,26 @@ class Tools :
         else:
           text_input = self.tokenizer(text , \
           truncation=False , return_tensors="pt")
-          
-        emb_ids = text_input.input_ids
-        if not use_raw_output: emb_ids = emb_ids[0]
+        ######
+        emb_ids = text_input.input_ids[0]
+
         return emb_ids.to(device = choosen_device , dtype = torch.int)
       #### End of get_emb_ids_from()
 
-      def _get_emb_vecs768_from(self , text):
-        nvpt = self.tokenizer.model_max_length 
-        embedded768 = self.FrozenCLIPEmbedderForSDXLWithCustomWords\
-        .encode_embedding_init_text(text , nvpt).to(choosen_device)
-        return embedded768
-
-      def _get_emb_vecs1280_from(self , text):
+      # Pass the text through the first layer in the SDXL model
+      # Outputs a tensor with the format [A , B  , C]
+      # Not sure if this is useful to anything in TokenMixer
+      def encode_embedding_init_text(self , text , use_1280_dim = False):
         nvpt = self.tokenizer.model_max_length
-        embedded1280 = self.FrozenCLIPEmbedderForSDXLWithCustomWords\
-        .encode_embedding_init_text(text , nvpt).to(choosen_device) 
-        return embedded1280
+        embedded = None
+        if use_1280_dim : 
+          embedded = self.FrozenOpenCLIPEmbedder2WithCustomWords\
+          .encode_embedding_init_text(text , nvpt).to(choosen_device)
+        else : 
+          embedded = self.FrozenCLIPEmbedderForSDXLWithCustomWords\
+          .encode_embedding_init_text(text , nvpt).to(choosen_device)
+        #######
+        return embedded
 
       # Get embedding vectors from text
       def get_emb_vecs_from(self, text , use_1280_dim = False):
@@ -292,8 +223,6 @@ class Tools :
       def __init__(self , count=1):
         #Default values if no model is loaded
         Tools.tokenizer = None
-        Tools.tokenizer768 = None
-        Tools.tokenizer1280 = None
         Tools.internal_embs = None
         Tools.internal_embs768 = None
         Tools.internal_embs1280 = None
@@ -310,6 +239,11 @@ class Tools :
         Tools.FrozenCLIPEmbedderForSDXLWithCustomWords = None #0 for SDXL (768)
         Tools.FrozenOpenCLIPEmbedder2WithCustomWords = None   #1 for SDXL (1280)
         #######
+        Tools.FrozenCLIPEmbedderForSDXL = None  #0 for SDXL (768)
+        Tools.FrozenOpenCLIPEmbedder2 = None #1 for SDXL (1280)
+        #######
+        Tools.embedder768 = None #FrozenCLIPEmbedderForSDXLWithCustomWords
+        Tools.embedder1280 = None #FrozenOpenCLIPEmbedder2WithCustomWords
 
         # Check if a valid SD model is loaded (SD 1.5 , SD2 or SDXL)
         model_is_loaded = self.model_is_loaded()
@@ -320,8 +254,6 @@ class Tools :
         #if a valid sd-model is loaded
         if model_is_loaded : 
           cond_stage_model = self.get_cond_stage_model_from(shared.sd_model)
-          #from pprint import pprint
-          #pprint(cond_stage_model)
           Tools.is_sdxl = is_sdxl
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.tokenizer = self.get_tokenizer()
@@ -333,39 +265,36 @@ class Tools :
         ########
 
         # SDXL Text encoders resources
+        # In A1111 they are contained within another class
+        # that allows them to process texts in "chunks" of
+        # 77 tokens , rather then being limited to 77 tokens
+        # as is usually the case
         if model_is_loaded and is_sdxl:
-          Tools.FrozenCLIPEmbedderForSDXLWithCustomWords = cond_stage_model.embedders[0]
-          Tools.FrozenOpenCLIPEmbedder2WithCustomWords = cond_stage_model.embedders[1]
-          
-          # Configure to output last hidden layer
-          # (i.e the embedding)
-          Tools.FrozenOpenCLIPEmbedder2WithCustomWords\
-          .wrapped.layer = 'last'
-          Tools.FrozenCLIPEmbedderForSDXLWithCustomWords\
-          .wrapped.layer = 'last' 
-          ########
 
-        # SDXL Internal embeddings
-        if model_is_loaded and is_sdxl:
-          Tools.internal_embs768 = self.get_internal_embs768()
-          Tools.internal_embs1280 = self.get_internal_embs1280()
+          #CLIPTextModel (768 Dimension)
+          Tools.embedder768 = cond_stage_model.embedders[0]
+          Tools.FrozenCLIPEmbedderForSDXLWithCustomWords = cond_stage_model.embedders[0]
+          Tools.FrozenCLIPEmbedderForSDXL = cond_stage_model.embedders[0].wrapped
+          self.internal_embs768 =\
+          self.FrozenCLIPEmbedderForSDXL.transformer.text_model.\
+          embeddings.token_embedding.wrapped.weight 
           Tools.no_of_internal_embs768 = len(self.internal_embs768)
+          #######
+          
+          #CLIPTextModelWithProjection (1280 Dimension)
+          Tools.embedder1280 = cond_stage_model.embedders[1]
+          Tools.FrozenOpenCLIPEmbedder2WithCustomWords = cond_stage_model.embedders[1]
+          Tools.FrozenOpenCLIPEmbedder2 = cond_stage_model.embedders[1].wrapped
+          Tools.internal_embs1280 = \
+          self.FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
           Tools.no_of_internal_embs1280 = len(self.internal_embs1280)
-        #######
+          #######
+          #BaseModelOutputWithPooling
 
         Tools.count = count 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
         'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
         'v' , 'w' , 'x' , 'y' , 'z']
 #End of Tools class
-
-
-        #BaseModelOutputWithPooling
-        #from pprint import pprint
-        #print(type(emb_vecs768))
-
-
-
-
 
 
