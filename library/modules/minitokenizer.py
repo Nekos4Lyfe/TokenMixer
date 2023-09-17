@@ -24,6 +24,11 @@ class MiniTokenizer:
   def Reset (self , mini_input , tokenbox) : 
     return '' , ''
 
+  @staticmethod
+  def isCutoff(_ID):
+    return _ID == start_of_text_ID or _ID == end_of_text_ID
+
+
   # Checks if an ID is valid
   def assert_ID(self, emb_id):
     assert isinstance(emb_id , int) , \
@@ -42,41 +47,54 @@ class MiniTokenizer:
   #Places token with given _ID at index
   # in the given fields of the dataclass 
   #(vector , positive , negative , temporary)
-  def place(self , _ID , index ,\
-    send_to_vector , send_to_positives  , send_to_negatives , send_to_temporary):
+  def place(self , _ID ,\
+    send_to_vector = False , send_to_positives = False  , send_to_negatives = False):
 
     self.assert_ID(_ID)
     model_is_sdxl , is_sd2 , is_sd1 = self.data.tools.get_flags()
 
-    emb_vec768 = self.data.tools.internal_embs768[_ID]\
-    .to(device = choosen_device , dtype = datatype)
-    assert emb_vec768 != None ,"emb_vec768 is NoneType!"
-    emb_name = self.data.emb_id_to_name(_ID)
-  
-    #Add to 768 dimension vectors
-    self.data.place(index ,\
-      vector =  emb_vec768.unsqueeze(0) ,
-      ID =  _ID ,
-      name = emb_name , 
-      to_negative = send_to_negatives ,
-      to_mixer = send_to_vector , 
-      to_positive = send_to_positives)
+    # Fetch 768 Dimension vectors
+    if True: 
+        emb_vec768 = self.data.tools.internal_embs768[_ID]\
+        .to(device = choosen_device , dtype = datatype)
+        assert emb_vec768 != None ,"emb_vec768 is NoneType!"
+        emb_name = self.data.emb_id_to_name(_ID)
+      ###########
 
-    #Add to 1280 dimension vectors (if model is SDXL)
+    # Fetch 1280 Dimension vectors
     if model_is_sdxl:
-      sdxl_emb_vec = self.data.tools.internal_embs1280[_ID]\
-      .to(device = choosen_device , dtype = datatype)
-      assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
-      ######
-      self.data.place(index , 
-        vector = sdxl_emb_vec.unsqueeze(0) ,
-        ID = _ID ,
-        name = emb_name , 
-        to_negative = send_to_negatives , 
-        to_mixer = send_to_vector , 
-        to_positive = send_to_positives , 
-        use_1280_dim =True)
-  ######## End of place()
+        sdxl_emb_vec = self.data.tools.internal_embs1280[_ID]\
+        .to(device = choosen_device , dtype = datatype)
+        assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
+      ###########
+
+    #Add to 768 dimension vectors
+    for index in range (MAX_NUM_MIX):
+      if self.data.place.vector768.isEmpty(index): continue
+      if True:
+        self.data.place(index ,\
+          vector =  emb_vec768.unsqueeze(0) ,
+          ID =  _ID ,
+          name = emb_name , 
+          to_negative = send_to_negatives ,
+          to_mixer = send_to_vector , 
+          to_positive = send_to_positives)
+      #########
+
+    #Add to 1280 dimension vectors 
+    for index in range (MAX_NUM_MIX):
+      if self.data.place.vector1280.isEmpty(index): continue
+      if model_is_sdxl:
+        self.data.place(index , 
+          vector = sdxl_emb_vec.unsqueeze(0) ,
+          ID = _ID ,
+          name = emb_name , 
+          to_negative = send_to_negatives , 
+          to_mixer = send_to_vector , 
+          to_positive = send_to_positives , 
+          use_1280_dim =True)
+      ########
+    ######## End of place()
 
   def random(self , use_1280_dim = False):
     target = None
@@ -201,7 +219,7 @@ class MiniTokenizer:
 
     #Get the inputs
     mini_input = args[0]
-    sendtomix = args[1]
+    send_to_vector = args[1]
     id_mode = args[2]
     send_to_negatives = args[3]
     random_token_length = args[4]
@@ -217,7 +235,7 @@ class MiniTokenizer:
     is_sdxl , is_sd2 , is_sd1 = self.data.tools.get_flags()
 
     tokenmixer_vectors = ''
-    if not sendtomix : tokenmixer_vectors= mix_input
+    if not send_to_vector : tokenmixer_vectors= mix_input
 
     # Do some checks prior to running
     if mini_input == None : 
@@ -226,7 +244,7 @@ class MiniTokenizer:
         name_list.append(self.data.vector.name.get(index))
       return tokenmixer_vectors , '' , '' , '' , '' , gr.Dropdown.update(choices = name_list)
     assert not (
-          sendtomix == None or
+          send_to_vector == None or
           id_mode == None or
           send_to_negatives == None or
           random_token_length == None or
@@ -246,25 +264,50 @@ class MiniTokenizer:
     for index in range(MAX_NUM_MIX):
       self.data.clear(index , 
           to_negative = send_to_negatives , 
-          to_mixer = sendtomix and not stack_mode , 
+          to_mixer = send_to_vector and not stack_mode , 
           to_positive = send_to_positives)
     ######
 
-    #Convert text input to list of 'words'
+    # Fetch tokenizer and internal embeddings
+    tokenize = self.data.tools.tokenize
+    internal_embs786 = self.data.tools.internal_embs768
+    internal_embs1280 = self.data.tools.internal_embs1280
 
-    text = mini_input.strip().lower().split()
-    processed , replacements768 , replacements1280 = \
-    self.filter_symbols(text)
+    # Place start of text token
+    self.place(start_of_text_ID , \
+      send_to_vector , send_to_positives  , send_to_negatives)
+    #########
 
-    from pprint import pprint
-    pprint(processed)
+    # Place the tokenized vectors (excluding cutoff tokens)
+    _IDs = tokenize(mini_input , max_length = True)
+    for _ID in _IDs :
+      if self.isCutoff(_ID) : continue
+      self.place(_ID , \
+      send_to_vector , send_to_positives  , send_to_negatives)
+    ######### 
 
+    # Place end of text token
+    self.place(end_of_text_ID , \
+      send_to_vector , send_to_positives  , send_to_negatives)
+    ########
+
+    # Add vector768 names to tokenbox and tokenmixer_vectors
     tokenbox = ''
+    embgenbox = ''
+    for index in range(MAX_NUM_MIX):
+      name = self.data.vector768.name.get(index)
+      _ID = self.data.vector768.ID.get(index)
+      if tokenbox != '': tokenbox = tokenbox + " , "
+      if embgenbox != '': embgenbox = embgenbox + " , "
+      tokenbox = tokenbox + name + "_" + str(_ID)
+      embgenbox = embgenbox + name
+    #########
+
     splitbox = ''
     negbox = ''
     posbox = ''
     
-    return tokenmixer_vectors , tokenbox , splitbox , negbox , posbox , gr.Dropdown.update(choices = name_list)
+    return embgenbox , tokenbox , splitbox , negbox , posbox , gr.Dropdown.update(choices = name_list)
     
 
   def setupIO_with (self, module):

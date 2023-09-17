@@ -177,10 +177,10 @@ class Tools :
       #### End of get_best_ids()
 
       # Get embedding IDs from text
-      def get_emb_ids_from(self, text , use_1280_dim = False):
+      def tokenize(self, text , max_length = False):
 
         text_input = None
-        if use_1280_dim: 
+        if max_length: 
           text_input = self.tokenizer(\
           text , truncation=False , \
           padding="max_length", \
