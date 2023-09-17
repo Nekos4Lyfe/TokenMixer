@@ -60,8 +60,7 @@ class MiniTokenizer:
       name = emb_name , 
       to_negative = send_to_negatives ,
       to_mixer = send_to_vector , 
-      to_positive = send_to_positives , 
-      to_temporary = send_to_temporary)
+      to_positive = send_to_positives)
 
     #Add to 1280 dimension vectors (if model is SDXL)
     if model_is_sdxl:
@@ -75,8 +74,7 @@ class MiniTokenizer:
         name = emb_name , 
         to_negative = send_to_negatives , 
         to_mixer = send_to_vector , 
-        to_positive = send_to_positives ,
-        to_temporary = send_to_temporary , 
+        to_positive = send_to_positives , 
         use_1280_dim =True)
   ######## End of place()
 
@@ -98,6 +96,107 @@ class MiniTokenizer:
     #######
     return emb_vec.to(device = choosen_device , dtype = datatype)
 
+  @staticmethod
+  def concat(tensor , target):
+    if target == None: 
+      return tensor.to(device = choosen_device , dtype = datatype)
+    else : return torch.cat([tensor , target] , dim = 0)\
+    .to(device = choosen_device , dtype = datatype)
+
+
+  def get_embedding_vecs(name):
+    return [] , 0
+
+  # Check which words have special symbols in them
+  def filter_symbols(self, text , id_mode = False) : 
+
+    # Initialize
+    is_sdxl , is_sd2 , is_sd1 = self.data.tools.get_flags()
+    symbols = ("_" , "<" , ">" , "[" , "]" , "," , "#")
+    words = text.strip().lower().split()
+    word_index = 0 
+    for word in words :
+      word_index += 1
+    no_of_words = word_index 
+    replacements768 = [None]*no_of_words
+    replacements1280 = [None]*no_of_words
+    ########
+
+    processed = None
+    for iteration in range(10):
+      processed = ''
+      for index in range(no_of_words):
+
+        for symbol in symbols:
+          location = word.find(symbol) # equals -1 if None found
+          if location>=0 : 
+            #Remove the symbol from the word
+            word = copy.copy(words[index])
+            words[index] = ''
+            for fragment in word.split(symbol): 
+              words[index] = words[index] + fragment
+            ######
+
+            if symbol == "_":
+              self.concat(replacements768[index] , self.random())
+              self.concat(replacements1280[index] , self.random(use_1280_dim = is_sdxl))
+          
+            elif symbol == "<":
+              self.concat(\
+              replacements768[index] ,
+              self.data.tools.internal_embs768[start_of_text_ID])
+
+              self.concat(\
+              replacements1280[index] ,
+              self.data.tools.internal_embs1280[start_of_text_ID])
+          
+            elif symbol == ">":
+
+              self.concat(\
+              replacements768[index] ,
+              self.random(end_of_text_ID))
+
+              self.concat(\
+              replacements1280[index] ,
+              self.random(end_of_text_ID , use_1280_dim = is_sdxl))
+      
+            elif symbol == "[": 
+              emb_vecs = self.get_embedding_vecs()
+              numbers = [int(num) for num in re.findall(r'\d+', words[index])]
+              start = 0
+              end = len(emb_vecs)
+              if (len(numbers)>1):
+                start = min(numbers[0] , 0)
+                end = max(numbers[1] , len(emb_vecs))
+              ######
+
+              k=None
+              for emb_vec in emb_vecs:
+                if k==None : k = 0
+                else: k = k+1
+                if k<start: continue
+                self.concat(replacements1280[index] , emb_vec)
+                if k==end : break
+              #########
+
+            elif id_mode and symbol == "#" and words[index].isdigit():
+        
+              _ID = int(words[index])
+              words[index] = ''
+
+              self.concat(\
+              self.concat(replacements768[index] ,
+              self.data.tools.internal_embs768[_ID]))
+              self.concat(\
+              self.concat(replacements768[index] ,
+              self.data.tools.internal_embs768[_ID]))
+            ##########
+            if processed != '' : processed = processed + ' '
+            processed = processed  + words[index]
+    
+    return processed , replacements768 , replacements1280
+
+
   def Process (self  , *args) :
 
     #Get the inputs
@@ -116,6 +215,9 @@ class MiniTokenizer:
     self.random_token_length = random_token_length
     self.random_token_length_randomization = random_token_length_randomization
     is_sdxl , is_sd2 , is_sd1 = self.data.tools.get_flags()
+
+    tokenmixer_vectors = ''
+    if not sendtomix : tokenmixer_vectors= mix_input
 
     # Do some checks prior to running
     if mini_input == None : 
@@ -145,402 +247,26 @@ class MiniTokenizer:
       self.data.clear(index , 
           to_negative = send_to_negatives , 
           to_mixer = sendtomix and not stack_mode , 
-          to_positive = send_to_positives ,
-          to_temporary = send_to_temporary)
+          to_positive = send_to_positives)
     ######
 
     #Convert text input to list of 'words'
-    words = mini_input.strip().lower().split()
-    word_index = 0
-    words = []
-    for word in words :
-      word_index += 1
-    no_of_words = word_index 
-    replacements768 = [None]*no_of_words
-    replacements1280 = [None]*no_of_words
-    ########
 
-    # Check which words have special symbols in them
-    symbols = ("_" , "<" , ">" , "[" , "]" , "," , "#")
-    for index in range(no_of_words):
-      word = words[index]
-      for symbol in symbols:
-        if word.find(symbol)>=0 : 
-          if symbol == "_":
-            replacements768[index] = self.random()
-            replacements1280[index] = self.random(use_1280_dim = is_sdxl)
-          elif symbol == ""
+    text = mini_input.strip().lower().split()
+    processed , replacements768 , replacements1280 = \
+    self.filter_symbols(text)
 
+    from pprint import pprint
+    pprint(processed)
 
-
-
-
-
-
-
-
-
-
-    send_to_temporary = False
-    tokenmixer_vectors = ''
-    if not sendtomix : tokenmixer_vectors= mix_input
-
-    # Vector length stuff
-    distance = torch.nn.PairwiseDistance(p=2)
-    origin = self.data.vector.origin\
-    .to(device = choosen_device , dtype = datatype)
-    origin1280 = self.data.vector1280.origin\
-    .to(device = choosen_device , dtype = datatype)
-    #######
-
-
-
-
-
-
-
-
-    #Parameters
-    section = None
     tokenbox = ''
     splitbox = ''
     negbox = ''
     posbox = ''
-    emb_name = None
-    found_IDs = None
-    reading_word = False
-    ID_index = None
-    ##########
-    start = 0
-    end = MAX_NUM_MIX
-    tmp = None
-    numbers = None
-    no_of_tokens = 0
-    token_num = 0
-    no_of_IDs = None
-    emb_vecs = None
-    emb_vec = None
-    sdxl_emb_vec = None
-    trailing_end_of_text = False
-
-    ## SDXL stuff
-    is_sdxl = self.data.tools.is_sdxl
-    ####
     
-    #Append start_of_text_ID to output before loop
-    first_index = 0
-    self.place (first_index,\
-    send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
-    start_of_text_ID) 
-    ######
-
-    placed = False
-    offset = 1
-    text_literal = ''
-    ########## Start loop : 
-    for k in range(MAX_NUM_MIX):
-      index = k + offset
-      if not index < MAX_NUM_MIX : break
-      ######
-      if placed : #Store the values from the previous iteration
-        neg_name = self.data.negative.name.get(index-1)
-        if neg_name != None :
-          if (negbox != '') : negbox = negbox + ' , ' 
-          negbox = negbox + neg_name
-        #####
-        pos_name = self.data.positive.name.get(index-1)
-        if pos_name != None :
-          if (posbox != '') : posbox = posbox + ' , ' 
-          posbox = posbox + pos_name
-        ######
-        name = self.data.vector.name.get(index-1)
-        if name != None and sendtomix:
-          if tokenmixer_vectors != '': tokenmixer_vectors = tokenmixer_vectors + ' , '
-          tokenmixer_vectors = tokenmixer_vectors + name
-        ######
-        placed = False
-      #########
-
-      if sendtomix and not self.data.vector.isEmpty.get(index): continue
-      #Go word-for-word through the list of words
-      if not word_index>0: break
-      word = sentence[no_of_words-word_index]
-      if word == "," :  
-        word_index -=1 
-        continue  #Ignore comma inputs
-      ########
-
-      # If word is '_' represent it as a random token
-      if word == "_":
-        emb_vec = torch.rand(self.data.vector.size).to(device = choosen_device , dtype = datatype)
-        dist = distance(emb_vec , origin).numpy()[0]
-        tmp = random_token_length * \
-        (1 - random_token_length_randomization*random.random())
-        emb_vec = (tmp/dist)*emb_vec
-        #####
-        if is_sdxl: 
-          sdxl_emb_vec = torch.rand(self.data.vector1280.size)\
-          .to(device = choosen_device , dtype = datatype)
-          dist = distance(sdxl_emb_vec  , origin1280).numpy()[0]
-          tmp = random_token_length * \
-          (1 - random_token_length_randomization*random.random())
-          sdxl_emb_vec  = (tmp/dist)*sdxl_emb_vec 
-        #######
-        emb_id = 0
-        emb_name = "random_" + str(index)
-      ###########
-        placed = True
-        self.data.place(index , 
-            vector =  emb_vec.unsqueeze(0) ,
-            ID =  emb_id ,
-            name = emb_name , 
-            to_negative = send_to_negatives ,
-            to_mixer = sendtomix , 
-            to_positive = send_to_positives , 
-            to_temporary = send_to_temporary)
-
-        if is_sdxl:
-            placed = True
-            self.data.place(index , 
-              vector = sdxl_emb_vec.unsqueeze(0) ,
-              ID = 0 ,
-              name = emb_name + '_' + str(token_num) , 
-              to_negative = send_to_negatives , 
-              to_mixer = sendtomix , 
-              to_positive = send_to_positives ,
-              to_temporary = send_to_temporary , 
-              use_1280_dim =True)
-        ##########
-        if (tokenbox != '') : tokenbox = tokenbox + ' , '
-        tokenbox =  tokenbox + emb_name + '_#' + str(emb_id)
-        word_index -=1 
-        continue
-      ########## End of the '_' random token stuff
-
-      #Place a start-of-text token if running SDXL
-      if word == "<" :
-        if word_index < no_of_words - 1 :
-          self.place (index  , \
-            send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
-            start_of_text_ID) 
-          #####
-          emb_name = "<|startoftext|>_#49406"
-          if (tokenbox != '') : tokenbox = tokenbox + ' , '
-          tokenbox =  tokenbox + emb_name
-        ########
-        word_index -=1 
-        continue
-      ####### End of the '<' start-of-text stuff
-
-      #Place a end-of-text token if running SDXL
-      if word == ">" :
-        self.place (index  , \
-          send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
-          end_of_text_ID) 
-        #####
-        emb_name = "<|endoftext|>_#49407"
-        if (tokenbox != '') : tokenbox = tokenbox + ' , '
-        tokenbox =  tokenbox + emb_name
-        word_index -=1 
-        trailing_end_of_text = True
-        continue
-      else :  trailing_end_of_text = False
-      #######End of the '>' end-of-text stuff
-
-      #Extract emb_vec from emb_id if id_mode is selected
-      if (id_mode and word.isdigit()):
-        emb_id = int(word)
-        if emb_id >= no_of_internal_embs: continue
-        emb_vec = self.data.tools.internal_embs[emb_id]\
-        .to(device = choosen_device , dtype = datatype)
-        if is_sdxl: sdxl_emb_vec = self.data.tools.internal_embs1280[emb_id]\
-        .to(device = choosen_device , dtype = datatype)
-        emb_name = self.data.emb_id_to_name(emb_id)
-        ######
-        assert emb_vec != None , "emb_vec is NoneType"
-        assert not placed , "Overwrite error!"
-        placed = True
-        self.data.place(index , 
-            vector =  emb_vec.unsqueeze(0) ,
-            ID =  emb_id  ,
-            name = emb_name , 
-            to_negative = send_to_negatives , 
-            to_mixer = sendtomix , 
-            to_positive = send_to_positives , 
-            to_temporary = send_to_temporary)
-        ######
-        if is_sdxl:
-            placed = True
-            self.data.place(index , 
-              vector = sdxl_emb_vec.unsqueeze(0) ,
-              ID = 0 ,
-              name = emb_name + '_' + str(token_num) , 
-              to_negative = send_to_negatives , 
-              to_mixer = sendtomix , 
-              to_positive = send_to_positives ,
-              to_temporary = send_to_temporary , 
-              use_1280_dim =True)
-        ###########
-        if (tokenbox != '') : tokenbox = tokenbox + ' , '
-        tokenbox =  tokenbox + emb_name + '_#' + str(emb_id)
-        word_index -=1 
-        continue
-      ######### End of id_mode stuff
-
-      #Find which section of embedding vectors to 
-      #add to the output if the user has written [n:m] in
-      #the mini_input
-      ##########
-      tmp = word.strip().lower()
-      if (word.find('[')>=0 and word.find(']')>=0 and (word.find('[]')<0)):
-          tmp =  word.split('[')[0]
-          tmp = tmp.strip().lower()
-          section = word.split('[')[1]
-          section = section.split(']')[0]
-          numbers = [int(num) for num in re.findall(r'\d+', section)]
-          if (len(numbers)>1):
-            start = numbers[0]
-            end = numbers[1]
-      ##########
-      #self.data.get
-      #####
-      emb_name, emb_ids, emb_vecs , loaded_emb  = self.data.get_embedding_info(tmp)
-      ###
-      sdxl_emb_name = None
-      sdxl_emb_ids = None
-      sdxl_emb_vecs = None 
-      sdxl_loaded_emb = None
-      if is_sdxl:
-        sdxl_emb_name, sdxl_emb_ids, sdxl_emb_vecs , sdxl_loaded_emb  = \
-        self.data.get_embedding_info(tmp , use_1280_dim =True)
-      ######## End of the [n:m] in mini_input stuff
-
-      no_of_tokens = emb_vecs.shape[0]
-      if no_of_tokens > MAX_NUM_MIX : no_of_tokens = MAX_NUM_MIX
-      if tmp == None : end = no_of_tokens
-
-      #If we read an embedding in 'literal mode'
-      #we discard the input and interpret the embedding 
-      #name as a CLIP token
-      if literal_mode :
-        no_of_tokens = 0 
-        emb_vecs = []
-        for emb_id in emb_ids:
-          emb_vec = self.data.emb_id_to_vec(emb_id)\
-          .to(device = choosen_device , dtype = datatype)
-          if is_sdxl: sdxl_emb_vec = \
-          self.data.emb_id_to_vec(emb_id , use_1280_dim =True)\
-          .to(device = choosen_device , dtype = datatype)
-          no_of_tokens +=1
-          break
-      ########## End of 'literal mode' stuff
-
-      # 'Normal operation'
-      if no_of_tokens > 1 :
-
-        # If we looped through single tokens then process them
-        if text_literal != '': 
-          offset , tokenbox = self.process (\
-          text_literal , k , offset , \
-          sendtomix , send_to_positives , send_to_negatives , send_to_temporary)
-          index = k + offset
-          text_literal = ''
-        ########
-
-
-
-        #If embedding contains multiple tokens
-          if (token_num+1>min(end, no_of_tokens)) or (start>end) :
-            token_num = 0  #Reset token_num
-            word_index -=1 #Go to next word
-            continue
-          if (token_num<start):
-            token_num += 1 #Skip until token_num==start
-            continue
-          #Fetch the vector
-          emb_vec = emb_vecs[token_num].to(device = choosen_device , dtype = datatype)
-          assert emb_vec != None , "emb_vec is NoneType"
-          ####
-          if is_sdxl: 
-            sdxl_emb_vec = sdxl_emb_vecs[token_num]\
-            .to(device = choosen_device , dtype = datatype)
-            assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType"
-          ######
-          assert not placed , "Overwrite error!"
-          placed = True
-          self.data.place(index , 
-              vector = emb_vec.unsqueeze(0) ,
-              ID = 0 ,
-              name = emb_name + '_' + str(token_num) , 
-              to_negative = send_to_negatives , 
-              to_mixer = sendtomix , 
-              to_positive = send_to_positives ,
-              to_temporary = send_to_temporary)
-          ######
-          if is_sdxl:
-            placed = True
-            self.data.place(index , 
-              vector = sdxl_emb_vec.unsqueeze(0) ,
-              ID = 0 ,
-              name = emb_name + '_' + str(token_num) , 
-              to_negative = send_to_negatives , 
-              to_mixer = sendtomix , 
-              to_positive = send_to_positives ,
-              to_temporary = send_to_temporary , 
-              use_1280_dim =True)
-          #######
-          if (splitbox != '') : splitbox = splitbox + ' , '    
-          splitbox =  splitbox + emb_name + '_' + str(token_num)
-          token_num += 1
-      ###########
-      else:
-        #If embedding is single token
-        if text_literal != '': text_literal = text_literal + ' '
-        text_literal = text_literal + word
-        word_index -=1 
-        continue
-      #### End of 'Normal operation'
-    ####### End main loop
-
-    # If we looped through single tokens then process them
-    if text_literal != '': 
-          offset , tokenbox = self.process (\
-          text_literal , k , offset , \
-          sendtomix , send_to_positives , send_to_negatives , send_to_temporary)
-          index = k + offset
-          text_literal = ''
-    ############
-
-    
-    # Find the first empty slot in the list
-    # after the loop (the last index to fill)
-    last_index = None
-    for index in range(MAX_NUM_MIX):
-      if trailing_end_of_text : break
-      if sendtomix and not self.data.vector.isEmpty.get(index): continue
-      last_index = copy.copy(index)
-    ########
-
-    # Append end_of_text_ID token to output after loop
-    # if none were placed at the end
-    if not trailing_end_of_text:
-      self.place (last_index  , \
-      send_to_negatives , sendtomix , send_to_positives , send_to_temporary , \
-      end_of_text_ID) 
-      if (tokenbox != '') : tokenbox = tokenbox + ' , '
-      tokenbox =  tokenbox + "<|endoftext|>_#49407"
-    ###### End of append end_of_text_ID to output
-
-    #Filter stuff
-    name_list = []
-    for index in range(MAX_NUM_MIX):
-        if self.data.vector.isEmpty.get(index): continue
-        name_list.append(self.data.vector.name.get(index))
-    ######### End of filter stuff
-
     return tokenmixer_vectors , tokenbox , splitbox , negbox , posbox , gr.Dropdown.update(choices = name_list)
     
-    
+
   def setupIO_with (self, module):
     #Tell the buttons in this class what to do when 
     #pressed by the user
