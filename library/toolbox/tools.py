@@ -31,9 +31,10 @@ class Tools :
 
       def get_cond_stage_model_from (self, model):
         conditioner = getattr(model, 'conditioner', None)
+        text_cond_models = []
+        cond_stage_model = None
+        
         if conditioner:
-            text_cond_models = []
-
             for i in range(len(conditioner.embedders)):
                 embedder = conditioner.embedders[i]
                 typename = type(embedder).__name__
@@ -50,6 +51,8 @@ class Tools :
                     conditioner.embedders[i] = sd_hijack_open_clip.\
                     FrozenOpenCLIPEmbedder2WithCustomWords(embedder, self)
                     text_cond_models.append(conditioner.embedders[i])
+
+
 
             if len(text_cond_models) == 1: 
               cond_stage_model = text_cond_models[0]
@@ -122,8 +125,8 @@ class Tools :
         is_sdxl , is_sd2 , is_sd1 = self.get_flags()
         #######
         embedder = None
-        if is_sdxl : embedder = self.cond_stage_model.embedders[0].wrapped
-        else : embedder = self.cond_stage_model.embedders.wrapped
+        if is_sdxl : embedder = self.cond_stage_models.embedders[0].wrapped
+        else : embedder = self.cond_stage_models.embedders.wrapped
         ######
         internal_emb_dir = None
         if is_sd2 : internal_emb_dir = embedder.model
@@ -138,8 +141,8 @@ class Tools :
         is_sdxl , is_sd2 , is_sd1 = self.get_flags()
 
         embedder = None
-        if is_sdxl : embedder = self.cond_stage_model.embedders[0].wrapped
-        else : embedder = self.cond_stage_model.embedders.wrapped
+        if is_sdxl : embedder = self.cond_stage_models.embedders[0].wrapped
+        else : embedder = self.cond_stage_models.embedders.wrapped
 
         tokenizer = None
         if is_sd2 :
@@ -248,12 +251,15 @@ class Tools :
         # Check if a valid SD model is loaded (SD 1.5 , SD2 or SDXL)
         model_is_loaded = self.model_is_loaded()
         if model_is_loaded : is_sdxl , is_sd2 , is_sd1 = self.get_flags()
+        from pprint import pprint
+        if is_sdxl : pprint("MODEL IS SDXL")
+        else : pprint("MODEL IS SD15")
         ######
 
         #Add values to Tools.py
         #if a valid sd-model is loaded
         if model_is_loaded : 
-          cond_stage_model = self.get_cond_stage_model_from(shared.sd_model)
+          Tools.cond_stage_models = self.get_cond_stage_model_from(shared.sd_model)
           Tools.is_sdxl = is_sdxl
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.tokenizer = self.get_tokenizer()
