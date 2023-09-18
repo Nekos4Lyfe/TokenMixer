@@ -52,8 +52,6 @@ class Tools :
                     FrozenOpenCLIPEmbedder2WithCustomWords(embedder, self)
                     text_cond_models.append(conditioner.embedders[i])
 
-
-
             if len(text_cond_models) == 1: 
               cond_stage_model = text_cond_models[0]
             else: cond_stage_model = conditioner
@@ -269,7 +267,7 @@ class Tools :
           assert self.tokenizer != None , "tokenizer is NoneType!"
           Tools.loaded = True
         ########
-
+#tokenize
         # SDXL Text encoders resources
         # In A1111 they are contained within another class
         # that allows them to process texts in "chunks" of
@@ -278,9 +276,9 @@ class Tools :
         if model_is_loaded and is_sdxl:
 
           #CLIPTextModel (768 Dimension)
-          Tools.embedder768 = cond_stage_model.embedders[0]
-          Tools.FrozenCLIPEmbedderForSDXLWithCustomWords = cond_stage_model.embedders[0]
-          Tools.FrozenCLIPEmbedderForSDXL = cond_stage_model.embedders[0].wrapped
+          Tools.embedder768 = self.cond_stage_models.embedders[0]
+          Tools.FrozenCLIPEmbedderForSDXLWithCustomWords = self.cond_stage_models.embedders[0]
+          Tools.FrozenCLIPEmbedderForSDXL = self.cond_stage_models.embedders[0].wrapped
           self.internal_embs768 =\
           self.FrozenCLIPEmbedderForSDXL.transformer.text_model.\
           embeddings.token_embedding.wrapped.weight 
@@ -288,9 +286,9 @@ class Tools :
           #######
           
           #CLIPTextModelWithProjection (1280 Dimension)
-          Tools.embedder1280 = cond_stage_model.embedders[1]
-          Tools.FrozenOpenCLIPEmbedder2WithCustomWords = cond_stage_model.embedders[1]
-          Tools.FrozenOpenCLIPEmbedder2 = cond_stage_model.embedders[1].wrapped
+          Tools.embedder1280 = self.cond_stage_models.embedders[1]
+          Tools.FrozenOpenCLIPEmbedder2WithCustomWords = self.cond_stage_models.embedders[1]
+          Tools.FrozenOpenCLIPEmbedder2 = self.cond_stage_models.embedders[1].wrapped
           Tools.internal_embs1280 = \
           self.FrozenOpenCLIPEmbedder2.model.token_embedding.wrapped.weight
           Tools.no_of_internal_embs1280 = len(self.internal_embs1280)
@@ -302,6 +300,3 @@ class Tools :
         'j' , 'k' , 'l' , 'm' , 'n' , 'o' , 'p' , 'q' , 'r' , 's' , 't' , 'u' , \
         'v' , 'w' , 'x' , 'y' , 'z']
 #End of Tools class
-
-
-

@@ -270,8 +270,8 @@ class MiniTokenizer:
 
     # Fetch tokenizer and internal embeddings
     tokenize = self.data.tools.tokenize
-    internal_embs786 = self.data.tools.internal_embs768
-    internal_embs1280 = self.data.tools.internal_embs1280
+    #internal_embs786 = self.data.tools.internal_embs768
+    #internal_embs1280 = self.data.tools.internal_embs1280
 
     # Place start of text token
     self.place(start_of_text_ID , \
@@ -436,6 +436,7 @@ class MiniTokenizer:
 
     if self.data.tools.loaded : self.setupIO_with(self)
 ## End of class MiniTokenizer--------------------------------------------------#
+
 
 
 
