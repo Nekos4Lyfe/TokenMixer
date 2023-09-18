@@ -140,7 +140,7 @@ class Tools :
 
         embedder = None
         if is_sdxl : embedder = self.cond_stage_models.embedders[0].wrapped
-        else : embedder = self.cond_stage_models.embedders.wrapped
+        else : embedder = shared.sd_model.cond_stage_model.wrapped
 
         tokenizer = None
         if is_sd2 :
