@@ -1,7 +1,6 @@
 #TOOLS.PY
 import torch, os
 import copy
-from types import NoneType
 import collections
 import gradio as gr
 from modules import shared
@@ -124,13 +123,17 @@ class Tools :
         #######
         embedder = None
         if is_sdxl : embedder = self.cond_stage_models.embedders[0].wrapped
-        else : embedder = self.cond_stage_models.embedders.wrapped
+        else : embedder = shared.sd_model.cond_stage_model.wrapped
+        assert embedder != None , "embedder is NoneType!"
         ######
         internal_emb_dir = None
         if is_sd2 : internal_emb_dir = embedder.model
         else : internal_emb_dir = embedder.transformer.text_model.embeddings
+        assert internal_emb_dir != None , "internal_emb_dir is NoneType!"
         ######
-        internal_embs = internal_emb_dir.token_embedding.wrapped.weight 
+        internal_embs = None
+        internal_embs = internal_emb_dir.token_embedding.wrapped.weight
+        assert internal_embs != None , "internal_embs is NoneType!"
         return internal_embs
       ########## End of get_internal_embs()
 
@@ -210,15 +213,58 @@ class Tools :
           .encode_embedding_init_text(text , nvpt).to(choosen_device)
         #######
         return embedded
+    
+      @staticmethod
+      def concat(tensor , target):
+        if target == None: 
+          return tensor.to(device = choosen_device , dtype = datatype)
+        else : return torch.cat([tensor , target] , dim = 0)\
+        .to(device = choosen_device , dtype = datatype)
+    
+      # Checks if an ID is valid
+      def assert_ID(self, emb_id):
+        model_is_sdxl , is_sd2 , is_sd1 = self.get_flags()
+        no_of_internal_embs = self.no_of_internal_embs
+        no_of_internal_embs1280 = self.no_of_internal_embs1280
+        #######
+        if model_is_sdxl : 
+          assert no_of_internal_embs1280 == no_of_internal_embs , \
+          "Mismatch between no. of IDs in no_of_internal_embs1280 " + \
+          "and no_of_internal_embs for loaded SDXL model!"
+        ########
+        assert (emb_id < no_of_internal_embs) and emb_id>=0 , \
+        "Error: ID with value " + str(emb_id)  + " is outside the range of " + \
+        "permissable values from 0 to "  + str(no_of_internal_embs)
+        return emb_id
+      ###### End of assert_ID()
 
       # Get embedding vectors from text
-      def get_emb_vecs_from(self, text , use_1280_dim = False):
-        assert type(text) == str , "input text is not string!"
-        embedded = None
+      def get_emb_vecs_from(self, input , use_1280_dim = False , max_length = False):
+        text = None
+        _ID = None
+        valid_single_ID = type(input) == torch.Tensor or  type(input) == int
+        ######
+        if type(input) == str : text = input
+        elif valid_single_ID : _ID = self.assert_ID(input)
+        else : assert False , "input is type " + str(type(input)) + " , which is not valid!"
+        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
         ########
-        if use_1280_dim:  embedded = self._get_emb_vecs1280_from(text)
-        else: embedded = self._get_emb_vecs768_from(text)
-        return embedded.to(choosen_device)
+        internal_embs = None
+        if use_1280_dim and is_sdxl:  internal_embs = self.internal_embs1280.to(choosen_device)
+        elif is_sdxl : internal_embs = self.internal_embs768.to(choosen_device)
+        else : internal_embs = self.internal_embs.to(choosen_device)
+        ########
+        if text != None: _IDs = self.tokenize(text , max_length)
+        else : _IDs = _ID
+        #####
+        emb_vecs = None
+        
+        if valid_single_ID : emb_vecs = self.concat(internal_embs[_IDs] , emb_vecs)
+        else:
+            for _ID in _IDs: 
+                emb_vecs = self.concat(internal_embs[_ID] , emb_vecs)
+        #############
+        return emb_vecs.to(device = choosen_device , dtype = datatype)
       ##### End of get_emb_vecs_from()
 
       def __init__(self , count=1):
@@ -245,6 +291,9 @@ class Tools :
         #######
         Tools.embedder768 = None #FrozenCLIPEmbedderForSDXLWithCustomWords
         Tools.embedder1280 = None #FrozenOpenCLIPEmbedder2WithCustomWords
+        ######
+        Tools.internal_embs786 = None
+        Tools.internal_embs1280 = None
 
         # Check if a valid SD model is loaded (SD 1.5 , SD2 or SDXL)
         model_is_loaded = self.model_is_loaded()
@@ -257,12 +306,16 @@ class Tools :
         #Add values to Tools.py
         #if a valid sd-model is loaded
         if model_is_loaded : 
+          pprint("MODEL IS LOADED")
           Tools.cond_stage_models = self.get_cond_stage_model_from(shared.sd_model)
           Tools.is_sdxl = is_sdxl
           Tools.emb_savepath = self.make_emb_folder('TokenMixer') 
           Tools.tokenizer = self.get_tokenizer()
           Tools.loaded_embs = self.get_loaded_embs()
           Tools.internal_embs = self.get_internal_embs()
+          assert self.internal_embs != None , "internal embeddings are NoneType!"
+          Tools.internal_embs786 = self.get_internal_embs() #default value (overwritten for SDXL)
+          Tools.internal_embs1280 = self.get_internal_embs() #default value (overwritten for SDXL)
           Tools.no_of_internal_embs = len(self.internal_embs)
           assert self.tokenizer != None , "tokenizer is NoneType!"
           Tools.loaded = True

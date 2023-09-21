@@ -4,7 +4,6 @@ def install_tokenmixer_dependencies():
   import os
   import pkg_resources
   from functools import lru_cache
-  from rich import print_json
   index_url = os.environ.get('INDEX_URL', "")
   import subprocess
   import sys

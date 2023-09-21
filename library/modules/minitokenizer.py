@@ -28,49 +28,33 @@ class MiniTokenizer:
   def isCutoff(_ID):
     return _ID == start_of_text_ID or _ID == end_of_text_ID
 
-
-  # Checks if an ID is valid
-  def assert_ID(self, emb_id):
-    assert isinstance(emb_id , int) , \
-    "Error: emb id is not an integer , it is a " + str(type(emb_id)) + " !" 
-    if self.data.tools.is_sdxl : 
-      assert self.data.tools.no_of_internal_embs1280 == \
-      self.data.tools.no_of_internal_embs , \
-      "Mismatch between no. of IDs in no_of_internal_embs1280 " + \
-      "and no_of_internal_embs for loaded SDXL model!"
-    ########
-    assert (emb_id < self.data.tools.no_of_internal_embs) and emb_id>=0 , \
-    "Error: ID with value " + str(emb_id)  + " is outside the range of " + \
-    "permissable values from 0 to "  + str(self.data.tools.no_of_internal_embs)
-  ###### End of assert_ID()
-
   #Places token with given _ID at index
   # in the given fields of the dataclass 
   #(vector , positive , negative , temporary)
   def place(self , _ID ,\
     send_to_vector = False , send_to_positives = False  , send_to_negatives = False):
-
-    self.assert_ID(_ID)
     model_is_sdxl , is_sd2 , is_sd1 = self.data.tools.get_flags()
+    get_emb_vecs_from = self.data.tools.get_emb_vecs_from
 
     # Fetch 768 Dimension vectors
     if True: 
-        emb_vec768 = self.data.tools.internal_embs768[_ID]\
+        emb_vec768 = get_emb_vecs_from(_ID)\
         .to(device = choosen_device , dtype = datatype)
         assert emb_vec768 != None ,"emb_vec768 is NoneType!"
         emb_name = self.data.emb_id_to_name(_ID)
+        assert emb_name != None ,"emb_name is NoneType!"
       ###########
 
     # Fetch 1280 Dimension vectors
     if model_is_sdxl:
-        sdxl_emb_vec = self.data.tools.internal_embs1280[_ID]\
+        sdxl_emb_vec = get_emb_vecs_from(_ID , use_1280_dim = True)\
         .to(device = choosen_device , dtype = datatype)
         assert sdxl_emb_vec != None , "sdxl_emb_vec is NoneType!"
       ###########
 
     #Add to 768 dimension vectors
     for index in range (MAX_NUM_MIX):
-      if self.data.place.vector768.isEmpty(index): continue
+      if self.data.vector.isEmpty.get(index): continue
       if True:
         self.data.place(index ,\
           vector =  emb_vec768.unsqueeze(0) ,
@@ -83,7 +67,7 @@ class MiniTokenizer:
 
     #Add to 1280 dimension vectors 
     for index in range (MAX_NUM_MIX):
-      if self.data.place.vector1280.isEmpty(index): continue
+      if self.data.vector1280.isEmpty.get(index): continue
       if model_is_sdxl:
         self.data.place(index , 
           vector = sdxl_emb_vec.unsqueeze(0) ,
@@ -99,7 +83,7 @@ class MiniTokenizer:
   def random(self , use_1280_dim = False):
     target = None
     if use_1280_dim : target = self.data.vector1280
-    else : target = self.data.vector768
+    else : target = self.data.vector
     distance = torch.nn.PairwiseDistance(p=2)
     size = target.size 
     origin = target.origin
@@ -121,9 +105,6 @@ class MiniTokenizer:
     else : return torch.cat([tensor , target] , dim = 0)\
     .to(device = choosen_device , dtype = datatype)
 
-
-  def get_embedding_vecs(name):
-    return [] , 0
 
   # Check which words have special symbols in them
   def filter_symbols(self, text , id_mode = False) : 
@@ -270,6 +251,7 @@ class MiniTokenizer:
 
     # Fetch tokenizer and internal embeddings
     tokenize = self.data.tools.tokenize
+    get_emb_vecs_from = self.data.tools.get_emb_vecs_from
     #internal_embs786 = self.data.tools.internal_embs768
     #internal_embs1280 = self.data.tools.internal_embs1280
 
@@ -280,6 +262,8 @@ class MiniTokenizer:
 
     # Place the tokenized vectors (excluding cutoff tokens)
     _IDs = tokenize(mini_input , max_length = True)
+    emb_vecs = get_emb_vecs_from(mini_input)
+    
     for _ID in _IDs :
       if self.isCutoff(_ID) : continue
       self.place(_ID , \
@@ -295,11 +279,11 @@ class MiniTokenizer:
     tokenbox = ''
     embgenbox = ''
     for index in range(MAX_NUM_MIX):
-      name = self.data.vector768.name.get(index)
-      _ID = self.data.vector768.ID.get(index)
+      name = self.data.vector.name.get(index)
+      emb_id = self.data.vector.ID.get(index)
       if tokenbox != '': tokenbox = tokenbox + " , "
       if embgenbox != '': embgenbox = embgenbox + " , "
-      tokenbox = tokenbox + name + "_" + str(_ID)
+      tokenbox = tokenbox + name
       embgenbox = embgenbox + name
     #########
 
