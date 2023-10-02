@@ -27,111 +27,122 @@ class MiniTokenizer:
     def isCutoff(_ID):
       return _ID == start_of_text_ID or _ID == end_of_text_ID
 
-    def get_emb_vec_from(self , _ID , use_1280_dim = False):
-
-      #Helper function which fetches an embedding vector
-      #from an ID with flag exceptions included
-      # Unlike the function get_emb_vecs_from in Tools.py , 
-      # this helper function can only process a single ID
-      # and return a single embedding vector
-
-      # Get flags
-      use_random , use_start_of_text , use_end_of_text = \
-      self.data.tools.get_token_type_from(_ID)
-
-      # Get functions
-      get_emb_vecs_from = self.data.tools.get_emb_vecs_from
-      random = self.data.tools.random
-      ######
-
-      #Fetch the vector from ID
-      emb_vec = get_emb_vecs_from(_ID , use_1280_dim)
-      #######
-
-      # Overwrite with different embedding vector 
-      # for certain types of ID:s
-      if use_random : emb_vec = random(use_1280_dim)
-      if use_start_of_text : emb_vec = \
-        get_emb_vecs_from(start_of_text_ID , use_1280_dim)
-      if use_end_of_text : emb_vec = \
-        get_emb_vecs_from(end_of_text_ID , use_1280_dim)
-      ######
-
-      return emb_vec.to(device = choosen_device , dtype = datatype)
-    ### End of get_emb_vec_from()
-
- 
     def place(self , input , \
       send_to_vector = False , send_to_positives = False  , \
       send_to_negatives = False):
-
-      #Places token with given _ID at index
-      # in the given fields of the dataclass 
-      #(vector , positive , negative , temporary)
-        
-        # Fetch _IDs from input
-        assert input != None , "_IDs is NoneType!"
-        _IDs = None
-        if type(_IDs) == torch.Tensor : 
-          _IDs = input.to(choosen_device).numpy()
-        else: 
-          assert type(input) == list , "_IDs is neither a tensor nor a list. " + \
-          "_IDs is the type " + str(type(_IDs)) + " !" 
-          _IDs = input
-          assert len(_IDs)>0 , "_IDs is an empty list!"
-        ###########
 
         # Fetch flags
         model_is_sdxl , is_sd2 , is_sd1 = self.data.tools.get_flags()
         ######
 
         #Fetch functions
-        get_emb_vec_from = self.get_emb_vec_from
-        get_name_from = self.data.tools.get_name_from
+        process = self.data.tools.process
         isEmpty_at = self.data.vector.isEmpty.get
         isCutoff = self.isCutoff
-        token = self.data.tools.token
         #######
 
-        # Initialize params
-        emb_vec768 = None
-        emb_vec1280 = None
-        rand_index = 0
-        count = 0
-        no_of_IDs = len(_IDs)
+        # Fetch the IDs (same for both 768 and 1280 dimension)
+        _IDs768 = process(input , to = 'ids')
+        _IDs1280 = process(input , to = 'ids' , max_length = True)
+        ####
+
+        # Fetch 768 dimension vectors
+        emb_vecs768 = process(input , to = 'tensors')
+        assert emb_vecs768 != None , "emb_vecs768 is NoneType!"
+        no_of_emb_vecs768 = emb_vecs768.shape[0]
         #######
 
-        for _ID in _IDs:
-            if isCutoff(_ID): continue #Skip ahead of all padding tokens
-            count = count + 1
+       # Fetch 1280 dimension vectors (if SDXL)
+        emb_vecs1280 = None
+        no_of_emb_vecs1280 = 0
+        ####
+        if model_is_sdxl : 
+          emb_vecs768 = process(\
+          input , to = 'tensors' , \
+          use_1280_dim = True , 
+          max_length = True)
 
-            # Fetch the name of the vector
-            emb_name = get_name_from(_ID , using_index = count)
-            assert emb_name != None ,"emb_name is NoneType!"
-            ##########
+          assert emb_vecs1280 != None , "emb_vecs1280 is NoneType!"
+          no_of_emb_vecs1280 = emb_vecs1280.shape[0]
+        #######
 
-            # Fetch 768 Dimension vectors
-            if True: 
-              emb_vec768 = get_emb_vec_from(_ID)
-              assert emb_vec768 != None ,"emb_vec768 is NoneType!"
-            ###########
 
-            # Fetch 1280 Dimension vectors
-            if model_is_sdxl:
-              emb_vec1280 = get_emb_vec_from(_ID)
-              assert emb_vec1280 != None , "emb_vec1280 is NoneType!"
-            ###########
-        
-            #Add to 768 dimension vector
-            for index in range (MAX_NUM_MIX):
-              if not isEmpty_at(index): continue
-              self.data.place(index ,\
+        if True:
+          emb_vec768 = None
+          for tensor_index in range(no_of_emb_vecs768):
+
+            # Fetch ID and name
+            _ID = _IDs768[tensor_index]
+            if isCutoff(_ID) : continue
+            emb_name = process(_ID , to = 'name' , using_index = tensor_index)
+            #####
+
+            # Fetch the 768 dimension vector
+            emb_vec768 = emb_vecs768[tensor_index].\
+            to(choosen_device , dtype = datatype)
+            #####
+
+            # Place the tensor in open slot
+            for storage_index in range(MAX_NUM_MIX):
+              if not isEmpty_at(storage_index): continue
+              self.data.place(storage_index ,\
                   vector =  emb_vec768.unsqueeze(0) ,
                   ID =  _ID ,
                   name = emb_name , 
                   to_negative = send_to_negatives ,
                   to_mixer = send_to_vector , 
                   to_positive = send_to_positives)
+              break
+            ###### End of for loop
+          ###### End of for loop
+
+        if model_is_sdxl:
+          emb_vec1280 = None
+          for tensor_index in range(no_of_emb_vecs1280):
+
+            # Fetch ID and name
+            _ID = _IDs1280[tensor_index]
+            if isCutoff(_ID) : continue
+            emb_name = process(_ID , to = 'name' , using_index = tensor_index)
+            #####
+
+            # Fetch the 1280 dimension vector
+            emb_vec1280 = emb_vecs1280[tensor_index].\
+            to(choosen_device , dtype = datatype)
+            #####
+
+            # Place the tensor in open slot
+            for storage_index in range(MAX_NUM_MIX):
+              if not isEmpty_at(storage_index): continue
+              self.data.place(storage_index ,\
+                  vector =  emb_vec1280.unsqueeze(0) ,
+                  ID =  _ID ,
+                  name = emb_name , 
+                  to_negative = send_to_negatives ,
+                  to_mixer = send_to_vector , 
+                  to_positive = send_to_positives , 
+                  use_1280_dim = True)
+              break
+            ###### End of for loop
+          ###### End of for loop
+
+        
+
+
+
+
+
+      
+
+
+
+
+          
+
+            #Add to 768 dimension vector
+            for emb_vec768 in emb_vecs768.split:
+              if not isEmpty_at(index): continue
+  
             ######### End of of for-loop
         
             #Add to 1280 dimension vectors 
@@ -149,7 +160,7 @@ class MiniTokenizer:
             ######## End of for-loop  
       ######## End of place()
 
-    def Process (self  , *args) :
+    def Run (self  , *args) :
 
       #Get the inputs
       mini_input = args[0]
@@ -244,7 +255,7 @@ class MiniTokenizer:
 
       # END PROCESSING THE VECTORS
 
-       # Process output params
+       # Run output params
       if not send_to_vector :  embgenbox = mix_input
       for index in range(MAX_NUM_MIX):
         if isEmpty_at(index) : continue
@@ -292,7 +303,7 @@ class MiniTokenizer:
         output_list.append(module.inputs.posbox)    #4
         output_list.append(module.inputs.unfiltered_names)  #5
         #######
-        self.buttons.tokenize.click(fn=self.Process , inputs = input_list , outputs = output_list)
+        self.buttons.tokenize.click(fn=self.Run , inputs = input_list , outputs = output_list)
     #End of setupIO_with()
 
 
@@ -336,7 +347,7 @@ class MiniTokenizer:
     
       with gr.Accordion(label , open=True , visible = vis) as show :
         with gr.Row() :  
-          self.buttons.tokenize = gr.Button(value="Process", variant="primary", size="sm")
+          self.buttons.tokenize = gr.Button(value="Run", variant="primary", size="sm")
           self.buttons.reset = gr.Button(value="Reset", variant = "secondary", size="sm")
         with gr.Row() : 
           self.inputs.mini_input = gr.Textbox(label='', lines=2, \

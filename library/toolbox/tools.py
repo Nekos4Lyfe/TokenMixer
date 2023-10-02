@@ -104,20 +104,23 @@ class Tools :
 
       # Create a random tensor
       def random(self , use_1280_dim = False):
+
+        # Fetch stuff
         distance = torch.nn.PairwiseDistance(p=2)
-        origin = None
-        size = None
-        if use_1280_dim : 
-          origin = self.origin1280
-          size = self.size1280
-        else : 
-          origin = self.origin768
-          size = self.size768
-        ######
         random_token_length = self.random_token_length
         random_token_length_randomization = self.random_token_length_randomization
-        #########
-        emb_vec = torch.rand(size).to(device = choosen_device , dtype = datatype)
+        ######
+        
+        origin = self.origin768\
+        .to(device = choosen_device , dtype = datatype)
+        if use_1280_dim : origin = self.origin1280\
+        .to(device = choosen_device , dtype = datatype)
+
+        size = self.size768
+        if use_1280_dim : size = self.size1280
+        emb_vec = torch.rand(size)\
+        .to(device = choosen_device , dtype = datatype)
+
         dist = distance(emb_vec , origin).numpy()[0]
         rdist = random_token_length * \
         (1 - random_token_length_randomization*random.random())
@@ -243,53 +246,16 @@ class Tools :
         return embedded
     
       @staticmethod
-      def concat(tensor , target):
-        if target == None: 
-          return tensor.to(device = choosen_device , dtype = datatype)
+      def concat(input , target):
+        assert type(input) == torch.Tensor , "input is not a " + \
+        "torch.Tensor, it is a " + str(type(input)) + " !"
+        tensor = input.to(device = choosen_device , dtype = datatype)
+        if target == None: return tensor
         else : return torch.cat([tensor , target] , dim = 0)\
         .to(device = choosen_device , dtype = datatype)
     
-      # Checks if an ID is valid
-      def validate(self, input):
-        assert type(input) == torch.Tensor or  type(input) == int  , \
-        "input is type " + str(type(input)) + " , which is not valid!"
-        model_is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        no_of_internal_embs = self.no_of_internal_embs
-        no_of_internal_embs1280 = self.no_of_internal_embs1280
-        ######
-        emb_ids = None
-        if type(input) == torch.Tensor : 
-          emb_ids = input.numpy()
-        else : emb_ids = input
-        assert len(emb_ids) == 1, "assert_ID function can " + \
-        "only handle a single ID at a time yet len(emb_ids) == " + str(len(emb_ids)) + " !"
-        emb_id = emb_ids[0]
-        #######
-        if model_is_sdxl : 
-          assert no_of_internal_embs1280 == no_of_internal_embs , \
-          "Mismatch between no. of IDs in no_of_internal_embs1280 " + \
-          "and no_of_internal_embs for loaded SDXL model!"
-        ########
-        assert (emb_id < no_of_internal_embs) and emb_id>=0 , \
-        "Error: ID with value " + str(emb_id)  + " is outside the range of " + \
-        "permissable values from 0 to "  + str(no_of_internal_embs)
-        return emb_id
-      ###### End of assert_ID()
-
       # Get name from an ID
-      def get_name_from(self , input , using_index = 0):
-        _ID = None
-        #Convert to int of _ID is a tensor
-        if type(input) == torch.Tensor: 
-            _IDs = input.to(choosen_device).numpy()
-            assert len(_IDs)==1 , \
-            "length of emb_id_list is not 1 it is " + str(len(_IDs)) + " !"
-            _ID = _IDs[0]
-        else : 
-            assert type(input) == int , \
-            "_ID is not int it is a " + str(type(input)) + " !"
-            _ID = copy.copy(input)
-        ########
+      def get_name_from(self, _ID , using_index = 0):
 
         #Fetch functions
         tokenizer = self.tokenizer
@@ -306,77 +272,117 @@ class Tools :
           emb_name = "Random_" + str(using_index)
 
         return emb_name # return embedding name for embedding ID
-    # End of emb_id_to_name()
+      # End of emb_id_to_name()
 
-      # Get embedding vectors from text
-      def get_emb_vecs_from(self, input , use_1280_dim = False , max_length = False):
+      def process(self, input , to = 'tensors' , \
+      use_1280_dim = False , max_length = False , using_index = 0):
         
-        #Do some checks
-        if input == '' : return None
-        assert input != None , "input is NoneType !"
+        # Do some checks
+        assert type(to) == str , "value for 'to' param is not string , it is " + \
+        " a " + str(type(to)) + " !"
         ######
+        
+        # Fetch the input depending on type
+        text = None # string
+        _ID_tensor = None # torch.Tensor 
+        _ID_int32 = None # torch.int32
+        if type(input) == str : text = input
+        elif type(input) == torch.Tensor : _ID_tensor = input
+        else : _ID_int32 = input
+        #######
 
-        #Get flags
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        ######
-
-        # Fetch functions
-        validate = self.validate
-        tokenize = self.tokenize 
+        # Fetch other stuff
+        internal_embs = self.internal_embs768
+        if use_1280_dim :  internal_embs = self.internal_embs1280
         token = self.token
         #####
 
-        # Tokenize the input if it is a string
-        text = None
-        _ID = None
-        if type(input) == str : text = input.lower().strip()
-        else: _ID = validate(input)
-        ####
-        _IDs = None
-        if text != None: _IDs = tokenize(text , max_length)
-        else : _IDs = _ID
+        #Initialize output params
+        emb_vecs = None
+        emb_ids = None
+        name = None
         ######
 
-        # Fetch internal embs
-        internal_embs = None
-        if use_1280_dim and is_sdxl:  
-          internal_embs = self.internal_embs1280.to(choosen_device)
-        elif is_sdxl : internal_embs = self.internal_embs768.to(choosen_device)
-        else : internal_embs = self.internal_embs.to(choosen_device)
-        ########
+        # If input is text string , tokenize it and fetch vectors
+        if text != None:
+          emb_vec = None 
+          _ID_tensor = self.tokenize(text , max_length)
+          emb_ids = _ID_tensor.to(choosen_device , dtype = torch.int32)
+          for _ID in _ID_tensor:
+            if token.is_normal_type(_ID): 
+              emb_vec = internal_embs[_ID]
+            elif token.is_random_type(_ID): 
+              emb_vec = self.random(use_1280_dim)
+            elif token.is_start_of_text_type(_ID): 
+              emb_vec = internal_embs[start_of_text_ID]
+            elif token.is_end_of_text_type(_ID):
+              emb_vec = internal_embs[end_of_text_ID] 
+            else : assert False , "_ID within tokenized _ID_tensor batch " + \
+            " with type " + str(type(_ID_int32)) + \
+            " could not be identified!"
+            ######
+            emb_vec = emb_vec.unsqueeze(0)
+            if emb_vecs == None : emb_vecs = emb_vec
+            else: emb_vecs = self.concat(emb_vec , emb_vecs)
+          #### End of for loop
+        #######
 
+        # If input is ID_tensor , do same as above but 
+        # skip the tokenization step since we already have the IDs
+        if _ID_tensor != None:
+          emb_vec = None
+          emb_ids = _ID_tensor.to(choosen_device , dtype = torch.int32)
+          for _ID in _ID_tensor:
+            if token.is_normal_type(_ID): 
+              emb_vec = internal_embs[_ID]
+            elif token.is_random_type(_ID): 
+              emb_vec = self.random(use_1280_dim)
+            elif token.is_start_of_text_type(_ID): 
+              emb_vec = internal_embs[start_of_text_ID]
+            elif token.is_end_of_text_type(_ID):
+              emb_vec = internal_embs[end_of_text_ID] 
+            else : assert False , "_ID within _ID_tensor batch " + \
+            " with type " + str(type(_ID_int32)) + \
+            " could not be identified!"
+            ######
+            emb_vec = emb_vec.unsqueeze(0)
+            if emb_vecs == None : emb_vecs = emb_vec
+            else: emb_vecs = self.concat(emb_vec , emb_vecs)
+          #### End of for loop
+        #########
 
-
-        emb_vecs = None
-        emb_vec = None
-        for _ID in _IDs: 
-          assert type(_ID) == int , "_ID is not int! It is a " + str(type(_ID)) + " !"
-          
-          #Default operation
-          if token.is_normal_type:
-            emb_vec = internal_embs[_ID]
-          #########
-
-          # Underscore IDs (replace with random vector)
-          elif token.is_random_type(_ID) : 
-            emb_vec = self.random()
-          ###########
-
-          # '<' symbol IDs (replace with start-of-text token)
-          elif token.is_start_of_text_type(_ID) : 
-            emb_vec = internal_embs[start_of_text_ID] 
-          ##########
-
-          # '>' symbol IDs (replace with end-of-text token)
-          elif token.is_end_of_text_type(_ID) : 
+        # If input is single ID , fetch the vector directly
+        if _ID_int32 != None : 
+          emb_ids = _ID_int32
+          if token.is_normal_type(_ID_int32): 
+            emb_vecs = internal_embs[_ID_int32]
+          elif token.is_random_type(_ID_int32): 
+            emb_vecs = self.random(use_1280_dim)
+          elif token.is_start_of_text_type(_ID_int32): 
+            emb_vecs = internal_embs[start_of_text_ID]
+          elif token.is_end_of_text_type(_ID_int32):
             emb_vec = internal_embs[end_of_text_ID] 
-          ##########
+          else : assert False , "single _ID with type " + \
+          str(type(_ID_int32)) + " could not be identified!"
+        #########
 
-          emb_vec = emb_vec.to(choosen_device , dtype = datatype)
-          emb_vecs = self.concat(emb_vec , emb_vecs)
-        #############
-        return emb_vecs.to(device = choosen_device , dtype = datatype)
+        if to == 'tensors':
+          return emb_vecs.squeeze(0)\
+          .to(device = choosen_device , dtype = datatype)
+        elif to == 'ids':
+          return emb_ids
+        elif to == 'name':
+          if _ID_int32 != None: 
+            name = self.get_name_from(_ID_int32 , using_index)
+            assert type(name) == str , "name is not string , it is " + \
+            " a " + str(type(name)) + " !"
+          return name
+        else : assert False , "parameter to = " + to + " could not be interpreted!" 
       ##### End of get_emb_vecs_from()
+
+
+
+
 
       def __init__(self , count=1):
         
