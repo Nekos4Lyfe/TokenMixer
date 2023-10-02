@@ -23,6 +23,9 @@ from modules.hypernetworks import hypernetwork
 from modules.shared import cmd_opts
 from modules import sd_hijack_clip, sd_hijack_open_clip, sd_hijack_unet, sd_hijack_xlmr, xlmr
 import ldm.modules.encoders.modules
+import random , numpy
+
+from library.toolbox.constants import Token
 
 class Tools :
   #The class tools contain built in functions for handling 
@@ -80,16 +83,17 @@ class Tools :
 
       # SD-Next compatibility (work in progress)
       def get_diffusers(self):
-        model = shared.sd_model
-        tokenizer = model.tokenizer
-        tokenizer1280 = model.tokenizer_2
-        loaded_embs = collections.OrderedDict(
-        sorted(sd_hijack.model_hijack.embedding_db.word_embeddings.items(),
-            key=lambda x: str(x[0]).lower())) #doesn't actually work with diffusers
-        internal_embs = model.text_encoder.get_input_embeddings().weight
-        is_sdxl = True
-        internal_embs1280 = model.text_encoder_2.get_input_embeddings().weight
-        return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_embs1280 , tokenizer1280
+        return None
+        #model = shared.sd_model
+        #tokenizer = model.tokenizer
+        #tokenizer1280 = model.tokenizer_2
+        #loaded_embs = collections.OrderedDict(
+        #sorted(sd_hijack.model_hijack.embedding_db.word_embeddings.items(),
+        #    key=lambda x: str(x[0]).lower())) #doesn't actually work with diffusers
+        #internal_embs = model.text_encoder.get_input_embeddings().weight
+        #is_sdxl = True
+        #internal_embs1280 = model.text_encoder_2.get_input_embeddings().weight
+        #return tokenizer , internal_embs , loaded_embs , is_sdxl , internal_embs1280 , tokenizer1280
       #### End of get_diffusers()
 
       #Check if a valid model is loaded
@@ -97,6 +101,30 @@ class Tools :
         if not hasattr(shared, 'sd_model'): return False
         else: return (shared.sd_model != None)
       #### End of model_is_loaded()
+
+      # Create a random tensor
+      def random(self , use_1280_dim = False):
+        distance = torch.nn.PairwiseDistance(p=2)
+        origin = None
+        size = None
+        if use_1280_dim : 
+          origin = self.origin1280
+          size = self.size1280
+        else : 
+          origin = self.origin768
+          size = self.size768
+        ######
+        random_token_length = self.random_token_length
+        random_token_length_randomization = self.random_token_length_randomization
+        #########
+        emb_vec = torch.rand(size).to(device = choosen_device , dtype = datatype)
+        dist = distance(emb_vec , origin).numpy()[0]
+        rdist = random_token_length * \
+        (1 - random_token_length_randomization*random.random())
+        emb_vec = (rdist/dist)*emb_vec
+        #######
+        return emb_vec.to(device = choosen_device , dtype = datatype)
+      ### End of random()
 
       # Get boolean flags for the sd_model
       def get_flags(self):
@@ -222,10 +250,20 @@ class Tools :
         .to(device = choosen_device , dtype = datatype)
     
       # Checks if an ID is valid
-      def assert_ID(self, emb_id):
+      def validate(self, input):
+        assert type(input) == torch.Tensor or  type(input) == int  , \
+        "input is type " + str(type(input)) + " , which is not valid!"
         model_is_sdxl , is_sd2 , is_sd1 = self.get_flags()
         no_of_internal_embs = self.no_of_internal_embs
         no_of_internal_embs1280 = self.no_of_internal_embs1280
+        ######
+        emb_ids = None
+        if type(input) == torch.Tensor : 
+          emb_ids = input.numpy()
+        else : emb_ids = input
+        assert len(emb_ids) == 1, "assert_ID function can " + \
+        "only handle a single ID at a time yet len(emb_ids) == " + str(len(emb_ids)) + " !"
+        emb_id = emb_ids[0]
         #######
         if model_is_sdxl : 
           assert no_of_internal_embs1280 == no_of_internal_embs , \
@@ -238,37 +276,113 @@ class Tools :
         return emb_id
       ###### End of assert_ID()
 
+      # Get name from an ID
+      def get_name_from(self , input , using_index = 0):
+        _ID = None
+        #Convert to int of _ID is a tensor
+        if type(input) == torch.Tensor: 
+            _IDs = input.to(choosen_device).numpy()
+            assert len(_IDs)==1 , \
+            "length of emb_id_list is not 1 it is " + str(len(_IDs)) + " !"
+            _ID = _IDs[0]
+        else : 
+            assert type(input) == int , \
+            "_ID is not int it is a " + str(type(input)) + " !"
+            _ID = copy.copy(input)
+        ########
+
+        #Fetch functions
+        tokenizer = self.tokenizer
+        token = self.token
+        #####
+
+        emb_name_utf8 = tokenizer.decoder.get(_ID)
+        if emb_name_utf8 != None:
+            byte_array_utf8 = bytearray([tokenizer.byte_decoder[c] for c in emb_name_utf8])
+            emb_name = byte_array_utf8.decode("utf-8", errors='backslashreplace')
+        else: emb_name = '!Unknown ID!'
+
+        if token.is_random_type(_ID):
+          emb_name = "Random_" + str(using_index)
+
+        return emb_name # return embedding name for embedding ID
+    # End of emb_id_to_name()
+
       # Get embedding vectors from text
       def get_emb_vecs_from(self, input , use_1280_dim = False , max_length = False):
+        
+        #Do some checks
+        if input == '' : return None
+        assert input != None , "input is NoneType !"
+        ######
+
+        #Get flags
+        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
+        ######
+
+        # Fetch functions
+        validate = self.validate
+        tokenize = self.tokenize 
+        token = self.token
+        #####
+
+        # Tokenize the input if it is a string
         text = None
         _ID = None
-        valid_single_ID = type(input) == torch.Tensor or  type(input) == int
+        if type(input) == str : text = input.lower().strip()
+        else: _ID = validate(input)
+        ####
+        _IDs = None
+        if text != None: _IDs = tokenize(text , max_length)
+        else : _IDs = _ID
         ######
-        if type(input) == str : text = input
-        elif valid_single_ID : _ID = self.assert_ID(input)
-        else : assert False , "input is type " + str(type(input)) + " , which is not valid!"
-        is_sdxl , is_sd2 , is_sd1 = self.get_flags()
-        ########
+
+        # Fetch internal embs
         internal_embs = None
-        if use_1280_dim and is_sdxl:  internal_embs = self.internal_embs1280.to(choosen_device)
+        if use_1280_dim and is_sdxl:  
+          internal_embs = self.internal_embs1280.to(choosen_device)
         elif is_sdxl : internal_embs = self.internal_embs768.to(choosen_device)
         else : internal_embs = self.internal_embs.to(choosen_device)
         ########
-        if text != None: _IDs = self.tokenize(text , max_length)
-        else : _IDs = _ID
-        #####
+
+
+
         emb_vecs = None
-        
-        if valid_single_ID : emb_vecs = self.concat(internal_embs[_IDs] , emb_vecs)
-        else:
-            for _ID in _IDs: 
-                emb_vecs = self.concat(internal_embs[_ID] , emb_vecs)
+        emb_vec = None
+        for _ID in _IDs: 
+          assert type(_ID) == int , "_ID is not int! It is a " + str(type(_ID)) + " !"
+          
+          #Default operation
+          if token.is_normal_type:
+            emb_vec = internal_embs[_ID]
+          #########
+
+          # Underscore IDs (replace with random vector)
+          elif token.is_random_type(_ID) : 
+            emb_vec = self.random()
+          ###########
+
+          # '<' symbol IDs (replace with start-of-text token)
+          elif token.is_start_of_text_type(_ID) : 
+            emb_vec = internal_embs[start_of_text_ID] 
+          ##########
+
+          # '>' symbol IDs (replace with end-of-text token)
+          elif token.is_end_of_text_type(_ID) : 
+            emb_vec = internal_embs[end_of_text_ID] 
+          ##########
+
+          emb_vec = emb_vec.to(choosen_device , dtype = datatype)
+          emb_vecs = self.concat(emb_vec , emb_vecs)
         #############
         return emb_vecs.to(device = choosen_device , dtype = datatype)
       ##### End of get_emb_vecs_from()
 
       def __init__(self , count=1):
+        
         #Default values if no model is loaded
+        Tools.token = Token()
+        Tools.get_token_type_from = self.token.type_from
         Tools.tokenizer = None
         Tools.internal_embs = None
         Tools.internal_embs768 = None
@@ -294,6 +408,15 @@ class Tools :
         ######
         Tools.internal_embs786 = None
         Tools.internal_embs1280 = None
+        ######
+        Tools.size768 = 0
+        Tools.size1280 = 0
+        Tools.origin768 = None
+        Tools.origin1280 = None
+        #####
+        Tools.random_token_length = None
+        Tools.random_token_length_randomization = None
+        ###### End of default values
 
         # Check if a valid SD model is loaded (SD 1.5 , SD2 or SDXL)
         model_is_loaded = self.model_is_loaded()
@@ -320,7 +443,7 @@ class Tools :
           assert self.tokenizer != None , "tokenizer is NoneType!"
           Tools.loaded = True
         ########
-#tokenize
+
         # SDXL Text encoders resources
         # In A1111 they are contained within another class
         # that allows them to process texts in "chunks" of
@@ -347,6 +470,18 @@ class Tools :
           Tools.no_of_internal_embs1280 = len(self.internal_embs1280)
           #######
           #BaseModelOutputWithPooling
+
+        if model_is_loaded:
+          sample_ID = self.tokenize(',')
+          emb_vec768 = self.get_emb_vecs_from(',')
+          emb_vec1280 = self.get_emb_vecs_from(',' , use_1280_dim=True)
+          Tools.size768 = emb_vec768.shape[1]
+          Tools.size1280 = emb_vec1280.shape[1]
+          Tools.origin768 = torch.zeros(self.size768)\
+          .to(choosen_device , dtype = datatype)
+          Tools.origin1280 = torch.zeros(self.size1280)\
+          .to(choosen_device , dtype = datatype)
+        #########
 
         Tools.count = count 
         Tools.letter = ['easter egg' , 'a' , 'b' , 'c' , 'd' , 'e' , 'f' , 'g' , 'h' , 'i' , \
