@@ -41,7 +41,8 @@ class MiniTokenizer:
         isCutoff = self.isCutoff
         #######
 
-        # Fetch the IDs (same for both 768 and 1280 dimension)
+        # Fetch the IDs (same for both 768 and 1280 dimension , 
+        # except 1280 dimension uses full 77 token length )
         _IDs768 = process(input , to = 'ids')
         _IDs1280 = process(input , to = 'ids' , max_length = True)
         ####
@@ -66,23 +67,23 @@ class MiniTokenizer:
           no_of_emb_vecs1280 = emb_vecs1280.shape[0]
         #######
 
+        # Place 768 dimension vectors
+        emb_vec768 = None
+        for tensor_index in range(no_of_emb_vecs768):
 
-        if True:
-          emb_vec768 = None
-          for tensor_index in range(no_of_emb_vecs768):
-
-            # Fetch ID and name
+            # Fetch ID and name from local params
             _ID = _IDs768[tensor_index]
             if isCutoff(_ID) : continue
             emb_name = process(_ID , to = 'name' , using_index = tensor_index)
             #####
 
             # Fetch the 768 dimension vector
+            # from local parameter
             emb_vec768 = emb_vecs768[tensor_index].\
             to(choosen_device , dtype = datatype)
             #####
 
-            # Place the tensor in open slot
+            # Place the 768 dimension tensor in an open slot
             for storage_index in range(MAX_NUM_MIX):
               if not isEmpty_at(storage_index): continue
               self.data.place(storage_index ,\
@@ -94,11 +95,13 @@ class MiniTokenizer:
                   to_positive = send_to_positives)
               break
             ###### End of for loop
-          ###### End of for loop
+        ###### End of for loop
 
-        if model_is_sdxl:
-          emb_vec1280 = None
-          for tensor_index in range(no_of_emb_vecs1280):
+        emb_vec1280 = None
+        for tensor_index in range(no_of_emb_vecs1280):
+          
+            # Skip if not SDXL
+            if not model_is_sdxl : break 
 
             # Fetch ID and name
             _ID = _IDs1280[tensor_index]
@@ -124,41 +127,7 @@ class MiniTokenizer:
                   use_1280_dim = True)
               break
             ###### End of for loop
-          ###### End of for loop
-
-        
-
-
-
-
-
-      
-
-
-
-
-          
-
-            #Add to 768 dimension vector
-            for emb_vec768 in emb_vecs768.split:
-              if not isEmpty_at(index): continue
-  
-            ######### End of of for-loop
-        
-            #Add to 1280 dimension vectors 
-            for index in range (MAX_NUM_MIX):
-              if not model_is_sdxl: break
-              if not isEmpty_at(index): continue
-              self.data.place(index , 
-                  vector = emb_vec1280.unsqueeze(0) ,
-                  ID = _ID ,
-                  name = emb_name , 
-                  to_negative = send_to_negatives , 
-                  to_mixer = send_to_vector , 
-                  to_positive = send_to_positives , 
-                  use_1280_dim =True)
-            ######## End of for-loop  
-      ######## End of place()
+        ###### End of for loop
 
     def Run (self  , *args) :
 
