@@ -175,10 +175,7 @@ class MiniTokenizer:
       random_token_length_randomization = (1/100) * args[9]
 
       # Fetch functions
-      tokenize = self.data.tools.tokenize
       place = self.place 
-      concat = self.concat
-      get_emb_vecs_from = self.data.tools.get_emb_vecs_from
       name_at = self.data.vector.name.get
       ID_at = self.data.vector.ID.get
       isEmpty_at = self.data.vector.isEmpty.get

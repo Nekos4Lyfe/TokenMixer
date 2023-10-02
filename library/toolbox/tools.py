@@ -251,7 +251,7 @@ class Tools :
         "torch.Tensor, it is a " + str(type(input)) + " !"
         tensor = input.to(device = choosen_device , dtype = datatype)
         if target == None: return tensor
-        else : return torch.cat([tensor , target] , dim = 0)\
+        else : return torch.cat([tensor , target.to(device = choosen_device , dtype = datatype)] , dim = 0)\
         .to(device = choosen_device , dtype = datatype)
     
       # Get name from an ID
@@ -478,9 +478,9 @@ class Tools :
           #BaseModelOutputWithPooling
 
         if model_is_loaded:
-          sample_ID = self.tokenize(',')
-          emb_vec768 = self.get_emb_vecs_from(',')
-          emb_vec1280 = self.get_emb_vecs_from(',' , use_1280_dim=True)
+          sample_ID = self.process(',' , to = 'ids')
+          emb_vec768 = self.process(',')
+          emb_vec1280 = self.process(',' , use_1280_dim=True)
           Tools.size768 = emb_vec768.shape[1]
           Tools.size1280 = emb_vec1280.shape[1]
           Tools.origin768 = torch.zeros(self.size768)\

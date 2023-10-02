@@ -17,7 +17,9 @@ END_OF_TEXT_ID = 49407
 class Token : 
 
   @staticmethod
-  def is_random_type(_ID) :
+  def is_random_type(input) :
+        
+    _ID = copy.copy(input)
 
     # Underscore IDs (replace with random vector)
     if _ID == 318 : return True  # = "_</w>" : 318
@@ -47,7 +49,9 @@ class Token :
     ########### End of is_underscore_token()
 
   @staticmethod
-  def is_start_of_text_type(_ID):
+  def is_start_of_text_type(input):
+        
+    _ID = copy.copy(input)
 
     if _ID == START_OF_TEXT_ID : return True # actual start-of-text token
     # '<' symbol IDs (replace with start-of-text token)
@@ -62,7 +66,9 @@ class Token :
   ####### End of is_start_of_text_token()
 
   @staticmethod
-  def is_end_of_text_type(_ID):
+  def is_end_of_text_type(input):
+        
+    _ID = copy.copy(input)
 
     if _ID == END_OF_TEXT_ID : return True # Actual end-of-text-token
     # '>' symbol IDs (replace with end-of-text token)
@@ -84,18 +90,12 @@ class Token :
   ####### End of is_end_of_text_token()
 
   def type_from(self , input):
-
-    _ID = None
-    if type(input) == torch.Tensor:
-      _IDs = input.to(TENSOR_DEVICE_TYPE).numpy()
-      assert len(_IDs)== 1 , "len(_IDs) must be 1 but is " + str(len(_IDs)) + " !"
-      _ID = _IDs[0]
-    else : _ID = copy.copy(input)
-    assert type(_ID) == int , "_ID is not int it is " + str(type(_ID)) + " !"
+    
+    _ID = copy.copy(input)
 
     is_random = self.is_random_type(_ID)
     is_start_of_text = self.is_start_of_text_type(_ID)
-    is_end_of_text = self.is_start_of_text_type(_ID)
+    is_end_of_text = self.is_end_of_text_type(_ID)
 
     # Do some checks
     if is_random :
@@ -115,8 +115,11 @@ class Token :
 
   # Returns False if _ID is a special type
   def is_normal_type(self, input) : 
+    
+    _ID = copy.copy(input)
+
     is_random , is_start_of_text , is_start_of_text = \
-    self.type_from(input)
+    self.type_from(_ID)
     is_special =  is_random or is_start_of_text or is_start_of_text
     if is_special : return False
     return True

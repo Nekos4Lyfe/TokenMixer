@@ -356,13 +356,11 @@ class Data :
     Data.temporary1280 = Temporary1280(3)
     ########
     if model_is_loaded:
-      emb_name, emb_id, emb_vec , loaded_emb = \
-      self.get_embedding_info(',')
+      emb_vec = self.tools.process(',' , to = 'tensors')
       size = emb_vec.shape[1]
       ####
       if is_sdxl:
-        sdxl_emb_name, sdxl_emb_id, sdxl_emb_vec , sdxl_loaded_emb = \
-        self.get_embedding_info(',', use_1280_dim = True)
+        sdxl_emb_vec = self.tools.process(',' , to = 'tensors', use_1280_dim = True)
         sdxl_size = sdxl_emb_vec.shape[1]
         self.vector1280 = Vector1280(sdxl_size)
         self.negative1280 = Negative1280(sdxl_size)
@@ -375,16 +373,14 @@ class Data :
       self.temporary = Temporary(size)
 
       from pprint import pprint
-      tokenize = self.tools.tokenize
-      get_emb_vecs_from = self.tools.get_emb_vecs_from
       pprint("1280 DIMENSION:")
-      emb_ids1280 = tokenize("girl on beach")
-      emb_vecs1280 = get_emb_vecs_from("girl on beach" , use_1280_dim = True)
+      emb_ids1280 = self.tools.process("girl on beach" , to = 'ids' , use_1280_dim = True)
+      emb_vecs1280 = self.tools.process("girl on beach" , use_1280_dim = True)
       pprint(emb_vecs1280.shape)
       pprint(emb_ids1280)
       pprint("768 DIMENSION:")
-      emb_ids768 = tokenize("girl on beach")
-      emb_vecs768 = get_emb_vecs_from("girl on beach")
+      emb_ids768 = self.tools.process("girl on beach" , to = 'ids')
+      emb_vecs768 = self.tools.process("girl on beach")
       pprint(emb_vecs768.shape)
       pprint(emb_ids768)
 
