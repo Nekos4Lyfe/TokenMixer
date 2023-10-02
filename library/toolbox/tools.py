@@ -1,6 +1,5 @@
 #TOOLS.PY
 import torch, os
-import copy
 import collections
 import gradio as gr
 from modules import shared
@@ -23,7 +22,7 @@ from modules.hypernetworks import hypernetwork
 from modules.shared import cmd_opts
 from modules import sd_hijack_clip, sd_hijack_open_clip, sd_hijack_unet, sd_hijack_xlmr, xlmr
 import ldm.modules.encoders.modules
-import random , numpy
+import random , numpy , copy
 
 from library.toolbox.constants import Token
 
@@ -286,9 +285,9 @@ class Tools :
         text = None # string
         _ID_tensor = None # torch.Tensor 
         _ID_int32 = None # torch.int32
-        if type(input) == str : text = input
+        if type(input) == str : text = copy.copy(input)
         elif type(input) == torch.Tensor : _ID_tensor = input
-        else : _ID_int32 = input
+        else : _ID_int32 = copy.copy(input)
         #######
 
         # Fetch other stuff
@@ -305,21 +304,16 @@ class Tools :
 
         # If input is text string , tokenize it and fetch vectors
         if text != None:
-          emb_vec = None 
           _ID_tensor = self.tokenize(text , max_length)
           emb_ids = _ID_tensor.to(choosen_device , dtype = torch.int32)
           for _ID in _ID_tensor:
-            if token.is_normal_type(_ID): 
-              emb_vec = internal_embs[_ID]
-            elif token.is_random_type(_ID): 
+            emb_vec = internal_embs[_ID]
+            if token.is_random_type(_ID): 
               emb_vec = self.random(use_1280_dim)
             elif token.is_start_of_text_type(_ID): 
               emb_vec = internal_embs[start_of_text_ID]
             elif token.is_end_of_text_type(_ID):
               emb_vec = internal_embs[end_of_text_ID] 
-            else : assert False , "_ID within tokenized _ID_tensor batch " + \
-            " with type " + str(type(_ID_int32)) + \
-            " could not be identified!"
             ######
             emb_vec = emb_vec.unsqueeze(0)
             if emb_vecs == None : emb_vecs = emb_vec
@@ -330,12 +324,10 @@ class Tools :
         # If input is ID_tensor , do same as above but 
         # skip the tokenization step since we already have the IDs
         if _ID_tensor != None:
-          emb_vec = None
           emb_ids = _ID_tensor.to(choosen_device , dtype = torch.int32)
           for _ID in _ID_tensor:
-            if token.is_normal_type(_ID): 
-              emb_vec = internal_embs[_ID]
-            elif token.is_random_type(_ID): 
+            emb_vec = internal_embs[_ID]
+            if token.is_random_type(_ID): 
               emb_vec = self.random(use_1280_dim)
             elif token.is_start_of_text_type(_ID): 
               emb_vec = internal_embs[start_of_text_ID]
@@ -354,21 +346,21 @@ class Tools :
         # If input is single ID , fetch the vector directly
         if _ID_int32 != None : 
           emb_ids = _ID_int32
-          if token.is_normal_type(_ID_int32): 
-            emb_vecs = internal_embs[_ID_int32]
-          elif token.is_random_type(_ID_int32): 
-            emb_vecs = self.random(use_1280_dim)
+          emb_vec = internal_embs[_ID_int32]
+          if token.is_random_type(_ID_int32): 
+            emb_vec = self.random(use_1280_dim)
           elif token.is_start_of_text_type(_ID_int32): 
-            emb_vecs = internal_embs[start_of_text_ID]
+            emb_vec = internal_embs[start_of_text_ID]
           elif token.is_end_of_text_type(_ID_int32):
             emb_vec = internal_embs[end_of_text_ID] 
-          else : assert False , "single _ID with type " + \
-          str(type(_ID_int32)) + " could not be identified!"
+          ######
+          emb_vecs = emb_vec # Only a single tensor in output
         #########
 
         if to == 'tensors':
-          return emb_vecs.squeeze(0)\
-          .to(device = choosen_device , dtype = datatype)
+          return emb_vecs\
+          .to(device = choosen_device , dtype = datatype)\
+          .squeeze(0)
         elif to == 'ids':
           return emb_ids
         elif to == 'name':
@@ -379,10 +371,6 @@ class Tools :
           return name
         else : assert False , "parameter to = " + to + " could not be interpreted!" 
       ##### End of get_emb_vecs_from()
-
-
-
-
 
       def __init__(self , count=1):
         

@@ -372,15 +372,27 @@ class Data :
       self.positive = Positive(size)
       self.temporary = Temporary(size)
 
+      emb_ids1280 = \
+      self.tools.process("girl on beach" , to = 'ids' , \
+      use_1280_dim = True , max_length = True)
+      emb_vecs1280 = self.tools.process(emb_ids1280 , use_1280_dim = True)
+      emb_ids768 = self.tools.process("girl on beach" , to = 'ids')
+      emb_vecs768 = self.tools.process("girl on beach")
+      
+      ######
+      names = ''
+      for _ID in emb_ids768:
+        if names != '': names = names + ' , '
+        name = self.tools.process(_ID , to = 'name')
+        names = names + name
+      #######
+
       from pprint import pprint
+      pprint("Example : " + names)
       pprint("1280 DIMENSION:")
-      emb_ids1280 = self.tools.process("girl on beach" , to = 'ids' , use_1280_dim = True)
-      emb_vecs1280 = self.tools.process("girl on beach" , use_1280_dim = True)
       pprint(emb_vecs1280.shape)
       pprint(emb_ids1280)
       pprint("768 DIMENSION:")
-      emb_ids768 = self.tools.process("girl on beach" , to = 'ids')
-      emb_vecs768 = self.tools.process("girl on beach")
       pprint(emb_vecs768.shape)
       pprint(emb_ids768)
 

@@ -176,6 +176,7 @@ class MiniTokenizer:
 
       # Fetch functions
       place = self.place 
+      process = self.tools.process
       name_at = self.data.vector.name.get
       ID_at = self.data.vector.ID.get
       isEmpty_at = self.data.vector.isEmpty.get
@@ -240,8 +241,7 @@ class MiniTokenizer:
       #########
 
       # Place the tokenized vectors (excluding any cutoff tokens)
-      _IDs = tokenize(mini_input , max_length = True)
-      emb_vecs = get_emb_vecs_from(mini_input)
+      _IDs = process(mini_input , to = 'ids' , max_length = True)
       place(_IDs , send_to_vector , send_to_positives  , send_to_negatives)
       ######### 
 

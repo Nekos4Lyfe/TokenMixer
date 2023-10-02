@@ -92,7 +92,6 @@ class Token :
   def type_from(self , input):
     
     _ID = copy.copy(input)
-
     is_random = self.is_random_type(_ID)
     is_start_of_text = self.is_start_of_text_type(_ID)
     is_end_of_text = self.is_end_of_text_type(_ID)
@@ -115,9 +114,7 @@ class Token :
 
   # Returns False if _ID is a special type
   def is_normal_type(self, input) : 
-    
     _ID = copy.copy(input)
-
     is_random , is_start_of_text , is_start_of_text = \
     self.type_from(_ID)
     is_special =  is_random or is_start_of_text or is_start_of_text
