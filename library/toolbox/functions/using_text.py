@@ -59,7 +59,7 @@ class TextFunctions:
         return emb_name # return embedding name for embedding ID
     # End of emb_id_to_name()
 
-    def get_embedding_info(self, string , use_1280_dim = False):
+      def get_embedding_info(self, string , use_1280_dim = False):
             emb_id = None
             text = copy.copy(string.lower())
             loaded_emb = self.loaded_embs.get(text, None)
@@ -118,7 +118,7 @@ class TextFunctions:
             return emb_names, emb_ids, emb_vecs, None 
         # End of get_embedding_info()
         
-    def text_to_emb_ids(self, text) :
+        def text_to_emb_ids(self, text) :
             text = copy.copy(text.lower())
             emb_ids = None
             if self.is_sdxl : #SDXL detected
@@ -131,7 +131,7 @@ class TextFunctions:
             return emb_ids # return list of embedding IDs for text
         # End of text_to_emb_ids()
         
-    def __init__(self , \
+        def __init__(self , \
           internal_embs , internal_embs1280 , \
           no_of_internal_embs , no_of_internal_embs1280 , \
           tokenizer , loaded_embs , \
